@@ -1,18 +1,28 @@
 import sqlite3
 import uuid
 
-conn = sqlite3.connect('lumieres.db')
-cursor = conn.cursor()
 
-id_semaphore = str(uuid.uuid4())
-
-cursor.execute(
+def ajouter_semaphore(nom, caractere_affiche, disponible, etat): 
+    id_semaphore = str(uuid.uuid4())
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute(
     "INSERT INTO semaphores (id, nom, caractere_affiche, disponible, etat) VALUES (?, ?, ?, ?, ?)",
-    ( id_semaphore, "Semaphore 1", "A", 1, "disponible" )
+    (id_semaphore, nom, caractere_affiche, disponible, etat)
+    
 )
+    conn.commit()
+    conn.close()
+    
+#ajouter_semaphore("Sémaphore 2", "B", 1, "libre")
 
-def ajouter_semaphore(nom, caractere_affiche, disponible, etat):
-    ajouter_semaphore("Sémaphore 2", "B", 1, "libre")
+def lire_semaphore():
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM semaphores")
+    resultats = cursor.fetchall()
+    conn.close()
+    return resultats
 
-conn.commit()
-conn.close()
+
+#print(lire_semaphore())    
