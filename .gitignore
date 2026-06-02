@@ -1,0 +1,38 @@
+# ========================
+# Fichiers et dossiers OS
+# ========================
+# Fichiers système macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ========================
+# Python
+# ========================
+# Fichiers compilés et cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+serveur/.venv/
+
+# ========================
+# Bases de données
+# ========================
+# Fichiers de base de données locale (SQLite)
+*.db
+*.sqlite
+*.sqlite3
+serveur/lumieres.db
+
+# ========================
+# Outils et IDE
+# ========================
+# Configuration locale de VS Code
+.vscode/
+*.code-workspace
