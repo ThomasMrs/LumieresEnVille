@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Contrôleur du projet « Lumières en Ville » (DEUST IOSI USAL67) -->
+    <groupId>fr.lumieresenville</groupId>
+    <artifactId>controleur</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Lumieres en Ville - Controleur</name>
+    <description>Console de pilotage / supervision des robots (JavaFX).</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- LTS installee : Java 21 (le sujet autorise jusqu'a la LTS 25) -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <javafx.version>21.0.5</javafx.version>
+        <!-- Classe lancee par `mvn javafx:run` -->
+        <main.class>fr.lumieresenville.controleur.AppControleur</main.class>
+    </properties>
+
+    <dependencies>
+        <!-- JavaFX : controls tire base + graphics en transitif -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <!-- FXML (optionnel, utile si l'IHM passe en fichiers .fxml plus tard) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Compilation Java 21 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+
+            <!-- Lancement de l'appli : `mvn javafx:run` -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>${main.class}</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
