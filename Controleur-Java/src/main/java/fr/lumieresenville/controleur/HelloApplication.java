@@ -18,7 +18,7 @@ public class HelloApplication extends Application {
         btnEnvoie.setOnAction(e -> {
             try {
                 // L'adresse exacte confirmée par ton pote
-                String adresse = "http://192.168.1.100:8000/get_semaphore" +
+                String adresse = "http://192.168.1.100:8000/post_semaphore" +
                         "?nom=Semaphore1" +
                         "&caractere_affiche=a" +
                         "&disponible=1" +
