@@ -17,8 +17,8 @@ public class HelloApplication extends Application {
 
         btnEnvoie.setOnAction(e -> {
             try {
-                // L'adresse exacte confirmée par ton pote
-                String adresse = "http://192.168.1.100:8000/post_semaphore" +
+                // Utilisation de 127.0.0.1 pour tester sur la même machine
+                String adresse = "http://127.0.0.1:8000/post_semaphore" +
                         "?nom=Semaphore1" +
                         "&caractere_affiche=a" +
                         "&disponible=1" +
@@ -30,8 +30,8 @@ public class HelloApplication extends Application {
                 URL url = new URL(adresse);
                 HttpURLConnection connexion = (HttpURLConnection) url.openConnection();
                 
-                // On utilise la méthode GET exigée par le serveur Python
-                connexion.setRequestMethod("GET");
+                // Le serveur Python attend une méthode POST pour cette route
+                connexion.setRequestMethod("POST");
 
                 // On tape à la porte du serveur et on attend sa réponse
                 int codeReponse = connexion.getResponseCode();
