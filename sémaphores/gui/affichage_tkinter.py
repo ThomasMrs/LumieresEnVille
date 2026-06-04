@@ -3,7 +3,7 @@ import tkinter as tk
 class FenetreSimulateur:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Simulateur Sémaphore - Polaire")
+        self.root.title("Simulateur Sémaphore - Étape 2 (Matrice de rotation)")
         
         self.zone_saisie = tk.Frame(self.root)
         self.zone_saisie.pack(pady=10)

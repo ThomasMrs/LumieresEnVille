@@ -15,8 +15,8 @@ def ajouter_point_polaire():
         if rayon_saisi < 0 or rayon_saisi > 10:
             print("Erreur : Le rayon doit etre compris entre 0 et 10.")
             return
-        if angle_saisi < 0 or angle_saisi > 360:
-            print("Erreur : L'angle doit etre compris entre 0 et 360.")
+        if angle_saisi < 0 or angle_saisi >= 360:
+            print("Erreur : L'angle doit etre compris entre 0 et 359.")
             return
             
         angle_arrondi = (angle_saisi // 10) * 10
@@ -39,31 +39,38 @@ def boucle_principale():
     vue.nettoyer_ecran()
     moteur.avancer_un_tic()
     
-    # 1. Dessin de la barre principale (Branches 1 et 3)
-    x1, y1 = moteur.obtenir_coordonnees_led(200)
-    x2, y2 = moteur.obtenir_coordonnees_led(-200)
+
+    x1, y1 = moteur.calculer_position_matrice(200, 0, moteur.angle)
+    x2, y2 = moteur.calculer_position_matrice(-200, 0, moteur.angle)
     vue.dessiner_barre(x1, y1, x2, y2)
     
-    # 2. Dessin de la barre perpendiculaire (Branches 2 et 4)
-    # On décale le moteur de 90 degrés juste le temps du calcul
-    moteur.angle += 90
-    x3, y3 = moteur.obtenir_coordonnees_led(200)
-    x4, y4 = moteur.obtenir_coordonnees_led(-200)
+    # Branche verticale à l'arrêt (Haut et Bas)
+    x3, y3 = moteur.calculer_position_matrice(0, 200, moteur.angle)
+    x4, y4 = moteur.calculer_position_matrice(0, -200, moteur.angle)
     vue.dessiner_barre(x3, y3, x4, y4)
-    moteur.angle -= 90 # On remet l'angle à sa vraie valeur !
     
-    # --- LE CERVEAU : LECTURE POLAIRE ---
-    angle_actuel = int(moteur.angle // 10) * 10
-    
-    if angle_actuel in coordonnees_profs:
-        rayons_a_allumer = coordonnees_profs[angle_actuel]
+    for i in range(4):
+        angle_branche = (moteur.angle + i * 90) % 360
+        angle_arrondi = int(angle_branche // 10) * 10
         
-        for rayon in rayons_a_allumer:
-            x_led, y_led = moteur.obtenir_coordonnees_led(rayon * 15)
-            vue.dessiner_led(x_led, y_led, True)
-            
+        if angle_arrondi in coordonnees_profs:
+            for rayon in coordonnees_profs[angle_arrondi]:
+                dist = rayon * 15
+                
+                if i == 0:
+                    x0, y0 = dist, 0       
+                elif i == 1:
+                    x0, y0 = 0, dist       
+                elif i == 2:
+                    x0, y0 = -dist, 0     
+                else:
+                    x0, y0 = 0, -dist     
+                    
+                x_led, y_led = moteur.calculer_position_matrice(x0, y0, moteur.angle)
+                vue.dessiner_led(x_led, y_led, True)
+                
     vue.root.after(20, boucle_principale)
 
-print("Lancement du simulateur polaire...")
+print("Lancement du simulateur Etape 2...")
 boucle_principale()
 vue.root.mainloop()
