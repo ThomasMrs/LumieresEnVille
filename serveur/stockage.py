@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 
+# --- Semaphores --- #
 
 def ajouter_semaphore(nom, caractere_affiche, disponible, etat): 
     id_semaphore = str(uuid.uuid4())
@@ -13,8 +14,6 @@ def ajouter_semaphore(nom, caractere_affiche, disponible, etat):
 )
     conn.commit()
     conn.close()
-    
-#ajouter_semaphore("Sémaphore 2", "B", 1, "libre")
 
 def lire_semaphore():
     conn = sqlite3.connect('lumieres.db')
@@ -30,8 +29,8 @@ def supprimer_semaphores():
     cursor.execute("DELETE FROM semaphores")
     conn.commit()
     conn.close()
-    
-#print(lire_semaphore())    
+
+# --- Robots --- #
 
 def ajouter_robots(nom, position_x, position_y, statut, disponible): 
     id_robots = str(uuid.uuid4())
@@ -52,6 +51,15 @@ def lire_robots():
     conn.close()
     return resultats
 
+def supprimer_robots():
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM robots")
+    conn.commit()
+    conn.close()
+
+# --- Equipe --- #
+
 def ajouter_equipe(nom, adresse_ip, autorise): 
     id_equipe = str(uuid.uuid4())
     conn = sqlite3.connect('lumieres.db')
@@ -71,3 +79,37 @@ def lire_equipe():
     conn.close()
     return resultats
 
+def supprimer_equipes():
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM controleurs")
+    conn.commit()
+    conn.close()
+
+# --- Missions ---
+
+def ajouter_missions(semaphore_id, symbole, heure_debut, duree, statut): 
+    id_missions = str(uuid.uuid4())
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO missions (id, semaphore_id, symbole, heure_debut, duree, statut) VALUES (?, ?, ?, ?, ?, ?)",
+        (id_missions, semaphore_id, symbole, heure_debut, duree, statut)
+    )
+    conn.commit()
+    conn.close()
+    
+def lire_missions():
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM missions")
+    resultats = cursor.fetchall()
+    conn.close()
+    return resultats
+
+def supprimer_missions():
+    conn = sqlite3.connect('lumieres.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM missions")
+    conn.commit()
+    conn.close()
