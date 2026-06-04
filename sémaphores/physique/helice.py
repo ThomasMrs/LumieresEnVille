@@ -1,20 +1,18 @@
-
 import math
 
 class MoteurHelice:
-    def __init__(self, vitesse_depart=2.0):
+    def __init__(self, vitesse_depart=4.0):
         self.angle = 0.0
-        self.vitesse_rotation = vitesse_depart
+        self.vitesse = vitesse_depart
         
     def avancer_un_tic(self):
-        """Fait tourner l'hélice d'un cran en fonction de sa vitesse."""
-        self.angle = (self.angle + self.vitesse_rotation) % 360
+        self.angle = (self.angle + self.vitesse) % 360
         
-    def obtenir_coordonnees_led(self, rayon):
-        """Traduit les coordonnées Polaires (Rayon, Angle) en Cartésiennes (X, Y)"""
-        angle_rad = math.radians(self.angle)
+    def calculer_position_matrice(self, x0, y0, angle_degres):
         
-        x = rayon * math.cos(angle_rad)
-        y = rayon * math.sin(angle_rad)
+        theta = math.radians(angle_degres)
         
-        return x, y
+        x_prime = x0 * math.cos(theta) - y0 * math.sin(theta)
+        y_prime = x0 * math.sin(theta) + y0 * math.cos(theta)
+        
+        return x_prime, y_prime
