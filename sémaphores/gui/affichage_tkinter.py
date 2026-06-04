@@ -8,15 +8,11 @@ class FenetreSimulateur:
         self.zone_saisie = tk.Frame(self.root)
         self.zone_saisie.pack(pady=10)
         
-        tk.Label(self.zone_saisie, text="Angle (0-359):").pack(side=tk.LEFT)
-        self.champ_angle = tk.Entry(self.zone_saisie, width=5)
-        self.champ_angle.pack(side=tk.LEFT, padx=5)
+        tk.Label(self.zone_saisie, text="Lettre à afficher :").pack(side=tk.LEFT)
+        self.champ_lettre = tk.Entry(self.zone_saisie, width=5)
+        self.champ_lettre.pack(side=tk.LEFT, padx=5)
         
-        tk.Label(self.zone_saisie, text="Rayon (0-10):").pack(side=tk.LEFT)
-        self.champ_rayon = tk.Entry(self.zone_saisie, width=5)
-        self.champ_rayon.pack(side=tk.LEFT, padx=5)
-        
-        self.bouton_valider = tk.Button(self.zone_saisie, text="Ajouter le point")
+        self.bouton_valider = tk.Button(self.zone_saisie, text="Afficher")
         self.bouton_valider.pack(side=tk.LEFT)
         
         self.largeur = 500
