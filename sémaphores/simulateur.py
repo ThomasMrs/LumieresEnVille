@@ -1,26 +1,32 @@
-
-from modélisation.matrices_glyphes import ALPHABET
+import tkinter as tk
 from physique.helice import MoteurHelice
 from gui.affichage_tkinter import FenetreSimulateur
 
 moteur = MoteurHelice(vitesse_depart=4.0)
 vue = FenetreSimulateur()
 
-lettre_actuelle = ALPHABET["A"]
+coordonnees_profs = {}
 
-def changer_lettre():
-    """Se déclenche quand on clique sur le bouton 'Afficher'"""
-    global lettre_actuelle
-    symbole = vue.champ_lettre.get().upper() 
-    
-    if symbole in ALPHABET:
-        lettre_actuelle = ALPHABET[symbole]
-        vue.canvas.delete("all") 
-        print(f"Affichage de la lettre : {symbole}")
-    else:
-        print(f"Erreur : La lettre '{symbole}' n'existe pas dans le dictionnaire.")
+def ajouter_point_polaire():
+    try:
+        angle_saisi = int(vue.champ_angle.get())
+        rayon_saisi = int(vue.champ_rayon.get())
+        
+        angle_arrondi = (angle_saisi // 10) * 10
+        
+        if angle_arrondi not in coordonnees_profs:
+            coordonnees_profs[angle_arrondi] = []
+            
+        if rayon_saisi not in coordonnees_profs[angle_arrondi]:
+            coordonnees_profs[angle_arrondi].append(rayon_saisi)
+            
+        vue.canvas.delete("all")
+        print(f"Point ajoute : Angle {angle_arrondi}, Rayon {rayon_saisi}")
+        
+    except ValueError:
+        print("Erreur : Entiers requis.")
 
-vue.bouton_valider.config(command=changer_lettre)
+vue.bouton_valider.config(command=ajouter_point_polaire)
 
 def boucle_principale():
     vue.nettoyer_ecran()
@@ -30,16 +36,17 @@ def boucle_principale():
     x2, y2 = moteur.obtenir_coordonnees_led(-200)
     vue.dessiner_barre(x1, y1, x2, y2)
     
-    if 220 <= moteur.angle < 320:
-        colonne_actuelle = int((moteur.angle - 220) // 10) 
+    angle_actuel = int(moteur.angle // 10) * 10
+    
+    if angle_actuel in coordonnees_profs:
+        rayons_a_allumer = coordonnees_profs[angle_actuel]
         
-        for rayon in range(10):
-            if lettre_actuelle[rayon][colonne_actuelle] == 1:
-                x_led, y_led = moteur.obtenir_coordonnees_led((rayon + 5) * 12)
-                vue.dessiner_led(x_led, y_led, True)
-                
+        for rayon in rayons_a_allumer:
+            x_led, y_led = moteur.obtenir_coordonnees_led(rayon * 15)
+            vue.dessiner_led(x_led, y_led, True)
+            
     vue.root.after(20, boucle_principale)
 
-print("Lancement du simulateur...")
+print("Lancement du simulateur polaire...")
 boucle_principale()
 vue.root.mainloop()
