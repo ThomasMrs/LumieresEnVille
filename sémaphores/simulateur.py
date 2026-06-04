@@ -36,10 +36,20 @@ def boucle_principale():
     vue.nettoyer_ecran()
     moteur.avancer_un_tic()
     
+    # 1. Dessin de la barre principale (Branches 1 et 3)
     x1, y1 = moteur.obtenir_coordonnees_led(200)
     x2, y2 = moteur.obtenir_coordonnees_led(-200)
     vue.dessiner_barre(x1, y1, x2, y2)
     
+    # 2. Dessin de la barre perpendiculaire (Branches 2 et 4)
+    # On décale le moteur de 90 degrés juste le temps du calcul
+    moteur.angle += 90
+    x3, y3 = moteur.obtenir_coordonnees_led(200)
+    x4, y4 = moteur.obtenir_coordonnees_led(-200)
+    vue.dessiner_barre(x3, y3, x4, y4)
+    moteur.angle -= 90 # On remet l'angle à sa vraie valeur !
+    
+    # --- LE CERVEAU : LECTURE POLAIRE ---
     angle_actuel = int(moteur.angle // 10) * 10
     
     if angle_actuel in coordonnees_profs:
