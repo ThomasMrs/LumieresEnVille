@@ -9,9 +9,7 @@ class MoteurHelice:
         self.angle = (self.angle + self.vitesse) % 360
         
     def calculer_position_matrice(self, x0, y0, angle_degres):
-        """
-        Étape 2 : Application stricte de la matrice de rotation
-        """
+        
         theta = math.radians(angle_degres)
         
         x_prime = x0 * math.cos(theta) - y0 * math.sin(theta)
