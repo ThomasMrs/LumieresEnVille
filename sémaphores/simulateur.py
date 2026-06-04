@@ -15,6 +15,9 @@ def ajouter_point_polaire():
         if rayon_saisi < 0 or rayon_saisi > 10:
             print("Erreur : Le rayon doit etre compris entre 0 et 10.")
             return
+        if angle_saisi < 0 or angle_saisi > 360:
+            print("Erreur : L'angle doit etre compris entre 0 et 360.")
+            return
             
         angle_arrondi = (angle_saisi // 10) * 10
         
