@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, HTTPException
 from stockage import (
     lire_semaphore, ajouter_semaphore, supprimer_semaphores, modifier_semaphore,
     lire_robots, ajouter_robots, supprimer_robots, modifier_robots,
     lire_equipe, ajouter_equipe, supprimer_equipes, modifier_equipes, auth_equipe,
     lire_missions, ajouter_missions, supprimer_missions, modifier_missions,
 )
+import gestion
+import http
 
 app = FastAPI()
 
@@ -26,8 +28,8 @@ def read_one_semaphore(id: str):
     return {}
 
 @app.post("/api/add_semaphore", tags=["Semaphore"])
-def add_semaphore(name: str, state: str, duration: int):
-    return ajouter_semaphore(name, state, duration)
+def add_semaphore(name: str, state: str):
+    return ajouter_semaphore(name, state)
 
 @app.put("/api/update_semaphore/{id}", tags=["Semaphore"])
 def update_semaphore(id: str, name: str, state: str, duration: int):
@@ -73,8 +75,8 @@ def read_missions():
     return lire_missions()
 
 @app.post("/api/add_mission", tags=["Mission"])
-def add_mission(name: str, semaphore_id: str, robot_id: str, state: str, start_date: str, end_date: str, team: str):
-    return ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team)
+def add_mission(name: str, time: int, semaphore_id: str, team_id: str, robot_id: str = None, state: str = "Pending", start_date: str = None, end_date: str = None):
+    return ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team_id,time)
 
 @app.put("/api/update_mission/{id}", tags=["Mission"])
 def update_mission(id: str, name: str, semaphore_id: str, robot_id: str, state: str, start_date: str, end_date: str, team: str):
@@ -83,6 +85,15 @@ def update_mission(id: str, name: str, semaphore_id: str, robot_id: str, state: 
 @app.delete("/api/delete_missions", tags=["Mission"])
 def delete_missions():
     return supprimer_missions()
+
+@app.put("/api/valider_mission/{mission_id}", tags=["Mission"])
+def api_valider_mission(mission_id: str, name: str, time: int, semaphore_id: str, team_id: str, symbole: str):
+    
+    resultat = gestion.valider_nouvelle_mission(name, time, semaphore_id, team_id, symbole, mission_id)
+
+    if resultat["succes"] == False:
+        raise HTTPException(status_code=400, detail=resultat["message"])
+    return {"status": "ok", "detail": resultat["message"]}
 
 # --- Team ---
 
@@ -102,7 +113,7 @@ def update_team(id: str, name: str, ip: str, allowed: bool):
 def delete_teams():
     return supprimer_equipes()
 
-# Liste des objets autorisés à se connecter (cahier des charges)
+# Liste des objets autorisés à se connecter
 @app.get("/api/list_teams_allowed", tags=["Team"])
 def read_teams_allowed():
     return auth_equipe()

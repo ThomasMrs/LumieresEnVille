@@ -3,13 +3,13 @@ import uuid
 
 # --- Semaphores --- #
 
-def ajouter_semaphore(name, state, duration):
+def ajouter_semaphore(name, state):
     id_semaphore = str(uuid.uuid4())
     conn = sqlite3.connect('lumieres.db')
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO semaphores (id, name, state, duration) VALUES (?, ?, ?, ?)",
-        (id_semaphore, name, state, duration)
+        "INSERT INTO semaphores (id, name, state) VALUES (?, ?, ?)",
+        (id_semaphore, name, state)
     )
     conn.commit()
     conn.close()
@@ -129,17 +129,17 @@ def modifier_equipes(id_equipe, name, ip, allowed):
 
 # --- Missions --- #
 
-def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team):
+def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team_id, time):
     id_missions = str(uuid.uuid4())
     conn = sqlite3.connect('lumieres.db')
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO missions (id, name, semaphore_id, robot_id, state, start_date, end_date, team) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        (id_missions, name, semaphore_id, robot_id, state, start_date, end_date, team)
+    "INSERT INTO missions (id, name, semaphore_id, robot_id, state, start_date, end_date, team_id, time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    (id_missions, name, semaphore_id, robot_id, state, start_date, end_date, team_id, time),
     )
-    conn.commit()
+    conn.commit() 
     conn.close()
-
+     
 def lire_missions():
     conn = sqlite3.connect('lumieres.db')
     conn.row_factory = sqlite3.Row

@@ -9,6 +9,7 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS semaphores (
     id TEXT PRIMARY KEY,
     name TEXT,
     state TEXT,
+    type TEXT,
     duration INTEGER
 )""")
 
@@ -31,9 +32,12 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS missions (
     state TEXT,
     start_date TEXT,
     end_date TEXT,
-    team TEXT,
+    team_id TEXT,
+    time, TEXT,
+    FOREIGN KEY (team_id) REFERENCES teams(id),
     FOREIGN KEY (semaphore_id) REFERENCES semaphores(id),
     FOREIGN KEY (robot_id) REFERENCES robots(id)
+    FOREIGN KEY (shape_id) REFERENCES shape(id)
 )""")
 
 # Création de la table teams
