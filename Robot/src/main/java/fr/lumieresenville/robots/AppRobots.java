@@ -1,121 +1,302 @@
-package fr.lumieresenville.robots;                       // le package (dossier logique)
+package fr.lumieresenville.robots;
 
-import java.net.URI;                                     // pour transformer une adresse texte en URL
-import java.net.URLEncoder;                              // pour encoder le texte dans l'URL (espaces, accents...)
-import java.net.http.HttpClient;                         // l'outil du JDK qui envoie des requetes HTTP
-import java.net.http.HttpRequest;                        // represente la requete que l'on envoie
-import java.net.http.HttpResponse;                       // represente la reponse renvoyee par le serveur
-import java.nio.charset.StandardCharsets;                // pour dire "encode en UTF-8"
-import java.time.Duration;                               // pour exprimer une duree (le delai d'attente)
-import java.time.LocalTime;                              // pour recuperer l'heure actuelle
-import java.util.List;                                   // pour ranger les robots dans une liste
-public class AppRobots {                                 // classe principale (console)
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
-    private static final int LIGNES = 10;                // nombre de lignes de la grille
-    private static final int COLONNES = 10;              // nombre de colonnes de la grille
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-    // Adresse du serveur a contacter (a modifier ici si besoin)
+public class AppRobots {
+
+    /*
+     * =========================
+     * CONFIGURATION GENERALE
+     * =========================
+     *
+     * SERVEUR : adresse du serveur FastAPI.
+     * HTTP : objet Java qui envoie toutes les requetes au serveur.
+     * FORMAT_DATE : format utilise pour start_date et end_date.
+     */
     private static final String SERVEUR = "http://192.168.1.100:8000";
-
-    // Un seul client HTTP, cree une fois et reutilise pour toutes les requetes
     private static final HttpClient HTTP = HttpClient.newHttpClient();
+    private static final DateTimeFormatter FORMAT_DATE =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static void main(String[] args) throws InterruptedException {
+    /*
+     * =========================
+     * PROGRAMME PRINCIPAL
+     * =========================
+     *
+     * Ordre du programme :
+     * 1. lire les robots deja presents sur le serveur
+     * 2. chercher un robot disponible
+     * 3. chercher une mission disponible
+     * 4. faire la mission si tout existe
+     * 5. afficher regulierement les robots et les missions
+     */
+    public static void main(String[] args) throws Exception {
 
-        // --- 1) On cree quelques robots ---
-        Robot r1 = new Robot("Robot 1", 5, 10);          // robot sur la base (colonne 5, ligne 10 = sous la grille)
-        Robot r2 = new Robot("Robot 2", 2, 3);           // robot sur la grille (colonne 2, ligne 3)
-        r2.setEtat(EtatRobot.EN_MISSION);                // ce robot est en mission
-        List<Robot> robots = List.of(r1, r2);            // la liste des robots
+        List<Robot> robots = lireRobotsDuServeur();
 
-        // --- 2) On dessine la grille dans le terminal ---
-        afficherGrille(robots);                          // appelle la methode qui dessine
-
-        // --- 3) Toutes les 5 secondes, chaque robot s'envoie au serveur ---
-        System.out.println("=== Envoi au serveur toutes les 5 s (Ctrl+C pour arreter) ===");
-        while (true) {                                   // boucle infinie : tourne jusqu'a Ctrl+C
-            for (Robot r : robots) {                     // pour chaque robot...
-                String resultat = envoyerRobot(r);       // ...on envoie son etat au serveur
-                System.out.println(LocalTime.now().withNano(0) + "  -  " + r.getNom() + " : " + resultat); // heure + nom + resultat
+        if (robots.isEmpty()) {
+            System.out.println("Aucun robot trouve sur le serveur.");
+        } else {
+            for (Robot robot : robots) {
+                System.out.println("Robot trouve : " + robot);
             }
-            Thread.sleep(5000);                          // on met le programme en pause 5000 ms = 5 secondes
+        }
+
+        Robot robotDisponible = chercherRobotDisponible(robots);
+        Mission mission = chercherMissionDisponible();
+
+        if (mission == null) {
+            System.out.println("Aucune mission disponible.");
+        } else if (robotDisponible == null) {
+            System.out.println("Aucun robot disponible.");
+        } else {
+            faireLaMission(robotDisponible, mission);
+        }
+
+        while (true) {
+            System.out.println(LocalTime.now().withNano(0) + " robots   : " + get("/api/list_robots"));
+            System.out.println(LocalTime.now().withNano(0) + " missions : " + get("/api/list_missions"));
+            Thread.sleep(5000);
         }
     }
 
-    // Dessine la grille 10x10 + la base, avec les robots dessus
-    private static void afficherGrille(List<Robot> robots) {
+    /*
+     * =========================
+     * DEROULEMENT D'UNE MISSION
+     * =========================
+     */
+    private static void faireLaMission(Robot robot, Mission mission) throws Exception {
+        System.out.println("Mission choisie : " + mission);
+        System.out.println("Semaphore lie   : " + get("/api/semaphore/" + enc(mission.getSemaphoreId())));
 
-        // a) On prepare une grille remplie de points '.'
-        char[][] grille = new char[LIGNES][COLONNES];    // un tableau 10x10 de caracteres
-        for (int ligne = 0; ligne < LIGNES; ligne++) {   // pour chaque ligne...
-            for (int col = 0; col < COLONNES; col++) {   // ...et chaque colonne...
-                grille[ligne][col] = '.';                // on met un point = case vide
-            }
-        }
+        mission.demarrer(robot.getId(), maintenant());
+        robot.setEtat(EtatRobot.OCCUPIED);
 
-        char base = 'B';                                 // la case base (vide = lettre 'B')
+        System.out.println("Debut mission : " + mission.getDebutMission());
+        System.out.println("PUT robot     : " + modifierRobot(robot));
+        System.out.println("PUT mission   : " + modifierMission(mission));
 
-        // b) On place chaque robot (numerote 1, 2, ...) sur la grille ou la base
-        for (int i = 0; i < robots.size(); i++) {        // pour chaque robot de la liste...
-            Robot r = robots.get(i);                     // le robot courant
-            char marque = (char) ('1' + i);              // son symbole : '1' pour le 1er, '2' pour le 2e...
-            int col = (int) r.getX();                    // sa colonne (position X)
-            int ligne = (int) r.getY();                  // sa ligne (position Y)
-            if (ligne < LIGNES) {                        // si le robot est sur la grille...
-                grille[ligne][col] = marque;             // ...on le pose dans la case
-            } else {                                     // sinon il est sur la base (ligne 10)...
-                base = marque;                           // ...on l'affiche sur la base
-            }
-        }
+        Thread.sleep(2000);
 
-        // c) On affiche la grille, ligne par ligne
-        System.out.println("=== Grille des robots ===");
-        for (int ligne = 0; ligne < LIGNES; ligne++) {   // pour chaque ligne...
-            StringBuilder texte = new StringBuilder();   // on construit la ligne de texte
-            for (int col = 0; col < COLONNES; col++) {   // pour chaque colonne...
-                texte.append(grille[ligne][col]).append(' '); // on ajoute la case + un espace
-            }
-            System.out.println(texte);                   // on affiche la ligne
-        }
+        mission.terminer(maintenant());
+        robot.setEtat(EtatRobot.AVAILABLE);
 
-        // d) On affiche la base, alignee sous la colonne du milieu (elle "depasse")
-        int colBase = COLONNES / 2;                      // colonne du milieu (5)
-        StringBuilder ligneBase = new StringBuilder();   // la ligne de la base
-        for (int col = 0; col < COLONNES; col++) {       // pour chaque colonne...
-            ligneBase.append(col == colBase ? base : ' ').append(' '); // base au milieu, espace ailleurs
-        }
-        System.out.println(ligneBase);                   // on affiche la base
-
-        // e) Une petite legende
-        System.out.println("Legende : . = case vide,  1/2 = robots,  case du bas = base");
+        System.out.println("Fin mission   : " + mission.getFinMission());
+        System.out.println("PUT mission   : " + modifierMission(mission));
+        System.out.println("PUT robot     : " + modifierRobot(robot));
     }
 
-    // Envoie l'etat d'un robot au serveur via POST /post_robots
-    private static String envoyerRobot(Robot r) {
-        try {                                            // on "essaie" (le reseau peut echouer)
-            String url = SERVEUR + "/post_robots"        // l'adresse du serveur + le chemin
-                    + "?nom=" + enc(r.getNom())          // parametre nom (encode pour l'URL)
-                    + "&position_x=" + r.getX()          // parametre position_x
-                    + "&position_y=" + r.getY()          // parametre position_y
-                    + "&statut=" + enc(r.getEtat().name()) // parametre statut = nom de l'etat (ex. DISPONIBLE)
-                    + "&disponible=" + (r.getEtat() == EtatRobot.DISPONIBLE ? 1 : 0); // 1 si dispo, sinon 0
-            HttpRequest requete = HttpRequest.newBuilder() // on commence a construire la requete
-                    .uri(URI.create(url))                // l'adresse complete avec les parametres
-                    .timeout(Duration.ofSeconds(4))      // on abandonne s'il n'y a pas de reponse en 4 s
-                    .POST(HttpRequest.BodyPublishers.noBody()) // requete POST, sans corps (tout est dans l'URL)
-                    .build();                            // la requete est terminee
-            HttpResponse<String> reponse =               // on envoie la requete et on stocke la reponse
-                    HTTP.send(requete, HttpResponse.BodyHandlers.ofString());
-            return reponse.statusCode() == 200           // si le code de reponse vaut 200 (= OK)...
-                    ? "envoye OK"                        // ...message de succes
-                    : "erreur HTTP " + reponse.statusCode(); // sinon on montre le code recu
-        } catch (Exception e) {                          // si une erreur survient (serveur eteint, etc.)
-            return "echec : " + e.getMessage();          // on renvoie le message d'erreur
+    /*
+     * =========================
+     * LECTURE DES ROBOTS
+     * =========================
+     *
+     * Le serveur renvoie une liste JSON. Chaque objet JSON est transforme
+     * en objet Robot Java pour pouvoir travailler plus simplement.
+     */
+    private static List<Robot> lireRobotsDuServeur() throws Exception {
+        JsonArray liste = lireTableauJson("/api/list_robots");
+        List<Robot> robots = new ArrayList<>();
+
+        for (int i = 0; i < liste.size(); i++) {
+            JsonObject objet = liste.get(i).getAsJsonObject();
+
+            Robot robot = new Robot(
+                    texte(objet, "name"),
+                    nombre(objet, "position_x"),
+                    nombre(objet, "position_y")
+            );
+
+            robot.setId(texte(objet, "id"));
+            robot.setVitesse(nombre(objet, "speed"));
+            robot.setEtat(etatRobot(texte(objet, "state")));
+            robots.add(robot);
+        }
+
+        return robots;
+    }
+
+//choix du robot disponible
+    private static Robot chercherRobotDisponible(List<Robot> robots) {
+        for (Robot robot : robots) {
+            if (robot.getEtat() == EtatRobot.AVAILABLE) {
+                return robot;
+            }
+        }
+
+        return null;
+    }
+
+//choix de la mission disponible pas encore en cours ou terminee ou avec un robot affecte
+    private static Mission chercherMissionDisponible() throws Exception {
+        JsonArray liste = lireTableauJson("/api/list_missions");
+
+        for (int i = 0; i < liste.size(); i++) {
+            JsonObject objet = liste.get(i).getAsJsonObject();
+
+            String robotId = texte(objet, "robot_id");
+            String etat = texte(objet, "state");
+
+            if (robotId.isBlank() && !etat.equals("In progress") && !etat.equals("Done")) {
+                return new Mission(
+                        texte(objet, "id"),
+                        texte(objet, "name"),
+                        texte(objet, "semaphore_id"),
+                        robotId,
+                        etat,
+                        texte(objet, "start_date"),
+                        texte(objet, "end_date"),
+                        texte(objet, "team")
+                );
+            }
+        }
+
+        return null;
+    }
+
+//put pour modifier le robot
+    private static String modifierRobot(Robot robot) throws Exception {
+        String url = "/api/update_robot/" + enc(robot.getId())
+                + "?name=" + enc(robot.getNom())
+                + "&state=" + enc(robot.getEtat().name())
+                + "&speed=" + robot.getVitesse()
+                + "&position_x=" + robot.getX()
+                + "&position_y=" + robot.getY();
+
+        return put(url);
+    }
+
+//Cette methode envoie un PUT au serveur pour sauvegarder la mission :
+//robot affecte, etat, date de debut, date de fin et equipe.
+
+    private static String modifierMission(Mission mission) throws Exception {
+        String url = "/api/update_mission/" + enc(mission.getId())
+                + "?name=" + enc(mission.getNom())
+                + "&semaphore_id=" + enc(mission.getSemaphoreId())
+                + "&robot_id=" + enc(mission.getRobotId())
+                + "&state=" + enc(mission.getEtat())
+                + "&start_date=" + enc(mission.getDebutMission())
+                + "&end_date=" + enc(mission.getFinMission())
+                + "&team=" + enc(mission.getTeam());
+
+        return put(url);
+    }
+
+    /*
+     * =========================
+     * LECTURE DU JSON
+     * =========================
+     *
+     * Gson transforme le texte JSON du serveur en objets Java.
+     * JsonArray = une liste JSON.
+     * JsonObject = un objet dans cette liste.
+     */
+    private static JsonArray lireTableauJson(String chemin) throws Exception {
+        String reponse = get(chemin);
+        return JsonParser.parseString(reponse).getAsJsonArray();
+    }
+
+    private static String texte(JsonObject objet, String nomChamp) {
+        if (!objet.has(nomChamp) || objet.get(nomChamp).isJsonNull()) {
+            return "";
+        }
+
+        return objet.get(nomChamp).getAsString();
+    }
+
+    private static double nombre(JsonObject objet, String nomChamp) {
+        if (!objet.has(nomChamp) || objet.get(nomChamp).isJsonNull()) {
+            return 0;
+        }
+
+        return objet.get(nomChamp).getAsDouble();
+    }
+
+    /*
+     * =========================
+     * CONVERSION DE L'ETAT
+     * =========================
+     *
+     * Le serveur renvoie l'etat sous forme de texte.
+     * Cette methode transforme ce texte en valeur EtatRobot.
+     */
+    private static EtatRobot etatRobot(String texte) {
+        try {
+            return EtatRobot.valueOf(texte.toUpperCase());
+        } catch (Exception e) {
+            return EtatRobot.AVAILABLE;
         }
     }
 
-    // Encode un texte pour qu'il soit valide dans une URL (UTF-8)
+    private static String get(String chemin) throws Exception {
+        return requete("GET", chemin);
+    }
+
+    private static String put(String chemin) throws Exception {
+        return requete("PUT", chemin);
+    }
+
+    /*
+     * =========================
+     * REQUETES HTTP
+     * =========================
+     *
+     * Methode commune pour envoyer les requetes au serveur.
+     * Elle recoit le type de requete (GET, PUT...) et le chemin de l'API.
+     */
+    private static String requete(String methode, String chemin) throws Exception {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(SERVEUR + chemin))
+                .timeout(Duration.ofSeconds(4));
+
+        if (methode.equals("GET")) {
+            builder.GET();
+        } else if (methode.equals("POST")) {
+            builder.POST(HttpRequest.BodyPublishers.noBody());
+        } else if (methode.equals("PUT")) {
+            builder.PUT(HttpRequest.BodyPublishers.noBody());
+        } else if (methode.equals("DELETE")) {
+            builder.DELETE();
+        }
+
+        HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+
+        if (reponse.statusCode() != 200) {
+            return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
+        }
+
+        if (reponse.body() == null || reponse.body().equals("null")) {
+            return "OK";
+        }
+
+        return reponse.body();
+    }
+
+    /* 
+     * maintenant() donne la date actuelle.
+     * enc() rend un texte utilisable dans une URL.
+     */
+    private static String maintenant() {
+        return LocalDateTime.now().format(FORMAT_DATE);
+    }
+
     private static String enc(String texte) {
-        return URLEncoder.encode(texte, StandardCharsets.UTF_8);
+        return URLEncoder.encode(texte == null ? "" : texte, StandardCharsets.UTF_8);
     }
+
 }
