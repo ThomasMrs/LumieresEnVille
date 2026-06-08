@@ -12,6 +12,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -30,6 +31,7 @@ public class AppRobots {
      */
     private static final String SERVEUR = "http://192.168.1.100:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
+    private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -41,7 +43,7 @@ public class AppRobots {
      * Ordre du programme :
      * 1. lire les robots deja presents sur le serveur
      * 2. chercher un robot disponible
-     * 3. chercher une mission disponible
+     * 3. choisir une mission disponible dans le terminal
      * 4. faire la mission si tout existe
      * 5. afficher regulierement les robots et les missions
      */
@@ -58,7 +60,7 @@ public class AppRobots {
         }
 
         Robot robotDisponible = chercherRobotDisponible(robots);
-        Mission mission = chercherMissionDisponible();
+        Mission mission = choisirMissionDansTerminal();
 
         if (mission == null) {
             System.out.println("Aucune mission disponible.");
@@ -142,9 +144,45 @@ public class AppRobots {
         return null;
     }
 
-//choix de la mission disponible pas encore en cours ou terminee ou avec un robot affecte
-    private static Mission chercherMissionDisponible() throws Exception {
+//affiche les missions disponibles et demande a l'utilisateur d'en choisir une
+    private static Mission choisirMissionDansTerminal() throws Exception {
+        List<Mission> missions = lireMissionsDisponibles();
+
+        if (missions.isEmpty()) {
+            return null;
+        }
+
+        System.out.println("=== Missions disponibles ===");
+        for (int i = 0; i < missions.size(); i++) {
+            Mission mission = missions.get(i);
+            System.out.println((i + 1) + " - "
+                    + mission.getNom()
+                    + " | semaphore : " + mission.getSemaphoreId()
+                    + " | equipe : " + mission.getTeam());
+        }
+
+        while (true) {
+            System.out.print("Choisis une mission (1 a " + missions.size() + ") : ");
+            String reponse = CLAVIER.nextLine();
+
+            try {
+                int numero = Integer.parseInt(reponse);
+
+                if (numero >= 1 && numero <= missions.size()) {
+                    return missions.get(numero - 1);
+                }
+            } catch (NumberFormatException e) {
+                // Si l'utilisateur n'a pas tape un nombre, on redemande.
+            }
+
+            System.out.println("Numero invalide.");
+        }
+    }
+
+//recupere les missions disponibles pas encore en cours ou terminees ou avec un robot affecte
+    private static List<Mission> lireMissionsDisponibles() throws Exception {
         JsonArray liste = lireTableauJson("/api/list_missions");
+        List<Mission> missions = new ArrayList<>();
 
         for (int i = 0; i < liste.size(); i++) {
             JsonObject objet = liste.get(i).getAsJsonObject();
@@ -152,8 +190,8 @@ public class AppRobots {
             String robotId = texte(objet, "robot_id");
             String etat = texte(objet, "state");
 
-            if (robotId.isBlank() && !etat.equals("In progress") && !etat.equals("Done")) {
-                return new Mission(
+            if (robotId.isBlank() && !etat.equalsIgnoreCase("In progress") && !etat.equalsIgnoreCase("Done")) {
+                Mission mission = new Mission(
                         texte(objet, "id"),
                         texte(objet, "name"),
                         texte(objet, "semaphore_id"),
@@ -163,10 +201,12 @@ public class AppRobots {
                         texte(objet, "end_date"),
                         texte(objet, "team")
                 );
+
+                missions.add(mission);
             }
         }
 
-        return null;
+        return missions;
     }
 
 //put pour modifier le robot
