@@ -13,10 +13,6 @@ import java.time.format.DateTimeFormatter;               // pour formater les da
 import java.util.ArrayList;                              // pour construire une liste
 import java.util.List;                                   // pour ranger les robots dans une liste
 
-/**
- * Affiche une grille 10x10, ajoute les robots au serveur, recupere leurs ids,
- * affecte une mission disponible a un robot, puis met a jour le robot et la mission.
- */
 public class AppRobots {                                 // classe principale (console)
 
     private static final int LIGNES = 10;                // nombre de lignes de la grille
