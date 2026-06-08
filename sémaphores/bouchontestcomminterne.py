@@ -1,60 +1,34 @@
 import tkinter as tk
 import requests
+import time
 
 URL_SERVEUR = "http://192.168.1.100:8000/api/list_missions"
-ID_SEMAPHORE = "SEMA_01"
+ID_SEMAPHORE = "S-102"
 
 root = tk.Tk()
-root.title(f"Test Afficheur Pur - {ID_SEMAPHORE}")
+root.title(f"Semaphore - {ID_SEMAPHORE}")
 canvas = tk.Canvas(root, width=500, height=500, bg="black")
-canvas.pack(padx=20, pady=20)
+canvas.pack()
 
-cx = 250
-cy = 250
-
-def executer_afficheur(symbole):
-    """Affiche juste le texte en gros et en vert au centre"""
+def afficher_forme(symbole):
     canvas.delete("all")
-    canvas.create_text(cx, cy, text=symbole, fill="lime green", font=("Courier", 100, "bold"))
-    print(f"[{ID_SEMAPHORE}] Affichage du texte '{symbole}' pendant 5 secondes.")
-    
-    root.after(5000, rendormir_semaphore)
+    canvas.create_text(250, 250, text=symbole, fill="lime", font=("Courier", 100, "bold"))
+    root.after(5000, lambda: canvas.delete("all"))
 
-def rendormir_semaphore():
-    canvas.delete("all")
-    print(f"[{ID_SEMAPHORE}] Mission terminée. Retour au sommeil...")
-    surveiller_reseau()
-
-def surveiller_reseau():
-    print(f"[{ID_SEMAPHORE}] Zzz... Attente d'un signal du Web Service...")
+def verifier_missions():
     try:
         reponse = requests.get(URL_SERVEUR, timeout=2)
-        
         if reponse.status_code == 200:
-            liste_missions = reponse.json()
-            mission_trouvee = False
-            
-            if isinstance(liste_missions, list):
-                for mission in liste_missions:
-                    cible = mission.get("id_semaphore") or mission.get("id")
-                    
-                    if cible == ID_SEMAPHORE:
-                        statut = mission.get("statut")
-                        
-                        if statut in ["ALLUME", "OCCUPE", "EN_COURS"]:
-                            symbole = mission.get("symbole", "?")
-                            print(f"Déclenchement détecté ! Symbole à afficher : {symbole}")
-                            
-                            executer_afficheur(symbole)
-                            mission_trouvee = True
-                            break
-            
-            if not mission_trouvee:
-                root.after(3000, surveiller_reseau)
-                
-    except requests.exceptions.ConnectionError:
-        print("Serveur injoignable, nouvelle tentative dans 3 secondes...")
-        root.after(3000, surveiller_reseau)
+            missions = reponse.json()
+            for m in missions:
+                if m.get("semaphore_id") == ID_SEMAPHORE:
+                    state = str(m.get("state") or "").upper()
+                    if state in ["AVAILABLE", "OCCUPIED", "PENDING"]:
+                        afficher_forme(m.get("shape_id"))
+                        break
+    except requests.exceptions.RequestException:
+        pass
+    root.after(3000, verifier_missions)
 
-surveiller_reseau()
+verifier_missions()
 root.mainloop()
