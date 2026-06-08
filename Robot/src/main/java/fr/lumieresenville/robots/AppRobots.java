@@ -1,23 +1,28 @@
 package fr.lumieresenville.robots;                       // le package (dossier logique)
 
 import java.net.URI;                                     // pour transformer une adresse texte en URL
-import java.net.URLEncoder;                              // pour encoder le texte dans l'URL (espaces, accents...)
+import java.net.URLEncoder;                              // pour encoder le texte dans l'URL
 import java.net.http.HttpClient;                         // l'outil du JDK qui envoie des requetes HTTP
 import java.net.http.HttpRequest;                        // represente la requete que l'on envoie
 import java.net.http.HttpResponse;                       // represente la reponse renvoyee par le serveur
 import java.nio.charset.StandardCharsets;                // pour dire "encode en UTF-8"
-import java.time.Duration;                               // pour exprimer une duree (le delai d'attente)
+import java.time.Duration;                               // pour exprimer une duree
+import java.time.LocalDateTime;                          // pour dater le debut et la fin de mission
 import java.time.LocalTime;                              // pour recuperer l'heure actuelle
+import java.time.format.DateTimeFormatter;               // pour formater les dates
+import java.util.ArrayList;                              // pour construire une liste
 import java.util.List;                                   // pour ranger les robots dans une liste
 
 /**
- * Affiche dans le TERMINAL une grille 10x10 avec une base en bas (qui depasse),
- * ajoute les robots au serveur, puis liste tous les robots toutes les 5 secondes.
+ * Affiche une grille 10x10, ajoute les robots au serveur, recupere leurs ids,
+ * affecte une mission disponible a un robot, puis met a jour le robot et la mission.
  */
 public class AppRobots {                                 // classe principale (console)
 
     private static final int LIGNES = 10;                // nombre de lignes de la grille
     private static final int COLONNES = 10;              // nombre de colonnes de la grille
+    private static final DateTimeFormatter FORMAT_DATE =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"); // format envoye au serveur
 
     // Adresse du serveur a contacter (a modifier ici si besoin)
     private static final String SERVEUR = "http://192.168.1.100:8000";
@@ -28,9 +33,8 @@ public class AppRobots {                                 // classe principale (c
     public static void main(String[] args) throws InterruptedException {
 
         // --- 1) On cree quelques robots ---
-        Robot r1 = new Robot("Robot 1", 5, 10);          // robot sur la base (colonne 5, ligne 10 = sous la grille)
-        Robot r2 = new Robot("Robot 2", 2, 3);           // robot sur la grille (colonne 2, ligne 3)
-        r2.setEtat(EtatRobot.OCCUPIED);                // ce robot est en mission
+        Robot r1 = new Robot("Robot 1", 5, 10);          // robot sur la base
+        Robot r2 = new Robot("Robot 2", 2, 3);           // robot sur la grille
         List<Robot> robots = List.of(r1, r2);            // la liste des robots
 
         // --- 2) On dessine la grille dans le terminal ---
@@ -40,17 +44,29 @@ public class AppRobots {                                 // classe principale (c
         System.out.println("=== Nettoyage des robots sur le serveur (DELETE /api/delete_robots) ===");
         System.out.println(supprimerRobots());
 
-        // --- 4) On AJOUTE chaque robot au serveur ---
+        // --- 4) On ajoute les robots au serveur ---
         System.out.println("=== Ajout des robots au serveur (POST /api/add_robot) ===");
         for (Robot r : robots) {                         // pour chaque robot...
-            System.out.println(r.getNom() + " : " + ajouterRobot(r)); // ...on l'ajoute et on affiche le resultat
+            System.out.println(r.getNom() + " : " + ajouterRobot(r)); // ...on l'ajoute
         }
 
-        // --- 5) Toutes les 5 secondes, on LISTE tous les robots du serveur ---
-        System.out.println("=== Liste des robots sur le serveur toutes les 5 s (GET /api/list_robots) ===");
+        // --- 5) On recupere les ids generes par le serveur ---
+        System.out.println("=== Recuperation des ids robots (GET /api/list_robots) ===");
+        recupererIdsRobots(robots);
+        for (Robot r : robots) {
+            System.out.println(r);
+        }
+
+        // --- 6) On recupere une mission et on met a jour son etat avec PUT ---
+        System.out.println("=== Recuperation et traitement d'une mission (GET/PUT /api/list_missions) ===");
+        traiterPremiereMission(robots);
+
+        // --- 7) Toutes les 5 secondes, on liste robots et missions ---
+        System.out.println("=== Surveillance toutes les 5 s ===");
         while (true) {                                   // boucle infinie : tourne jusqu'a Ctrl+C
-            System.out.println(LocalTime.now().withNano(0) + "  -  " + listerRobots()); // on affiche la liste recue
-            Thread.sleep(5000);                          // on met le programme en pause 5 secondes
+            System.out.println(LocalTime.now().withNano(0) + "  robots   -  " + listerRobots());
+            System.out.println(LocalTime.now().withNano(0) + "  missions -  " + listerMissions());
+            Thread.sleep(5000);                          // pause 5 secondes
         }
     }
 
@@ -73,10 +89,10 @@ public class AppRobots {                                 // classe principale (c
             char marque = (char) ('1' + i);              // son symbole : '1' pour le 1er, '2' pour le 2e...
             int col = (int) r.getX();                    // sa colonne (position X)
             int ligne = (int) r.getY();                  // sa ligne (position Y)
-            if (ligne < LIGNES) {                        // si le robot est sur la grille...
-                grille[ligne][col] = marque;             // ...on le pose dans la case
-            } else {                                     // sinon il est sur la base (ligne 10)...
-                base = marque;                           // ...on l'affiche sur la base
+            if (ligne >= 0 && ligne < LIGNES && col >= 0 && col < COLONNES) {
+                grille[ligne][col] = marque;             // on le pose dans la case
+            } else {                                     // sinon il est sur la base ou hors grille
+                base = marque;                           // on l'affiche sur la base
             }
         }
 
@@ -90,11 +106,11 @@ public class AppRobots {                                 // classe principale (c
             System.out.println(texte);                   // on affiche la ligne
         }
 
-        // d) On affiche la base, alignee sous la colonne du milieu (elle "depasse")
+        // d) On affiche la base, alignee sous la colonne du milieu
         int colBase = COLONNES / 2;                      // colonne du milieu (5)
         StringBuilder ligneBase = new StringBuilder();   // la ligne de la base
         for (int col = 0; col < COLONNES; col++) {       // pour chaque colonne...
-            ligneBase.append(col == colBase ? base : ' ').append(' '); // base au milieu, espace ailleurs
+            ligneBase.append(col == colBase ? base : ' ').append(' '); // base au milieu
         }
         System.out.println(ligneBase);                   // on affiche la base
 
@@ -102,68 +118,292 @@ public class AppRobots {                                 // classe principale (c
         System.out.println("Legende : . = case vide,  1/2 = robots,  case du bas = base");
     }
 
+    // Recupere les ids des robots apres leur ajout, car POST /api/add_robot ne renvoie pas l'id
+    private static void recupererIdsRobots(List<Robot> robots) {
+        String json = listerRobots();                    // on lit tous les robots du serveur
+        for (String objet : objetsJson(json)) {          // pour chaque objet JSON recu...
+            String id = champJson(objet, "id");          // id serveur
+            String nom = champJson(objet, "name");       // nom du robot
+            for (Robot r : robots) {
+                if (r.getNom().equals(nom)) {
+                    r.setId(id);                         // on relie l'objet Java a l'id serveur
+                }
+            }
+        }
+    }
+
+    // Recupere une mission disponible, affecte un robot, puis met debut/fin a jour
+    private static void traiterPremiereMission(List<Robot> robots) throws InterruptedException {
+        Mission mission = recupererMissionDisponible();  // mission a faire
+        if (mission == null) {
+            System.out.println("Aucune mission disponible.");
+            return;
+        }
+
+        Robot robot = premierRobotDisponible(robots);    // robot a affecter
+        if (robot == null || estVide(robot.getId())) {
+            System.out.println("Aucun robot disponible avec id serveur.");
+            return;
+        }
+
+        System.out.println("Mission recuperee : " + mission);
+        System.out.println("Semaphore recupere : " + lireSemaphore(mission.getSemaphoreId()));
+
+        // Debut de mission : robot OCCUPIED, mission In progress, date de debut remplie
+        String debut = maintenant();
+        robot.setEtat(EtatRobot.OCCUPIED);
+        robot.setMission(mission);
+        mission.demarrer(robot.getId(), debut);
+
+        System.out.println("Debut mission robot : " + debut);
+        System.out.println("PUT robot debut   : " + modifierRobot(robot));
+        System.out.println("PUT mission debut : " + modifierMission(mission));
+        System.out.println("Mission du robot  : " + listerMissionsRobot(robot.getId()));
+
+        // Petite simulation : le robot termine la mission quelques secondes apres
+        Thread.sleep(2000);
+
+        // Fin de mission : robot AVAILABLE, mission Done, date de fin remplie
+        String fin = maintenant();
+        mission.terminer(fin);
+        robot.setEtat(EtatRobot.AVAILABLE);
+
+        System.out.println("Fin mission robot : " + fin);
+        System.out.println("PUT mission fin   : " + modifierMission(mission));
+        robot.setMission(null);
+        System.out.println("PUT robot fin     : " + modifierRobot(robot));
+    }
+
+    // Choisit la premiere mission qui n'est pas encore affectee et pas terminee
+    private static Mission recupererMissionDisponible() {
+        String json = listerMissions();                  // GET /api/list_missions
+        for (String objet : objetsJson(json)) {
+            String etat = champJson(objet, "state");
+            String robotId = champJson(objet, "robot_id");
+            if (estVide(robotId) && !etat.equalsIgnoreCase("Done") && !etat.equalsIgnoreCase("In progress")) {
+                String team = champJson(objet, "team");
+                if (estVide(team)) {
+                    team = champJson(objet, "team_id");
+                }
+                return new Mission(
+                        champJson(objet, "id"),
+                        champJson(objet, "name"),
+                        champJson(objet, "semaphore_id"),
+                        robotId,
+                        etat,
+                        champJson(objet, "start_date"),
+                        champJson(objet, "end_date"),
+                        team
+                );
+            }
+        }
+        return null;
+    }
+
+    // Choisit le premier robot disponible dans la liste locale
+    private static Robot premierRobotDisponible(List<Robot> robots) {
+        for (Robot robot : robots) {
+            if (robot.getEtat() == EtatRobot.AVAILABLE) {
+                return robot;
+            }
+        }
+        return null;
+    }
+
     // Supprime tous les anciens robots du serveur (DELETE /api/delete_robots)
     private static String supprimerRobots() {
-        try {                                            // on "essaie" (le reseau peut echouer)
-            HttpResponse<String> reponse = HTTP.send(    // on envoie la requete DELETE...
-                    HttpRequest.newBuilder()
-                            .uri(URI.create(SERVEUR + "/api/delete_robots")) // le chemin de suppression
-                            .timeout(Duration.ofSeconds(4)) // on abandonne apres 4 s sans reponse
-                            .DELETE()                    // requete DELETE (on supprime les donnees)
-                            .build(),
-                    HttpResponse.BodyHandlers.ofString());
-            return reponse.statusCode() == 200           // si OK...
-                    ? "anciens robots supprimes"         // ...message de succes
-                    : "erreur HTTP " + reponse.statusCode(); // sinon le code d'erreur
-        } catch (Exception e) {                          // en cas de probleme reseau...
-            return "echec : " + e.getMessage();          // ...on renvoie le message d'erreur
-        }
+        String resultat = envoyer("DELETE", SERVEUR + "/api/delete_robots");
+        return resultat.equals("OK") ? "anciens robots supprimes" : resultat;
     }
 
     // Ajoute un robot au serveur (POST /api/add_robot)
     private static String ajouterRobot(Robot r) {
-        try {                                            // on "essaie" (le reseau peut echouer)
-            String url = SERVEUR + "/api/add_robot"      // l'adresse + le chemin d'ajout
-                    + "?name=" + enc(r.getNom())         // parametre name (encode pour l'URL)
-                    + "&state=" + enc(r.getEtat().name()) // parametre state = nom de l'etat (ex. AVAILABLE)
-                    + "&speed=1"                         // parametre speed = vitesse (1 pour l'instant)
-                    + "&position_x=" + r.getX()          // parametre position_x
-                    + "&position_y=" + r.getY();         // parametre position_y
-            HttpResponse<String> reponse = HTTP.send(    // on envoie la requete POST...
-                    HttpRequest.newBuilder()
-                            .uri(URI.create(url))        // l'adresse complete avec les parametres
-                            .timeout(Duration.ofSeconds(4)) // on abandonne apres 4 s sans reponse
-                            .POST(HttpRequest.BodyPublishers.noBody()) // POST sans corps (tout est dans l'URL)
-                            .build(),
-                    HttpResponse.BodyHandlers.ofString());
-            return reponse.statusCode() == 200           // si OK...
-                    ? "ajoute OK"                        // ...message de succes
-                    : "erreur HTTP " + reponse.statusCode(); // sinon le code d'erreur
-        } catch (Exception e) {                          // en cas de probleme reseau...
-            return "echec : " + e.getMessage();          // ...on renvoie le message d'erreur
+        String url = SERVEUR + "/api/add_robot"
+                + "?name=" + enc(r.getNom())
+                + "&state=" + enc(r.getEtat().name())
+                + "&speed=" + r.getVitesse()
+                + "&position_x=" + r.getX()
+                + "&position_y=" + r.getY();
+        String resultat = envoyer("POST", url);
+        return resultat.equals("OK") ? "ajoute OK" : resultat;
+    }
+
+    // Modifie l'etat et la position d'un robot (PUT /api/update_robot/{id})
+    private static String modifierRobot(Robot r) {
+        String url = SERVEUR + "/api/update_robot/" + enc(r.getId())
+                + "?name=" + enc(r.getNom())
+                + "&state=" + enc(r.getEtat().name())
+                + "&speed=" + r.getVitesse()
+                + "&position_x=" + r.getX()
+                + "&position_y=" + r.getY();
+        return envoyer("PUT", url);
+    }
+
+    // Modifie l'etat, le robot affecte, le debut et la fin d'une mission
+    private static String modifierMission(Mission mission) {
+        String url = SERVEUR + "/api/update_mission/" + enc(mission.getId())
+                + "?name=" + enc(mission.getNom())
+                + "&semaphore_id=" + enc(mission.getSemaphoreId())
+                + "&robot_id=" + enc(mission.getRobotId())
+                + "&state=" + enc(mission.getEtat())
+                + "&start_date=" + enc(mission.getDebutMission())
+                + "&end_date=" + enc(mission.getFinMission())
+                + "&team=" + enc(mission.getTeam());
+        return envoyer("PUT", url);
+    }
+
+    // Recupere la liste de tous les robots du serveur (GET /api/list_robots)
+    private static String listerRobots() {
+        return envoyer("GET", SERVEUR + "/api/list_robots");
+    }
+
+    // Recupere la liste de toutes les missions du serveur (GET /api/list_missions)
+    private static String listerMissions() {
+        return envoyer("GET", SERVEUR + "/api/list_missions");
+    }
+
+    // Recupere les missions affectees a un robot (GET /api/robot/{id}/mission)
+    private static String listerMissionsRobot(String robotId) {
+        return envoyer("GET", SERVEUR + "/api/robot/" + enc(robotId) + "/mission");
+    }
+
+    // Recupere le semaphore lie a une mission (GET /api/semaphore/{id})
+    private static String lireSemaphore(String semaphoreId) {
+        if (estVide(semaphoreId)) {
+            return "aucun semaphore_id";
+        }
+        return envoyer("GET", SERVEUR + "/api/semaphore/" + enc(semaphoreId));
+    }
+
+    // Envoie une requete HTTP simple sans corps
+    private static String envoyer(String methode, String url) {
+        try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(4));
+
+            if ("GET".equals(methode)) {
+                builder.GET();
+            } else if ("POST".equals(methode)) {
+                builder.POST(HttpRequest.BodyPublishers.noBody());
+            } else if ("PUT".equals(methode)) {
+                builder.PUT(HttpRequest.BodyPublishers.noBody());
+            } else if ("DELETE".equals(methode)) {
+                builder.DELETE();
+            } else {
+                return "methode HTTP inconnue : " + methode;
+            }
+
+            HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            String body = reponse.body() == null ? "" : reponse.body().trim();
+            if (reponse.statusCode() == 200) {
+                return body.isEmpty() || body.equals("null") ? "OK" : body;
+            }
+            return "erreur HTTP " + reponse.statusCode() + " : " + body;
+        } catch (Exception e) {
+            return "echec : " + e.getMessage();
         }
     }
 
-    // Recupere la liste de TOUS les robots du serveur (GET /api/list_robots)
-    private static String listerRobots() {
-        try {                                            // on "essaie" (le reseau peut echouer)
-            HttpResponse<String> reponse = HTTP.send(    // on envoie la requete GET...
-                    HttpRequest.newBuilder()
-                            .uri(URI.create(SERVEUR + "/api/list_robots")) // le chemin pour tout lister
-                            .timeout(Duration.ofSeconds(4)) // on abandonne apres 4 s sans reponse
-                            .GET()                       // requete GET (on lit des donnees)
-                            .build(),
-                    HttpResponse.BodyHandlers.ofString());
-            return reponse.statusCode() == 200           // si OK...
-                    ? reponse.body()                     // ...on renvoie le contenu brut (la liste JSON)
-                    : "erreur HTTP " + reponse.statusCode(); // sinon le code d'erreur
-        } catch (Exception e) {                          // en cas de probleme...
-            return "echec : " + e.getMessage();          // ...on renvoie le message d'erreur
+    // Extrait les objets JSON contenus dans une liste JSON
+    private static List<String> objetsJson(String json) {
+        List<String> objets = new ArrayList<>();
+        if (json == null) {
+            return objets;
         }
+
+        boolean dansTexte = false;
+        boolean echappe = false;
+        int profondeur = 0;
+        int debut = -1;
+
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+
+            if (dansTexte) {
+                if (echappe) {
+                    echappe = false;
+                } else if (c == '\\') {
+                    echappe = true;
+                } else if (c == '"') {
+                    dansTexte = false;
+                }
+                continue;
+            }
+
+            if (c == '"') {
+                dansTexte = true;
+            } else if (c == '{') {
+                if (profondeur == 0) {
+                    debut = i;
+                }
+                profondeur++;
+            } else if (c == '}') {
+                profondeur--;
+                if (profondeur == 0 && debut >= 0) {
+                    objets.add(json.substring(debut, i + 1));
+                    debut = -1;
+                }
+            }
+        }
+        return objets;
+    }
+
+    // Lit une valeur simple dans un objet JSON plat
+    private static String champJson(String objet, String champ) {
+        String cle = "\"" + champ + "\":";
+        int position = objet.indexOf(cle);
+        if (position < 0) {
+            return "";
+        }
+
+        int debut = position + cle.length();
+        while (debut < objet.length() && Character.isWhitespace(objet.charAt(debut))) {
+            debut++;
+        }
+
+        if (debut >= objet.length() || objet.startsWith("null", debut)) {
+            return "";
+        }
+
+        if (objet.charAt(debut) == '"') {
+            StringBuilder valeur = new StringBuilder();
+            boolean echappe = false;
+            for (int i = debut + 1; i < objet.length(); i++) {
+                char c = objet.charAt(i);
+                if (echappe) {
+                    valeur.append(c);
+                    echappe = false;
+                } else if (c == '\\') {
+                    echappe = true;
+                } else if (c == '"') {
+                    return valeur.toString();
+                } else {
+                    valeur.append(c);
+                }
+            }
+            return valeur.toString();
+        }
+
+        int fin = debut;
+        while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') {
+            fin++;
+        }
+        return objet.substring(debut, fin).trim();
+    }
+
+    // Date/heure actuelle envoyee dans start_date et end_date
+    private static String maintenant() {
+        return LocalDateTime.now().format(FORMAT_DATE);
+    }
+
+    // Teste les valeurs absentes dans les reponses JSON
+    private static boolean estVide(String texte) {
+        return texte == null || texte.isBlank() || texte.equalsIgnoreCase("null");
     }
 
     // Encode un texte pour qu'il soit valide dans une URL (UTF-8)
     private static String enc(String texte) {
-        return URLEncoder.encode(texte, StandardCharsets.UTF_8);
+        return URLEncoder.encode(texte == null ? "" : texte, StandardCharsets.UTF_8);
     }
 }
