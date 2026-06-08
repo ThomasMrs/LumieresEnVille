@@ -14,7 +14,7 @@ public class Robot {
         this.nom = nom;                      // on memorise le nom
         this.x = x;                          // on memorise la position X
         this.y = y;                          // on memorise la position Y
-        this.etat = EtatRobot.DISPONIBLE;    // au depart : disponible
+        this.etat = EtatRobot.AVAILABLE;    // au depart : disponible
         this.mission = null;                 // au depart : pas de mission
     }
 

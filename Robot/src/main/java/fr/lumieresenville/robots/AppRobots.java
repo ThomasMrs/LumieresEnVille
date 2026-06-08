@@ -30,7 +30,7 @@ public class AppRobots {                                 // classe principale (c
         // --- 1) On cree quelques robots ---
         Robot r1 = new Robot("Robot 1", 5, 10);          // robot sur la base (colonne 5, ligne 10 = sous la grille)
         Robot r2 = new Robot("Robot 2", 2, 3);           // robot sur la grille (colonne 2, ligne 3)
-        r2.setEtat(EtatRobot.EN_MISSION);                // ce robot est en mission
+        r2.setEtat(EtatRobot.OCCUPIED);                // ce robot est en mission
         List<Robot> robots = List.of(r1, r2);            // la liste des robots
 
         // --- 2) On dessine la grille dans le terminal ---
