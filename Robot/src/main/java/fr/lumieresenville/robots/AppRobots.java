@@ -9,6 +9,11 @@ import java.nio.charset.StandardCharsets;                // pour dire "encode en
 import java.time.Duration;                               // pour exprimer une duree (le delai d'attente)
 import java.time.LocalTime;                              // pour recuperer l'heure actuelle
 import java.util.List;                                   // pour ranger les robots dans une liste
+
+/**
+ * Affiche dans le TERMINAL une grille 10x10 avec une base en bas (qui depasse),
+ * ajoute les robots au serveur, puis liste tous les robots toutes les 5 secondes.
+ */
 public class AppRobots {                                 // classe principale (console)
 
     private static final int LIGNES = 10;                // nombre de lignes de la grille
@@ -31,14 +36,17 @@ public class AppRobots {                                 // classe principale (c
         // --- 2) On dessine la grille dans le terminal ---
         afficherGrille(robots);                          // appelle la methode qui dessine
 
-        // --- 3) Toutes les 5 secondes, chaque robot s'envoie au serveur ---
-        System.out.println("=== Envoi au serveur toutes les 5 s (Ctrl+C pour arreter) ===");
+        // --- 3) On AJOUTE chaque robot au serveur ---
+        System.out.println("=== Ajout des robots au serveur (POST /api/add_robot) ===");
+        for (Robot r : robots) {                         // pour chaque robot...
+            System.out.println(r.getNom() + " : " + ajouterRobot(r)); // ...on l'ajoute et on affiche le resultat
+        }
+
+        // --- 4) Toutes les 5 secondes, on LISTE tous les robots du serveur ---
+        System.out.println("=== Liste des robots sur le serveur toutes les 5 s (GET /api/list_robots) ===");
         while (true) {                                   // boucle infinie : tourne jusqu'a Ctrl+C
-            for (Robot r : robots) {                     // pour chaque robot...
-                String resultat = envoyerRobot(r);       // ...on envoie son etat au serveur
-                System.out.println(LocalTime.now().withNano(0) + "  -  " + r.getNom() + " : " + resultat); // heure + nom + resultat
-            }
-            Thread.sleep(5000);                          // on met le programme en pause 5000 ms = 5 secondes
+            System.out.println(LocalTime.now().withNano(0) + "  -  " + listerRobots()); // on affiche la liste recue
+            Thread.sleep(5000);                          // on met le programme en pause 5 secondes
         }
     }
 
@@ -90,27 +98,45 @@ public class AppRobots {                                 // classe principale (c
         System.out.println("Legende : . = case vide,  1/2 = robots,  case du bas = base");
     }
 
-    // Envoie l'etat d'un robot au serveur via POST /post_robots
-    private static String envoyerRobot(Robot r) {
+    // Ajoute un robot au serveur (POST /api/add_robot)
+    private static String ajouterRobot(Robot r) {
         try {                                            // on "essaie" (le reseau peut echouer)
-            String url = SERVEUR + "/post_robots"        // l'adresse du serveur + le chemin
-                    + "?nom=" + enc(r.getNom())          // parametre nom (encode pour l'URL)
+            String url = SERVEUR + "/api/add_robot"      // l'adresse + le chemin d'ajout
+                    + "?name=" + enc(r.getNom())         // parametre name (encode pour l'URL)
+                    + "&state=" + enc(r.getEtat().name()) // parametre state = nom de l'etat (ex. DISPONIBLE)
+                    + "&speed=1"                         // parametre speed = vitesse (1 pour l'instant)
                     + "&position_x=" + r.getX()          // parametre position_x
-                    + "&position_y=" + r.getY()          // parametre position_y
-                    + "&statut=" + enc(r.getEtat().name()) // parametre statut = nom de l'etat (ex. DISPONIBLE)
-                    + "&disponible=" + (r.getEtat() == EtatRobot.DISPONIBLE ? 1 : 0); // 1 si dispo, sinon 0
-            HttpRequest requete = HttpRequest.newBuilder() // on commence a construire la requete
-                    .uri(URI.create(url))                // l'adresse complete avec les parametres
-                    .timeout(Duration.ofSeconds(4))      // on abandonne s'il n'y a pas de reponse en 4 s
-                    .POST(HttpRequest.BodyPublishers.noBody()) // requete POST, sans corps (tout est dans l'URL)
-                    .build();                            // la requete est terminee
-            HttpResponse<String> reponse =               // on envoie la requete et on stocke la reponse
-                    HTTP.send(requete, HttpResponse.BodyHandlers.ofString());
-            return reponse.statusCode() == 200           // si le code de reponse vaut 200 (= OK)...
-                    ? "envoye OK"                        // ...message de succes
-                    : "erreur HTTP " + reponse.statusCode(); // sinon on montre le code recu
-        } catch (Exception e) {                          // si une erreur survient (serveur eteint, etc.)
-            return "echec : " + e.getMessage();          // on renvoie le message d'erreur
+                    + "&position_y=" + r.getY();         // parametre position_y
+            HttpResponse<String> reponse = HTTP.send(    // on envoie la requete POST...
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(url))        // l'adresse complete avec les parametres
+                            .timeout(Duration.ofSeconds(4)) // on abandonne apres 4 s sans reponse
+                            .POST(HttpRequest.BodyPublishers.noBody()) // POST sans corps (tout est dans l'URL)
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            return reponse.statusCode() == 200           // si OK...
+                    ? "ajoute OK"                        // ...message de succes
+                    : "erreur HTTP " + reponse.statusCode(); // sinon le code d'erreur
+        } catch (Exception e) {                          // en cas de probleme reseau...
+            return "echec : " + e.getMessage();          // ...on renvoie le message d'erreur
+        }
+    }
+
+    // Recupere la liste de TOUS les robots du serveur (GET /api/list_robots)
+    private static String listerRobots() {
+        try {                                            // on "essaie" (le reseau peut echouer)
+            HttpResponse<String> reponse = HTTP.send(    // on envoie la requete GET...
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(SERVEUR + "/api/list_robots")) // le chemin pour tout lister
+                            .timeout(Duration.ofSeconds(4)) // on abandonne apres 4 s sans reponse
+                            .GET()                       // requete GET (on lit des donnees)
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            return reponse.statusCode() == 200           // si OK...
+                    ? reponse.body()                     // ...on renvoie le contenu brut (la liste JSON)
+                    : "erreur HTTP " + reponse.statusCode(); // sinon le code d'erreur
+        } catch (Exception e) {                          // en cas de probleme...
+            return "echec : " + e.getMessage();          // ...on renvoie le message d'erreur
         }
     }
 
