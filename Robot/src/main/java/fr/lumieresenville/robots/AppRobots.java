@@ -29,8 +29,6 @@ public class AppRobots {
         Robot robot2 = new Robot("Robot 2", 2, 3);
         List<Robot> robots = List.of(robot1, robot2);
 
-        afficherGrille(robots);
-
         System.out.println("Suppression des anciens robots : " + supprimerTousLesRobots());
 
         for (Robot robot : robots) {
@@ -225,31 +223,4 @@ public class AppRobots {
         return URLEncoder.encode(texte == null ? "" : texte, StandardCharsets.UTF_8);
     }
 
-    private static void afficherGrille(List<Robot> robots) {
-        char[][] grille = new char[10][10];
-
-        for (int ligne = 0; ligne < 10; ligne++) {
-            for (int colonne = 0; colonne < 10; colonne++) {
-                grille[ligne][colonne] = '.';
-            }
-        }
-
-        for (int i = 0; i < robots.size(); i++) {
-            Robot robot = robots.get(i);
-            int x = (int) robot.getX();
-            int y = (int) robot.getY();
-
-            if (x >= 0 && x < 10 && y >= 0 && y < 10) {
-                grille[y][x] = (char) ('1' + i);
-            }
-        }
-
-        System.out.println("=== Grille ===");
-        for (int ligne = 0; ligne < 10; ligne++) {
-            for (int colonne = 0; colonne < 10; colonne++) {
-                System.out.print(grille[ligne][colonne] + " ");
-            }
-            System.out.println();
-        }
-    }
 }

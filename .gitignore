@@ -36,3 +36,8 @@ serveur/lumieres.db
 # Configuration locale de VS Code
 .vscode/
 *.code-workspace
+
+# ========================
+# Java / Maven
+# ========================
+Robot/target/
