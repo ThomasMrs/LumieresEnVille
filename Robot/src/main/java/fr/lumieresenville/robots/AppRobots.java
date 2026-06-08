@@ -79,10 +79,6 @@ public class AppRobots {
      * =========================
      * DEROULEMENT D'UNE MISSION
      * =========================
-     *
-     * Le robot prend une mission, passe en OCCUPIED, puis la mission passe
-     * en "In progress". Apres une courte attente, la mission passe en "Done"
-     * et le robot redevient AVAILABLE.
      */
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
@@ -135,13 +131,7 @@ public class AppRobots {
         return robots;
     }
 
-    /*
-     * =========================
-     * CHOIX DU ROBOT
-     * =========================
-     *
-     * On prend le premier robot dont l'etat est AVAILABLE.
-     */
+//choix du robot disponible
     private static Robot chercherRobotDisponible(List<Robot> robots) {
         for (Robot robot : robots) {
             if (robot.getEtat() == EtatRobot.AVAILABLE) {
@@ -152,16 +142,7 @@ public class AppRobots {
         return null;
     }
 
-    /*
-     * =========================
-     * CHOIX DE LA MISSION
-     * =========================
-     *
-     * On prend la premiere mission qui :
-     * - n'a pas encore de robot_id
-     * - n'est pas deja en cours
-     * - n'est pas deja terminee
-     */
+//choix de la mission disponible pas encore en cours ou terminee ou avec un robot affecte
     private static Mission chercherMissionDisponible() throws Exception {
         JsonArray liste = lireTableauJson("/api/list_missions");
 
@@ -188,14 +169,7 @@ public class AppRobots {
         return null;
     }
 
-    /*
-     * =========================
-     * MODIFICATION DU ROBOT
-     * =========================
-     *
-     * Cette methode envoie un PUT au serveur pour sauvegarder l'etat actuel
-     * du robot : nom, etat, vitesse et position.
-     */
+//put pour modifier le robot
     private static String modifierRobot(Robot robot) throws Exception {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
@@ -207,14 +181,9 @@ public class AppRobots {
         return put(url);
     }
 
-    /*
-     * =========================
-     * MODIFICATION DE LA MISSION
-     * =========================
-     *
-     * Cette methode envoie un PUT au serveur pour sauvegarder la mission :
-     * robot affecte, etat, date de debut, date de fin et equipe.
-     */
+//Cette methode envoie un PUT au serveur pour sauvegarder la mission :
+//robot affecte, etat, date de debut, date de fin et equipe.
+
     private static String modifierMission(Mission mission) throws Exception {
         String url = "/api/update_mission/" + enc(mission.getId())
                 + "?name=" + enc(mission.getNom())
@@ -318,11 +287,7 @@ public class AppRobots {
         return reponse.body();
     }
 
-    /*
-     * =========================
-     * PETITS OUTILS
-     * =========================
-     *
+    /* 
      * maintenant() donne la date actuelle.
      * enc() rend un texte utilisable dans une URL.
      */

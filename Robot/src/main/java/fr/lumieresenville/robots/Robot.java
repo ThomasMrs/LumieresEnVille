@@ -1,6 +1,5 @@
-package fr.lumieresenville.robots;          // le package (dossier logique)
+package fr.lumieresenville.robots; 
 
-// Modele d'un robot : son nom, sa position, son etat et sa mission en cours.
 public class Robot {
 
     private String id;                       // id renvoye par le serveur
