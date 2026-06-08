@@ -36,13 +36,17 @@ public class AppRobots {                                 // classe principale (c
         // --- 2) On dessine la grille dans le terminal ---
         afficherGrille(robots);                          // appelle la methode qui dessine
 
-        // --- 3) On AJOUTE chaque robot au serveur ---
+        // --- 3) On nettoie les anciens robots de test sur le serveur ---
+        System.out.println("=== Nettoyage des robots sur le serveur (DELETE /api/delete_robots) ===");
+        System.out.println(supprimerRobots());
+
+        // --- 4) On AJOUTE chaque robot au serveur ---
         System.out.println("=== Ajout des robots au serveur (POST /api/add_robot) ===");
         for (Robot r : robots) {                         // pour chaque robot...
             System.out.println(r.getNom() + " : " + ajouterRobot(r)); // ...on l'ajoute et on affiche le resultat
         }
 
-        // --- 4) Toutes les 5 secondes, on LISTE tous les robots du serveur ---
+        // --- 5) Toutes les 5 secondes, on LISTE tous les robots du serveur ---
         System.out.println("=== Liste des robots sur le serveur toutes les 5 s (GET /api/list_robots) ===");
         while (true) {                                   // boucle infinie : tourne jusqu'a Ctrl+C
             System.out.println(LocalTime.now().withNano(0) + "  -  " + listerRobots()); // on affiche la liste recue
@@ -98,12 +102,30 @@ public class AppRobots {                                 // classe principale (c
         System.out.println("Legende : . = case vide,  1/2 = robots,  case du bas = base");
     }
 
+    // Supprime tous les anciens robots du serveur (DELETE /api/delete_robots)
+    private static String supprimerRobots() {
+        try {                                            // on "essaie" (le reseau peut echouer)
+            HttpResponse<String> reponse = HTTP.send(    // on envoie la requete DELETE...
+                    HttpRequest.newBuilder()
+                            .uri(URI.create(SERVEUR + "/api/delete_robots")) // le chemin de suppression
+                            .timeout(Duration.ofSeconds(4)) // on abandonne apres 4 s sans reponse
+                            .DELETE()                    // requete DELETE (on supprime les donnees)
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString());
+            return reponse.statusCode() == 200           // si OK...
+                    ? "anciens robots supprimes"         // ...message de succes
+                    : "erreur HTTP " + reponse.statusCode(); // sinon le code d'erreur
+        } catch (Exception e) {                          // en cas de probleme reseau...
+            return "echec : " + e.getMessage();          // ...on renvoie le message d'erreur
+        }
+    }
+
     // Ajoute un robot au serveur (POST /api/add_robot)
     private static String ajouterRobot(Robot r) {
         try {                                            // on "essaie" (le reseau peut echouer)
             String url = SERVEUR + "/api/add_robot"      // l'adresse + le chemin d'ajout
                     + "?name=" + enc(r.getNom())         // parametre name (encode pour l'URL)
-                    + "&state=" + enc(r.getEtat().name()) // parametre state = nom de l'etat (ex. DISPONIBLE)
+                    + "&state=" + enc(r.getEtat().name()) // parametre state = nom de l'etat (ex. AVAILABLE)
                     + "&speed=1"                         // parametre speed = vitesse (1 pour l'instant)
                     + "&position_x=" + r.getX()          // parametre position_x
                     + "&position_y=" + r.getY();         // parametre position_y
