@@ -33,7 +33,7 @@ public class Robot {
     public String toString() {
         String m = (mission == null)                                   // si le robot n'a pas de mission...
                 ? "aucune mission"                                     // ...on ecrit "aucune mission"
-                : mission.getSymbole() + " -> " + mission.getSemaphore(); // sinon : symbole -> semaphore
+                : "-> " + mission.getSemaphore();                      // sinon : -> semaphore a reveiller
         return nom + "  (" + (int) x + ", " + (int) y + ")  [" + etat + "]  " + m; // la ligne complete
     }
 }
