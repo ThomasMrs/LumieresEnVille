@@ -1,48 +1,53 @@
 import tkinter as tk
 import requests
 
-URL_SERVEUR = "http://192.168.1.100:8000/api/list_missions"
-ID_SEMAPHORE = "S-102"
+api_missions = "http://192.168.1.100:8000/api/list_missions"
+api_formes = "http://192.168.1.100:8000/api/list_shapes"
+mon_id = "c4e95c86-d916-4477-9f44-1c3ac8c64e98"
 
-root = tk.Tk()
-root.title(f"Sémaphore - {ID_SEMAPHORE}")
-canvas = tk.Canvas(root, width=500, height=500, bg="black")
+formes = {}
+
+fenetre = tk.Tk()
+fenetre.title("Sema - " + mon_id)
+canvas = tk.Canvas(fenetre, width=500, height=500, bg="black")
 canvas.pack(padx=20, pady=20)
 
-def afficher_forme(symbole):
+try:
+    req = requests.get(api_formes, timeout=2)
+    for f in req.json():
+        formes[f["id"]] = f["image"]
+except:
+    pass
+
+def afficher(symbole):
     canvas.delete("all")
     canvas.create_text(250, 250, text=symbole, fill="lime", font=("Courier", 100, "bold"))
-    print(f"[{ID_SEMAPHORE}] Affichage : {symbole}")
-    root.after(5000, lambda: canvas.delete("all"))
+    print(f"-> Affichage de : {symbole}")
+    fenetre.after(5000, lambda: canvas.delete("all"))
 
-def choisir_et_lancer():
+def boucle_principale():
     try:
-        reponse = requests.get(URL_SERVEUR, timeout=2)
-        if reponse.status_code == 200:
-            missions = reponse.json()
-            disponibles = [m for m in missions if m.get("semaphore_id") == ID_SEMAPHORE]
+        req = requests.get(api_missions, timeout=2)
+        mes_missions = [m for m in req.json() if m["semaphore_id"] == mon_id]
+        
+        print("\n--- Liste des missions ---")
+        for i, m in enumerate(mes_missions):
+            symb = formes.get(m["shape_id"], "?")
+            print(f"{i+1} - {m['name']} | {m['state']} | {symb}")
+        
+        choix = input("Choix (numero) : ")
+        
+        try:
+            index = int(choix) - 1
+            if index >= 0:
+                afficher(formes.get(mes_missions[index]["shape_id"], "?"))
+        except:
+            print("Erreur de saisie.")
             
-            print("\n--- Missions disponibles pour S-102 ---")
-            for i, m in enumerate(disponibles):
-                print(f"{i+1} - Forme: {m.get('shape_id')} | État: {m.get('state')}")
-            
-            choix = input("Choisis le numéro de la mission à afficher : ")
-            
-            try:
-                idx = int(choix) - 1
-                if 0 <= idx < len(disponibles):
-                    forme = disponibles[idx].get("shape_id")
-                    afficher_forme(forme)
-                else:
-                    print("Numéro invalide.")
-            except ValueError:
-                print("Entrée invalide.")
-                
-    except requests.exceptions.RequestException:
-        print("Erreur de connexion au serveur.")
+    except:
+        print("Erreur serveur")
     
-    root.after(2000, choisir_et_lancer)
+    fenetre.after(2000, boucle_principale)
 
-# Lancement
-root.after(1000, choisir_et_lancer)
-root.mainloop()
+fenetre.after(1000, boucle_principale)
+fenetre.mainloop()

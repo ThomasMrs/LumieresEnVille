@@ -11,9 +11,9 @@ from routes.shapes import ajouter_shape, lire_shape
 from routes.config import ajouter_config, lire_config
 
 # --- Semaphores (3) ---
-ajouter_semaphore("Feu A", 30, "LED", "2", "3")
-ajouter_semaphore("Feu B", 45, "HELICE", "5", "1")
-ajouter_semaphore("Feu C", 20, "TRACANT", "8", "6")
+ajouter_semaphore("Feu A", 30, "LED", 2, 3)
+ajouter_semaphore("Feu B", 45, "HELICE", 5, 1)
+ajouter_semaphore("Feu C", 20, "TRACANT", 8, 6)
 
 semaphores = lire_semaphore()
 print(f"{len(semaphores)} semaphores insérés")
@@ -34,9 +34,11 @@ ajouter_equipe("Equipe Gamma", "192.168.1.30", 0)
 print("3 teams insérées")
 
 # --- Shapes (3) ---
-ajouter_shape("Etoile", "etoile.png")
-ajouter_shape("Cercle", "cercle.png")
-ajouter_shape("Triangle", "triangle.png")
+ajouter_shape("Etoile", "*")
+ajouter_shape("Lettre A", "A")
+ajouter_shape("Drapeau Congo", "🇨🇬")
+ajouter_shape("Singe", "🦧")
+ajouter_shape("Barre à roue", "⎈")
 
 shapes = lire_shape()
 print(f"{len(shapes)} shapes insérées")
@@ -54,8 +56,12 @@ ajouter_missions("Mission Gamma", s_ids[2], r_ids[2], "en cours",
                  "2026-06-08", None, "Lux Sky Troopers", 90, sh_ids[2])
 ajouter_missions("Mission Delta", s_ids[0], None, "pending",
                  None, None, "Equipe Beta", None, sh_ids[0])
+ajouter_missions("Mission Singe", s_ids[1], r_ids[0], "pending",
+                 "2026-06-09", "2026-06-10", "Lux Sky Troopers", 45, sh_ids[3])
+ajouter_missions("Mission Barre", s_ids[2], r_ids[1], "pending",
+                 "2026-06-10", "2026-06-11", "Equipe Beta", 30, sh_ids[4])
 
-print("4 missions insérées")
+print("6 missions insérées")
 
 # --- Config (1) ---
 ajouter_config("10x10", 3, 3)

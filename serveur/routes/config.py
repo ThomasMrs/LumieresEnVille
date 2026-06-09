@@ -42,7 +42,7 @@ def modifier_config(**champs):
 
 # --- Routes ---
 
-@router.get("/add_config")
+@router.post("/add_config")
 def add_config(grille: str, nbr_semaphore: int, nbr_robot: int):
     return ajouter_config(grille, nbr_semaphore, nbr_robot)
 
@@ -52,7 +52,7 @@ def get_config():
     return lire_config()
 
 
-@router.get("/update_config")
+@router.put("/update_config")
 def update_config(grille: str | None = None, nbr_semaphore: int | None = None,
                   nbr_robot: int | None = None):
     champs = {}

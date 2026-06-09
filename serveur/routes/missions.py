@@ -58,6 +58,11 @@ def read_missions():
     return lire_missions()
 
 
+@router.get("/get_missions")
+def get_missions(team: str):
+    return [m for m in lire_missions() if m["team"] == team]
+
+
 @router.post("/add_mission")
 def add_mission(semaphore_id: str, shape_id: str, team: str,
                 name: str | None = None, robot_id: str | None = None,
