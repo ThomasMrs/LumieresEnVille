@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 from fastapi import APIRouter
+from database import DB_PATH
 
 router = APIRouter(prefix="/api", tags=["Team"])
 
@@ -8,7 +9,7 @@ router = APIRouter(prefix="/api", tags=["Team"])
 
 def ajouter_equipe(name, ip, allowed):
     id_equipe = str(uuid.uuid4())
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO team (id, name, ip, allowed) VALUES (?, ?, ?, ?)",
@@ -19,7 +20,7 @@ def ajouter_equipe(name, ip, allowed):
 
 
 def lire_equipe():
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM team")
@@ -30,7 +31,7 @@ def lire_equipe():
 
 def auth_equipe():
     """Retourne uniquement les équipes autorisées à se connecter."""
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM team WHERE allowed = 1")
@@ -40,20 +41,21 @@ def auth_equipe():
 
 
 def supprimer_equipes():
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM team")
     conn.commit()
     conn.close()
 
 
-def modifier_equipes(id_equipe, name, ip, allowed):
-    conn = sqlite3.connect("lumieres.db")
+def modifier_equipes(id_equipe, **champs):
+    if not champs:
+        return
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE team SET name = ?, ip = ?, allowed = ? WHERE id = ?",
-        (name, ip, allowed, id_equipe),
-    )
+    sets = ", ".join(f"{k} = ?" for k in champs)
+    vals = list(champs.values()) + [id_equipe]
+    cursor.execute(f"UPDATE team SET {sets} WHERE id = ?", vals)
     conn.commit()
     conn.close()
 
@@ -66,13 +68,21 @@ def read_teams():
 
 
 @router.post("/add_team")
-def add_team(name: str, ip: str, allowed: bool):
+def add_team(name: str, ip: str | None = None, allowed: bool = False):
     return ajouter_equipe(name, ip, allowed)
 
 
 @router.put("/update_team/{id}")
-def update_team(id: str, name: str, ip: str, allowed: bool):
-    return modifier_equipes(id, name, ip, allowed)
+def update_team(id: str, name: str | None = None, ip: str | None = None,
+                allowed: bool | None = None):
+    champs = {}
+    if name is not None:
+        champs["name"] = name
+    if ip is not None:
+        champs["ip"] = ip
+    if allowed is not None:
+        champs["allowed"] = allowed
+    return modifier_equipes(id, **champs)
 
 
 @router.delete("/delete_teams")
@@ -80,7 +90,6 @@ def delete_teams():
     return supprimer_equipes()
 
 
-# Liste des objets autorisés à se connecter (cahier des charges)
 @router.get("/list_teams_allowed")
 def read_teams_allowed():
     return auth_equipe()

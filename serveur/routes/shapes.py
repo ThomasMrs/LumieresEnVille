@@ -2,6 +2,7 @@ import sqlite3
 import uuid
 
 from fastapi import APIRouter
+from database import DB_PATH
 
 router = APIRouter(prefix="/api", tags=["Shape"])
 
@@ -10,7 +11,7 @@ router = APIRouter(prefix="/api", tags=["Shape"])
 
 def ajouter_shape(name, image):
     id_shape = str(uuid.uuid4())
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO shape (id, name, image) VALUES (?, ?, ?)",
@@ -21,7 +22,7 @@ def ajouter_shape(name, image):
 
 
 def lire_shape():
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM shape")
@@ -31,20 +32,21 @@ def lire_shape():
 
 
 def supprimer_shapes():
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM shape")
     conn.commit()
     conn.close()
 
 
-def modifier_shape(id_shape, name, image):
-    conn = sqlite3.connect("lumieres.db")
+def modifier_shape(id_shape, **champs):
+    if not champs:
+        return
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE shape SET name = ?, image = ? WHERE id = ?",
-        (name, image, id_shape),
-    )
+    sets = ", ".join(f"{k} = ?" for k in champs)
+    vals = list(champs.values()) + [id_shape]
+    cursor.execute(f"UPDATE shape SET {sets} WHERE id = ?", vals)
     conn.commit()
     conn.close()
 
@@ -67,8 +69,13 @@ def add_shape(name: str, image: str):
     return ajouter_shape(name, image)
 
 @router.put("/update_shape/{id}")
-def update_shape(id: str, name: str, image: str):
-    return modifier_shape(id, name, image)
+def update_shape(id: str, name: str | None = None, image: str | None = None):
+    champs = {}
+    if name is not None:
+        champs["name"] = name
+    if image is not None:
+        champs["image"] = image
+    return modifier_shape(id, **champs)
 
 @router.delete("/delete_shapes")
 def delete_shapes():

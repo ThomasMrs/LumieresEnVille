@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import semaphores, robots, teams, missions, shapes, health
+from routes import semaphores, robots, teams, missions, shapes, health, config
 
 app = FastAPI()
 
@@ -22,3 +22,4 @@ app.include_router(teams.router)
 app.include_router(missions.router)
 app.include_router(shapes.router)
 app.include_router(health.router)
+app.include_router(config.router)

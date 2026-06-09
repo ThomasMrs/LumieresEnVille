@@ -1,6 +1,7 @@
 import sqlite3
 import uuid
 from fastapi import APIRouter
+from database import DB_PATH
 
 from routes.missions import lire_missions
 
@@ -9,21 +10,23 @@ router = APIRouter(prefix="/api", tags=["Robot"])
 
 # --- Accès base de données ---
 
-def ajouter_robots(name, state, speed, position_x, position_y):
+def ajouter_robots(**champs):
     id_robots = str(uuid.uuid4())
-    conn = sqlite3.connect("lumieres.db")
+    champs["id"] = id_robots
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    cols = ", ".join(champs.keys())
+    placeholders = ", ".join("?" * len(champs))
     cursor.execute(
-        "INSERT INTO robot (id, name, state, speed, position_x, position_y) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (id_robots, name, state, speed, position_x, position_y),
+        f"INSERT INTO robot ({cols}) VALUES ({placeholders})",
+        list(champs.values()),
     )
     conn.commit()
     conn.close()
 
 
 def lire_robots():
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM robot")
@@ -33,21 +36,21 @@ def lire_robots():
 
 
 def supprimer_robots():
-    conn = sqlite3.connect("lumieres.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM robot")
     conn.commit()
     conn.close()
 
 
-def modifier_robots(id_robots, name, state, speed, position_x, position_y):
-    conn = sqlite3.connect("lumieres.db")
+def modifier_robots(id_robots, **champs):
+    if not champs:
+        return
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE robot SET name = ?, state = ?, speed = ?, "
-        "position_x = ?, position_y = ? WHERE id = ?",
-        (name, state, speed, position_x, position_y, id_robots),
-    )
+    sets = ", ".join(f"{k} = ?" for k in champs)
+    vals = list(champs.values()) + [id_robots]
+    cursor.execute(f"UPDATE robot SET {sets} WHERE id = ?", vals)
     conn.commit()
     conn.close()
 
@@ -73,13 +76,36 @@ def read_robot_missions(id: str):
 
 
 @router.post("/add_robot")
-def add_robot(name: str, state: str, speed: float, position_x: float, position_y: float):
-    return ajouter_robots(name, state, speed, position_x, position_y)
+def add_robot(name: str | None = None, speed: int | None = None,
+              position_x: int | None = None, position_y: int | None = None):
+    champs = {}
+    if name is not None:
+        champs["name"] = name
+    if speed is not None:
+        champs["speed"] = speed
+    if position_x is not None:
+        champs["position_x"] = position_x
+    if position_y is not None:
+        champs["position_y"] = position_y
+    return ajouter_robots(**champs)
 
 
 @router.put("/update_robot/{id}")
-def update_robot(id: str, name: str, state: str, speed: float, position_x: float, position_y: float):
-    return modifier_robots(id, name, state, speed, position_x, position_y)
+def update_robot(id: str, name: str | None = None, state: str | None = None,
+                 speed: int | None = None, position_x: int | None = None,
+                 position_y: int | None = None):
+    champs = {}
+    if name is not None:
+        champs["name"] = name
+    if state is not None:
+        champs["state"] = state
+    if speed is not None:
+        champs["speed"] = speed
+    if position_x is not None:
+        champs["position_x"] = position_x
+    if position_y is not None:
+        champs["position_y"] = position_y
+    return modifier_robots(id, **champs)
 
 
 @router.delete("/delete_robots")
