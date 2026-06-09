@@ -93,16 +93,18 @@ public class AppRobots {
     }
 
     private static Mission choisirMissionDansTerminal() throws Exception {
-        List<Mission> missions = lireMissionsDisponibles();
+        List<Mission> missions = lireMissions();
         if (missions.isEmpty()) {
             return null;
         }
 
-        System.out.println("=== Missions disponibles ===");
+        System.out.println("=== Missions (" + missions.size() + ") ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
+            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
             System.out.println((i + 1) + " - " + mission.getNom()
-                    + " | semaphore : " + mission.getSemaphoreId()
+                    + " | etat : " + mission.getEtat()
+                    + " | " + libre
                     + " | equipe : " + mission.getTeam());
         }
 
@@ -121,17 +123,13 @@ public class AppRobots {
         }
     }
 
-    // On garde seulement les missions libres : sans robot affecte, ni "In progress", ni "Done".
-    private static List<Mission> lireMissionsDisponibles() throws Exception {
+    private static List<Mission> lireMissions() throws Exception {
         List<Mission> missions = new ArrayList<>();
         for (String objet : objets(get("/api/list_missions"))) {
-            String robotId = champ(objet, "robot_id");
-            String etat = champ(objet, "state");
-            if (robotId.isBlank() && !etat.equalsIgnoreCase("In progress") && !etat.equalsIgnoreCase("Done")) {
-                missions.add(new Mission(
-                        champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
-                        robotId, etat, champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
-            }
+            missions.add(new Mission(
+                    champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
+                    champ(objet, "robot_id"), champ(objet, "state"),
+                    champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
         }
         return missions;
     }
@@ -140,7 +138,7 @@ public class AppRobots {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(robot.getEtat().name())
-                + "&speed=" + robot.getVitesse()
+                + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
                 + "&position_x=" + robot.getX()
                 + "&position_y=" + robot.getY();
         return put(url);
