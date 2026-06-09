@@ -45,7 +45,7 @@ def boucle_principale():
             print("Erreur de saisie.")
             
     except:
-        print("Erreur serveur...")
+        print("Erreur serveur")
     
     fenetre.after(2000, boucle_principale)
 
