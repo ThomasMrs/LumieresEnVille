@@ -14,15 +14,6 @@
 
     <name>Lumieres en Ville - Simulateur de robots</name>
 
-    <dependencies>
-        <!-- Gson permet de lire facilement les reponses JSON du serveur -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.11.0</version>
-        </dependency>
-    </dependencies>
-
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>

@@ -14,28 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 public class AppRobots {
 
     private static final String SERVEUR = "http://192.168.1.100:8000";
-    // Objet Java utilise pour envoyer les requetes HTTP au serveur.
     private static final HttpClient HTTP = HttpClient.newHttpClient();
-
-    // Scanner utilise pour lire le numero de mission tape dans le terminal.
     private static final Scanner CLAVIER = new Scanner(System.in);
-
-    // Format utilise pour envoyer start_date et end_date au serveur.
     private static final DateTimeFormatter FORMAT_DATE =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // Methode principale :
-    // lit les robots du serveur, choisit un robot disponible,
-    // demande une mission dans le terminal, puis lance la mission.
     public static void main(String[] args) throws Exception {
-
         List<Robot> robots = lireRobotsDuServeur();
 
         if (robots.isEmpty()) {
@@ -64,70 +51,49 @@ public class AppRobots {
         }
     }
 
-    // Cette methode simule le deroulement d'une mission :
-    // le robot passe en OCCUPIED, la mission passe en "In progress",
-    // puis apres 2 secondes la mission passe en "Done" et le robot redevient AVAILABLE.
+    // Deroulement d'une mission : robot -> OCCUPIED et mission -> "In progress",
+    // puis apres 2 s mission -> "Done" et robot -> AVAILABLE.
+    // Chaque changement est sauvegarde sur le serveur (PUT).
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
         System.out.println("Semaphore lie   : " + get("/api/semaphore/" + enc(mission.getSemaphoreId())));
 
         mission.demarrer(robot.getId(), maintenant());
         robot.setEtat(EtatRobot.OCCUPIED);
-
-        System.out.println("Debut mission : " + mission.getDebutMission());
-        System.out.println("PUT robot     : " + modifierRobot(robot));
-        System.out.println("PUT mission   : " + modifierMission(mission));
+        System.out.println("PUT robot   : " + modifierRobot(robot));
+        System.out.println("PUT mission : " + modifierMission(mission));
 
         Thread.sleep(2000);
 
         mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
-
-        System.out.println("Fin mission   : " + mission.getFinMission());
-        System.out.println("PUT mission   : " + modifierMission(mission));
-        System.out.println("PUT robot     : " + modifierRobot(robot));
+        System.out.println("PUT mission : " + modifierMission(mission));
+        System.out.println("PUT robot   : " + modifierRobot(robot));
     }
 
-    // Cette methode recupere les robots deja presents sur le serveur :
-    // elle lit le JSON de /api/list_robots et transforme chaque robot JSON en objet Robot Java.
     private static List<Robot> lireRobotsDuServeur() throws Exception {
-        JsonArray liste = lireTableauJson("/api/list_robots");
         List<Robot> robots = new ArrayList<>();
-
-        for (int i = 0; i < liste.size(); i++) {
-            JsonObject objet = liste.get(i).getAsJsonObject();
-
-            Robot robot = new Robot(
-                    texte(objet, "name"),
-                    nombre(objet, "position_x"),
-                    nombre(objet, "position_y")
-            );
-
-            robot.setId(texte(objet, "id"));
+        for (String objet : objets(get("/api/list_robots"))) {
+            Robot robot = new Robot(champ(objet, "name"), nombre(objet, "position_x"), nombre(objet, "position_y"));
+            robot.setId(champ(objet, "id"));
             robot.setVitesse(nombre(objet, "speed"));
-            robot.setEtat(etatRobot(texte(objet, "state")));
+            robot.setEtat(etatRobot(champ(objet, "state")));
             robots.add(robot);
         }
-
         return robots;
     }
 
-    // Cette methode cherche le premier robot disponible dans la liste.
     private static Robot chercherRobotDisponible(List<Robot> robots) {
         for (Robot robot : robots) {
             if (robot.getEtat() == EtatRobot.AVAILABLE) {
                 return robot;
             }
         }
-
         return null;
     }
 
-    // Cette methode affiche les missions disponibles dans le terminal :
-    // l'utilisateur choisit une mission en tapant son numero.
     private static Mission choisirMissionDansTerminal() throws Exception {
         List<Mission> missions = lireMissionsDisponibles();
-
         if (missions.isEmpty()) {
             return null;
         }
@@ -135,8 +101,7 @@ public class AppRobots {
         System.out.println("=== Missions disponibles ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
-            System.out.println((i + 1) + " - "
-                    + mission.getNom()
+            System.out.println((i + 1) + " - " + mission.getNom()
                     + " | semaphore : " + mission.getSemaphoreId()
                     + " | equipe : " + mission.getTeam());
         }
@@ -144,55 +109,33 @@ public class AppRobots {
         while (true) {
             System.out.print("Choisis une mission (1 a " + missions.size() + ") : ");
             String reponse = CLAVIER.nextLine();
-
             try {
                 int numero = Integer.parseInt(reponse);
-
                 if (numero >= 1 && numero <= missions.size()) {
                     return missions.get(numero - 1);
                 }
             } catch (NumberFormatException e) {
-                // Si l'utilisateur n'a pas tape un nombre, on redemande.
+                // entree non numerique : on redemande
             }
-
             System.out.println("Numero invalide.");
         }
     }
 
-    // Cette methode recupere les missions disponibles :
-    // elle garde seulement les missions sans robot affecte,
-    // pas encore en cours et pas encore terminees.
+    // On garde seulement les missions libres : sans robot affecte, ni "In progress", ni "Done".
     private static List<Mission> lireMissionsDisponibles() throws Exception {
-        JsonArray liste = lireTableauJson("/api/list_missions");
         List<Mission> missions = new ArrayList<>();
-
-        for (int i = 0; i < liste.size(); i++) {
-            JsonObject objet = liste.get(i).getAsJsonObject();
-
-            String robotId = texte(objet, "robot_id");
-            String etat = texte(objet, "state");
-
+        for (String objet : objets(get("/api/list_missions"))) {
+            String robotId = champ(objet, "robot_id");
+            String etat = champ(objet, "state");
             if (robotId.isBlank() && !etat.equalsIgnoreCase("In progress") && !etat.equalsIgnoreCase("Done")) {
-                Mission mission = new Mission(
-                        texte(objet, "id"),
-                        texte(objet, "name"),
-                        texte(objet, "semaphore_id"),
-                        robotId,
-                        etat,
-                        texte(objet, "start_date"),
-                        texte(objet, "end_date"),
-                        texte(objet, "team")
-                );
-
-                missions.add(mission);
+                missions.add(new Mission(
+                        champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
+                        robotId, etat, champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
             }
         }
-
         return missions;
     }
 
-    // Cette methode envoie un PUT au serveur pour sauvegarder le robot :
-    // nom, etat, vitesse, position_x et position_y.
     private static String modifierRobot(Robot robot) throws Exception {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
@@ -200,12 +143,9 @@ public class AppRobots {
                 + "&speed=" + robot.getVitesse()
                 + "&position_x=" + robot.getX()
                 + "&position_y=" + robot.getY();
-
         return put(url);
     }
 
-    // Cette methode envoie un PUT au serveur pour sauvegarder la mission :
-    // robot affecte, etat, date de debut, date de fin et equipe.
     private static String modifierMission(Mission mission) throws Exception {
         String url = "/api/update_mission/" + enc(mission.getId())
                 + "?name=" + enc(mission.getNom())
@@ -215,38 +155,48 @@ public class AppRobots {
                 + "&start_date=" + enc(mission.getDebutMission())
                 + "&end_date=" + enc(mission.getFinMission())
                 + "&team=" + enc(mission.getTeam());
-
         return put(url);
     }
 
-    // Cette methode lit une route qui renvoie une liste JSON :
-    // exemple /api/list_robots ou /api/list_missions.
-    private static JsonArray lireTableauJson(String chemin) throws Exception {
-        String reponse = get(chemin);
-        return JsonParser.parseString(reponse).getAsJsonArray();
-    }
-
-    // Cette methode lit un texte dans un objet JSON :
-    // si le champ est absent ou null, elle renvoie une chaine vide.
-    private static String texte(JsonObject objet, String nomChamp) {
-        if (!objet.has(nomChamp) || objet.get(nomChamp).isJsonNull()) {
-            return "";
+    // Decoupe un tableau JSON [ {...}, {...} ] en objets, en suivant la profondeur des accolades.
+    private static List<String> objets(String json) {
+        List<String> liste = new ArrayList<>();
+        int profondeur = 0;
+        int debut = -1;
+        for (int i = 0; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '{') {
+                if (profondeur == 0) debut = i;
+                profondeur++;
+            } else if (c == '}') {
+                profondeur--;
+                if (profondeur == 0) liste.add(json.substring(debut, i + 1));
+            }
         }
-
-        return objet.get(nomChamp).getAsString();
+        return liste;
     }
 
-    // Cette methode lit un nombre dans un objet JSON :
-    // si le champ est absent ou null, elle renvoie 0.
-    private static double nombre(JsonObject objet, String nomChamp) {
-        if (!objet.has(nomChamp) || objet.get(nomChamp).isJsonNull()) {
-            return 0;
+    // Extrait la valeur d'un champ d'un objet JSON plat : "champ":"texte" ou "champ":nombre.
+    private static String champ(String objet, String nom) {
+        int i = objet.indexOf("\"" + nom + "\"");
+        if (i < 0) return "";
+        i = objet.indexOf(':', i) + 1;
+        while (i < objet.length() && objet.charAt(i) == ' ') i++;
+        if (i >= objet.length()) return "";
+        if (objet.charAt(i) == '"') {                       // valeur texte : entre guillemets
+            return objet.substring(i + 1, objet.indexOf('"', i + 1));
         }
-
-        return objet.get(nomChamp).getAsDouble();
+        int fin = i;                                        // valeur nombre/null : jusqu'a , ou }
+        while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') fin++;
+        String valeur = objet.substring(i, fin).trim();
+        return valeur.equals("null") ? "" : valeur;
     }
 
-    // Cette methode transforme le texte recu du serveur en EtatRobot.
+    private static double nombre(String objet, String nom) {
+        String valeur = champ(objet, nom);
+        return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
+    }
+
     private static EtatRobot etatRobot(String texte) {
         try {
             return EtatRobot.valueOf(texte.toUpperCase());
@@ -255,23 +205,20 @@ public class AppRobots {
         }
     }
 
-    // Cette methode envoie une requete GET.
     private static String get(String chemin) throws Exception {
         return requete("GET", chemin);
     }
 
-    // Cette methode envoie une requete PUT.
     private static String put(String chemin) throws Exception {
         return requete("PUT", chemin);
     }
 
-    // Cette methode envoie une requete HTTP au serveur :
-    // elle construit la requete, l'envoie, puis renvoie le texte de la reponse.
+    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie,
+    // puis renvoie le corps ou un message d'erreur selon le code retour.
     private static String requete(String methode, String chemin) throws Exception {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(SERVEUR + chemin))
                 .timeout(Duration.ofSeconds(4));
-
         if (methode.equals("GET")) {
             builder.GET();
         } else if (methode.equals("POST")) {
@@ -283,24 +230,19 @@ public class AppRobots {
         }
 
         HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-
         if (reponse.statusCode() != 200) {
             return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
         }
-
         if (reponse.body() == null || reponse.body().equals("null")) {
             return "OK";
         }
-
         return reponse.body();
     }
 
-    // Cette methode donne la date actuelle au format attendu par le serveur.
     private static String maintenant() {
         return LocalDateTime.now().format(FORMAT_DATE);
     }
 
-    // Cette methode encode un texte pour qu'il soit utilisable dans une URL.
     private static String enc(String texte) {
         return URLEncoder.encode(texte == null ? "" : texte, StandardCharsets.UTF_8);
     }
