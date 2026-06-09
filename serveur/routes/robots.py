@@ -1,0 +1,113 @@
+import sqlite3
+import uuid
+from fastapi import APIRouter
+from database import DB_PATH
+
+from routes.missions import lire_missions
+
+router = APIRouter(prefix="/api", tags=["Robot"])
+
+
+# --- Accès base de données ---
+
+def ajouter_robots(**champs):
+    id_robots = str(uuid.uuid4())
+    champs["id"] = id_robots
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cols = ", ".join(champs.keys())
+    placeholders = ", ".join("?" * len(champs))
+    cursor.execute(
+        f"INSERT INTO robot ({cols}) VALUES ({placeholders})",
+        list(champs.values()),
+    )
+    conn.commit()
+    conn.close()
+
+
+def lire_robots():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM robot")
+    resultats = [dict(ligne) for ligne in cursor.fetchall()]
+    conn.close()
+    return resultats
+
+
+def supprimer_robots():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM robot")
+    conn.commit()
+    conn.close()
+
+
+def modifier_robots(id_robots, **champs):
+    if not champs:
+        return
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    sets = ", ".join(f"{k} = ?" for k in champs)
+    vals = list(champs.values()) + [id_robots]
+    cursor.execute(f"UPDATE robot SET {sets} WHERE id = ?", vals)
+    conn.commit()
+    conn.close()
+
+
+# --- Routes ---
+
+@router.get("/list_robots")
+def read_robots():
+    return lire_robots()
+
+
+@router.get("/robot/{id}")
+def read_one_robot(id: str):
+    for r in lire_robots():
+        if r["id"] == id:
+            return r
+    return {}
+
+
+@router.get("/robot/{id}/mission")
+def read_robot_missions(id: str):
+    return [m for m in lire_missions() if m["robot_id"] == id]
+
+
+@router.post("/add_robot")
+def add_robot(name: str | None = None, speed: int | None = None,
+              position_x: int | None = None, position_y: int | None = None):
+    champs = {}
+    if name is not None:
+        champs["name"] = name
+    if speed is not None:
+        champs["speed"] = speed
+    if position_x is not None:
+        champs["position_x"] = position_x
+    if position_y is not None:
+        champs["position_y"] = position_y
+    return ajouter_robots(**champs)
+
+
+@router.put("/update_robot/{id}")
+def update_robot(id: str, name: str | None = None, state: str | None = None,
+                 speed: int | None = None, position_x: int | None = None,
+                 position_y: int | None = None):
+    champs = {}
+    if name is not None:
+        champs["name"] = name
+    if state is not None:
+        champs["state"] = state
+    if speed is not None:
+        champs["speed"] = speed
+    if position_x is not None:
+        champs["position_x"] = position_x
+    if position_y is not None:
+        champs["position_y"] = position_y
+    return modifier_robots(id, **champs)
+
+
+@router.delete("/delete_robots")
+def delete_robots():
+    return supprimer_robots()
