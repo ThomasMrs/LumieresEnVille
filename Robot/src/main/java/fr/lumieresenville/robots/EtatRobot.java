@@ -1,7 +1,8 @@
 package fr.lumieresenville.robots;
 
+//Liste etat robot
 public enum EtatRobot {
-    DISPONIBLE,
-    EN_MISSION,
-    RETOUR_BASE
+        AVAILABLE,
+        OCCUPIED,
+        DISABLED
 }
