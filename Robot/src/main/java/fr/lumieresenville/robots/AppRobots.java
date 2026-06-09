@@ -20,9 +20,7 @@ import com.google.gson.JsonParser;
 
 public class AppRobots {
 
-    // Adresse du serveur FastAPI utilise par le programme.
     private static final String SERVEUR = "http://192.168.1.100:8000";
-
     // Objet Java utilise pour envoyer les requetes HTTP au serveur.
     private static final HttpClient HTTP = HttpClient.newHttpClient();
 

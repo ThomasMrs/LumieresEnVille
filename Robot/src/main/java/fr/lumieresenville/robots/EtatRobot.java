@@ -1,6 +1,6 @@
 package fr.lumieresenville.robots;
 
-// Cette enumeration liste les etats possibles d'un robot.
+//Liste etat robot
 public enum EtatRobot {
         AVAILABLE,
         OCCUPIED,
