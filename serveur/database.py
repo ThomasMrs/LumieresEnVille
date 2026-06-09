@@ -14,8 +14,8 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS semaphore (
     state       TEXT NOT NULL DEFAULT 'Available',
     duration    INTEGER NOT NULL DEFAULT 30,
     type        TEXT NOT NULL,
-    coord_x     TEXT NOT NULL,
-    coord_y     TEXT NOT NULL
+    coord_x     INTEGER NOT NULL,
+    coord_y     INTEGER NOT NULL
 )""")
 
 # Table robot

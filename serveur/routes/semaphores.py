@@ -66,14 +66,14 @@ def read_one_semaphore(id: str):
 
 
 @router.post("/add_semaphore")
-def add_semaphore(name: str, duration: int, type: str, coord_x: str = "", coord_y: str = ""):
+def add_semaphore(name: str, duration: int, type: str, coord_x: int, coord_y: int):
     return ajouter_semaphore(name, duration, type, coord_x, coord_y)
 
 
 @router.put("/update_semaphore/{id}")
 def update_semaphore(id: str, name: str | None = None, state: str | None = None,
                      duration: int | None = None, type: str | None = None,
-                     coord_x: str | None = None, coord_y: str | None = None):
+                     coord_x: int | None = None, coord_y: int | None = None):
     champs = {}
     if name is not None:
         champs["name"] = name

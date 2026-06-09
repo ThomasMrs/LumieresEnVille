@@ -11,9 +11,9 @@ from routes.shapes import ajouter_shape, lire_shape
 from routes.config import ajouter_config, lire_config
 
 # --- Semaphores (3) ---
-ajouter_semaphore("Feu A", 30, "LED", "2", "3")
-ajouter_semaphore("Feu B", 45, "HELICE", "5", "1")
-ajouter_semaphore("Feu C", 20, "TRACANT", "8", "6")
+ajouter_semaphore("Feu A", 30, "LED", 2, 3)
+ajouter_semaphore("Feu B", 45, "HELICE", 5, 1)
+ajouter_semaphore("Feu C", 20, "TRACANT", 8, 6)
 
 semaphores = lire_semaphore()
 print(f"{len(semaphores)} semaphores insérés")
@@ -34,9 +34,9 @@ ajouter_equipe("Equipe Gamma", "192.168.1.30", 0)
 print("3 teams insérées")
 
 # --- Shapes (3) ---
-ajouter_shape("Etoile", "etoile.png")
-ajouter_shape("Cercle", "cercle.png")
-ajouter_shape("Triangle", "triangle.png")
+ajouter_shape("Etoile", "*")
+ajouter_shape("Cercle", "A")
+ajouter_shape("Triangle", "🇨🇬")
 
 shapes = lire_shape()
 print(f"{len(shapes)} shapes insérées")
