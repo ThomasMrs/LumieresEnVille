@@ -1,4 +1,4 @@
-from stockage import (
+from serveur.tests.stockage import (
     ajouter_equipe, ajouter_missions, ajouter_robots, ajouter_semaphore,
     lire_semaphore, lire_robots,
 )

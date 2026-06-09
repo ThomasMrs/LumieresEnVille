@@ -1,58 +1,59 @@
 import sqlite3
 
-# Connexion à la base de données
+# Connexion à la base de données (nom imposé par le contrat d'équipe)
 conn = sqlite3.connect('lumieres.db')
 cursor = conn.cursor()
 
-# Création de la table semaphores
-cursor.execute("""CREATE TABLE IF NOT EXISTS semaphores (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    state TEXT,
-    type TEXT,
-    duration INTEGER
+# Table semaphore
+cursor.execute("""CREATE TABLE IF NOT EXISTS semaphore (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    state       TEXT NOT NULL DEFAULT 'Available',
+    duration    INTEGER,
+    type_semaphore        TEXT NOT NULL
 )""")
 
-# Création de la table robots
-cursor.execute("""CREATE TABLE IF NOT EXISTS robots (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    state TEXT,
-    speed REAL,
-    position_x REAL,
-    position_y REAL
+# Table robot
+cursor.execute("""CREATE TABLE IF NOT EXISTS robot (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    state       TEXT NOT NULL DEFAULT 'Available',
+    speed       REAL NOT NULL DEFAULT 1.0,
+    position_x  REAL NOT NULL DEFAULT 0.0,
+    position_y  REAL NOT NULL DEFAULT 0.0
 )""")
 
-# Création de la table missions
-cursor.execute("""CREATE TABLE IF NOT EXISTS missions (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    semaphore_id TEXT,
-    robot_id TEXT,
-    state TEXT,
-    start_date TEXT,
-    end_date TEXT,
-    team_id TEXT,
-    time, TEXT,
-    FOREIGN KEY (team_id) REFERENCES teams(id),
-    FOREIGN KEY (semaphore_id) REFERENCES semaphores(id),
-    FOREIGN KEY (robot_id) REFERENCES robots(id)
-    FOREIGN KEY (shape_id) REFERENCES shape(id)
+# Table team
+cursor.execute("""CREATE TABLE IF NOT EXISTS team (
+    id        TEXT PRIMARY KEY,
+    name      TEXT NOT NULL,
+    ip        TEXT,
+    allowed   INTEGER NOT NULL DEFAULT 0
 )""")
 
-# Création de la table teams
-cursor.execute("""CREATE TABLE IF NOT EXISTS teams (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    ip TEXT,
-    allowed INTEGER
+# Table shape
+cursor.execute("""CREATE TABLE IF NOT EXISTS shape (
+    id     TEXT PRIMARY KEY,
+    name   TEXT NOT NULL,
+    image  TEXT NOT NULL
 )""")
 
-# Création de la table shapes
-cursor.execute("""CREATE TABLE IF NOT EXISTS shapes (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    image TEXT
+# Table mission (créée après les tables référencées par ses clés étrangères)
+cursor.execute("""CREATE TABLE IF NOT EXISTS mission (
+    id            TEXT PRIMARY KEY,
+    name          TEXT,
+    semaphore_id  TEXT,
+    robot_id      TEXT,
+    shape_id      TEXT,
+    state         TEXT DEFAULT 'Pending',
+    start_date    TEXT DEFAULT '',
+    end_date      TEXT DEFAULT '',
+    team          TEXT DEFAULT '',
+    time          TEXT DEFAULT '',
+    FOREIGN KEY (semaphore_id) REFERENCES semaphore(id),
+    FOREIGN KEY (robot_id)     REFERENCES robot(id),
+    FOREIGN KEY (shape_id)     REFERENCES shape(id),
+    FOREIGN KEY (team)         REFERENCES team(name)
 )""")
 
 conn.commit()

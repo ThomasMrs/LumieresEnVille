@@ -1,4 +1,4 @@
-from stockage import lire_missions
+from serveur.tests.stockage import lire_missions
 
 def valider_nouvelle_mission(name, time, semaphore_id, team_id, symbole, mission_id):
     missions = lire_missions()

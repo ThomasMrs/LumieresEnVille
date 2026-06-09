@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAGE IHM — K-talents</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <img src="../templates/logo.png" alt="logo K-talents">
+        <h1>K-talents</h1>
+    </header>
+    <main>
+        <section class="card">
+            <h2>Sémaphore</h2>
+            <p>Supervision des sémaphores</p>
+            <input type="text" name="name" placeholder="Nom">
+            <input type="text" name="state" placeholder="État">
+            <input type="text" name="type_semaphore" placeholder="Type de sémaphore">
+            <input type="number" name="duration" placeholder="Durée (s)">
+            <button data-endpoint="/api/add_semaphore">Ajouter</button>
+        </section>
+
+        <section class="card">
+            <h2>Robot</h2>
+            <p>Supervision des robots</p>
+            <input type="text" name="name" placeholder="Nom">
+            <input type="text" name="state" placeholder="État">
+            <input type="number" name="speed" placeholder="Vitesse">
+            <input type="number" name="position_x" placeholder="Position X">
+            <input type="number" name="position_y" placeholder="Position Y">
+            <button data-endpoint="/api/add_robot">Ajouter</button>
+        </section>
+
+        <section class="card">
+            <h2>Forme</h2>
+            <p>Supervision des formes</p>
+            <input type="text" name="name" placeholder="Nom">
+            <input type="text" name="image" placeholder="Image (URL)">
+            <button data-endpoint="/api/add_shape">Ajouter</button>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
