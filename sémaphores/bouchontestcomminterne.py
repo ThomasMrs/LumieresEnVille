@@ -7,7 +7,7 @@ api_formes = "http://192.168.1.100:8000/api/list_shapes"
 formes = {}
 
 fenetre = tk.Tk()
-fenetre.title("Sema - Toutes les missions")
+fenetre.title("Sémaphore")
 canvas = tk.Canvas(fenetre, width=500, height=500, bg="black")
 canvas.pack(padx=20, pady=20)
 
@@ -29,7 +29,7 @@ def boucle_principale():
         req = requests.get(api_missions, timeout=2)
         mes_missions = req.json()
         
-        print("\n--- Liste de TOUTES les missions ---")
+        print("\nListe de TOUTES les missions")
         for i, m in enumerate(mes_missions):
             symb = formes.get(m["shape_id"], "?")
             sem_id = m.get("semaphore_id", "Inconnu")[:8]
@@ -48,7 +48,7 @@ def boucle_principale():
             print("Erreur de saisie.")
             
     except:
-        print("Erreur serveur...")
+        print("Erreur serveur")
     
     fenetre.after(2000, boucle_principale)
 
