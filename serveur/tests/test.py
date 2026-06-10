@@ -1,7 +1,7 @@
 import sys
-import os
+from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from routes.semaphores import ajouter_semaphore, lire_semaphore
 from routes.robots import ajouter_robots, lire_robots
@@ -36,8 +36,6 @@ print("3 teams insérées")
 # --- Shapes (3) ---
 ajouter_shape("Etoile", "*")
 ajouter_shape("Lettre A", "A")
-ajouter_shape("Drapeau Congo", "🇨🇬")
-ajouter_shape("Singe", "🦧")
 ajouter_shape("Barre à roue", "⎈")
 
 shapes = lire_shape()

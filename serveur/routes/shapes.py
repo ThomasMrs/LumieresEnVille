@@ -1,13 +1,14 @@
 import sqlite3
-import uuid
-from fastapi import APIRouter, HTTPException
+from uuid import uuid4
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 from database import DB_PATH
 from gestion import valider_id
 
 router = APIRouter(prefix="/api", tags=["Shape"])
 
 def ajouter_shape(name, image):
-    id_shape = str(uuid.uuid4())
+    id_shape = str(uuid4())
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
@@ -56,22 +57,25 @@ def modifier_shape(id_shape, **champs):
 def read_shapes():
     return lire_shape()
 
+
 @router.get("/shape/{id}")
 def read_one_shape(id: str):
     if not valider_id("shape", id):
-        raise HTTPException(status_code=404, detail="Shape introuvable")
+        return HTMLResponse(status_code=404, content="Shape introuvable")
     for s in lire_shape():
         if s["id"] == id:
             return s
+
 
 @router.post("/add_shape")
 def add_shape(name: str, image: str):
     return ajouter_shape(name, image)
 
+
 @router.put("/update_shape/{id}")
 def update_shape(id: str, name: str | None = None, image: str | None = None):
     if not valider_id("shape", id):
-        raise HTTPException(status_code=404, detail="Shape introuvable")
+        return HTMLResponse(status_code=404, content="Shape introuvable")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -79,6 +83,7 @@ def update_shape(id: str, name: str | None = None, image: str | None = None):
         champs["image"] = image
     modifier_shape(id, **champs)
     return {"id": id, "status": "updated"}
+
 
 @router.delete("/delete_shapes")
 def delete_shapes():

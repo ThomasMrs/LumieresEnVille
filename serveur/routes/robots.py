@@ -1,15 +1,16 @@
 import sqlite3
-import uuid
-from fastapi import APIRouter, HTTPException
+from uuid import uuid4
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 from database import DB_PATH
 from gestion import valider_id, valider_etat
-
 from routes.missions import lire_missions
 
 router = APIRouter(prefix="/api", tags=["Robot"])
 
+
 def ajouter_robots(**champs):
-    id_robots = str(uuid.uuid4())
+    id_robots = str(uuid4())
     champs["id"] = id_robots
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -65,7 +66,7 @@ def read_robots():
 @router.get("/robot/{id}")
 def read_one_robot(id: str):
     if not valider_id("robot", id):
-        raise HTTPException(status_code=404, detail="Robot introuvable")
+        return HTMLResponse(status_code=404, content="Robot introuvable")
     for r in lire_robots():
         if r["id"] == id:
             return r
@@ -74,7 +75,7 @@ def read_one_robot(id: str):
 @router.get("/robot/{id}/mission")
 def read_robot_missions(id: str):
     if not valider_id("robot", id):
-        raise HTTPException(status_code=404, detail="Robot introuvable")
+        return HTMLResponse(status_code=404, content="Robot introuvable")
     return [m for m in lire_missions() if m["robot_id"] == id]
 
 
@@ -99,9 +100,9 @@ def update_robot(id: str, name: str | None = None, state: str | None = None,
                  speed: int | None = None, position_x: int | None = None,
                  position_y: int | None = None):
     if not valider_id("robot", id):
-        raise HTTPException(status_code=404, detail="Robot introuvable")
+        return HTMLResponse(status_code=404, content="Robot introuvable")
     if state is not None and not valider_etat(state, "robot"):
-        raise HTTPException(status_code=400, detail="Etat invalide (Available | Occupied | Disabled)")
+        return HTMLResponse(status_code=400, content="Etat invalide (Available | Occupied | Disabled)")
     champs = {}
     if name is not None:
         champs["name"] = name

@@ -1,6 +1,6 @@
 import sqlite3
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse
 from database import DB_PATH
 
 router = APIRouter(prefix="/api", tags=["Health"])
@@ -11,9 +11,9 @@ def health():
         conn = sqlite3.connect(DB_PATH)
         conn.execute("SELECT 1")
         conn.close()
-        return JSONResponse(status_code=200, content={"message": "Serveur ON", "status": 200})
+        return HTMLResponse(status_code=200, content="Serveur ON")
     except Exception:
-        return JSONResponse(status_code=503, content={"message": "Serveur OFF", "status": 503})
+        return HTMLResponse(status_code=503, content="Serveur OFF")
 
 @router.get("/health_all")
 def health_all():

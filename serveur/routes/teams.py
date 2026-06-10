@@ -1,13 +1,15 @@
 import sqlite3
-import uuid
-from fastapi import APIRouter, HTTPException
+from uuid import uuid4
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 from database import DB_PATH
 from gestion import valider_id
 
 router = APIRouter(prefix="/api", tags=["Team"])
 
+
 def ajouter_equipe(name, ip, allowed):
-    id_equipe = str(uuid.uuid4())
+    id_equipe = str(uuid4())
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
@@ -76,7 +78,7 @@ def add_team(name: str, ip: str | None = None, allowed: bool = False):
 def update_team(id: str, name: str | None = None, ip: str | None = None,
                 allowed: bool | None = None):
     if not valider_id("team", id):
-        raise HTTPException(status_code=404, detail="Team introuvable")
+        return HTMLResponse(status_code=404, content="Team introuvable")
     champs = {}
     if name is not None:
         champs["name"] = name

@@ -1,13 +1,15 @@
 import sqlite3
-import uuid
-from fastapi import APIRouter, HTTPException
+from uuid import uuid4
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 from database import DB_PATH
 from gestion import valider_id, valider_etat
 
 router = APIRouter(prefix="/api", tags=["Mission"])
 
+
 def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id):
-    id_missions = str(uuid.uuid4())
+    id_missions = str(uuid4())
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
@@ -49,7 +51,6 @@ def modifier_missions(id_mission, **champs):
     conn.commit()
     conn.close()
 
-
 # =======================
 # Route
 # =======================
@@ -69,11 +70,11 @@ def add_mission(semaphore_id: str, shape_id: str, team: str,
                 name: str | None = None, robot_id: str | None = None,
                 start_date: str = "", end_date: str = "", time: str = ""):
     if not valider_id("semaphore", semaphore_id):
-        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+        return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if not valider_id("shape", shape_id):
-        raise HTTPException(status_code=404, detail="Shape introuvable")
+        return HTMLResponse(status_code=404, content="Shape introuvable")
     if robot_id and not valider_id("robot", robot_id):
-        raise HTTPException(status_code=404, detail="Robot introuvable")
+        return HTMLResponse(status_code=404, content="Robot introuvable")
     id_mission = ajouter_missions(name, semaphore_id, robot_id, "pending", start_date, end_date, team, time, shape_id)
     return {"id": id_mission, "status": "ok"}
 
@@ -85,15 +86,15 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
                    end_date: str | None = None, team: str | None = None,
                    time: str | None = None):
     if not valider_id("mission", id):
-        raise HTTPException(status_code=404, detail="Mission introuvable")
+        return HTMLResponse(status_code=404, content="Mission introuvable")
     if state is not None and not valider_etat(state, "mission"):
-        raise HTTPException(status_code=400, detail="Etat invalide (Pending | In progress | Done)")
+        return HTMLResponse(status_code=400, content="Etat invalide (Pending | In progress | Done)")
     if semaphore_id and not valider_id("semaphore", semaphore_id):
-        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+        return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if shape_id and not valider_id("shape", shape_id):
-        raise HTTPException(status_code=404, detail="Shape introuvable")
+        return HTMLResponse(status_code=404, content="Shape introuvable")
     if robot_id and not valider_id("robot", robot_id):
-        raise HTTPException(status_code=404, detail="Robot introuvable")
+        return HTMLResponse(status_code=404, content="Robot introuvable")
     champs = {}
     if name is not None:
         champs["name"] = name

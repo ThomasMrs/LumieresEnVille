@@ -1,13 +1,15 @@
 import sqlite3
-import uuid
-from fastapi import APIRouter, HTTPException
+from uuid import uuid4
+from fastapi import APIRouter
+from fastapi.responses import HTMLResponse
 from database import DB_PATH
 from gestion import valider_id, valider_etat
 
 router = APIRouter(prefix="/api", tags=["Semaphore"])
 
+
 def ajouter_semaphore(name, duration, type, coord_x, coord_y):
-    id_semaphore = str(uuid.uuid4())
+    id_semaphore = str(uuid4())
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
@@ -60,7 +62,7 @@ def read_semaphore():
 @router.get("/semaphore/{id}")
 def read_one_semaphore(id: str):
     if not valider_id("semaphore", id):
-        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+        return HTMLResponse(status_code=404, content="Semaphore introuvable")
     for s in lire_semaphore():
         if s["id"] == id:
             return s
@@ -76,9 +78,9 @@ def update_semaphore(id: str, name: str | None = None, state: str | None = None,
                      duration: int | None = None, type: str | None = None,
                      coord_x: int | None = None, coord_y: int | None = None):
     if not valider_id("semaphore", id):
-        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+        return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if state is not None and not valider_etat(state, "semaphore"):
-        raise HTTPException(status_code=400, detail="Etat invalide (Available | Occupied | Disabled)")
+        return HTMLResponse(status_code=400, content="Etat invalide (Available | Occupied | Disabled)")
     champs = {}
     if name is not None:
         champs["name"] = name

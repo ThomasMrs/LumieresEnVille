@@ -1,7 +1,7 @@
-import os
+from pathlib import Path
 import sqlite3
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "lumieres.db")
+DB_PATH = str(Path(__file__).parent / "lumieres.db")
 
 # Connexion à la base de données (nom imposé par le contrat d'équipe)
 conn = sqlite3.connect(DB_PATH)
