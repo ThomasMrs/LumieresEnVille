@@ -3,12 +3,11 @@ import requests
 
 api_missions = "http://192.168.1.100:8000/api/list_missions"
 api_formes = "http://192.168.1.100:8000/api/list_shapes"
-mon_id = "6be6d8f4-44fe-4215-9297-5339aef7645f"
 
 formes = {}
 
 fenetre = tk.Tk()
-fenetre.title("Sema - " + mon_id)
+fenetre.title("Sema - Toutes les missions")
 canvas = tk.Canvas(fenetre, width=500, height=500, bg="black")
 canvas.pack(padx=20, pady=20)
 
@@ -28,24 +27,28 @@ def afficher(symbole):
 def boucle_principale():
     try:
         req = requests.get(api_missions, timeout=2)
-        mes_missions = [m for m in req.json() if m["semaphore_id"] == mon_id]
+        mes_missions = req.json()
         
-        print("\n--- Liste des missions ---")
+        print("\n--- Liste de TOUTES les missions ---")
         for i, m in enumerate(mes_missions):
             symb = formes.get(m["shape_id"], "?")
-            print(f"{i+1} - {m['name']} | {m['state']} | {symb}")
+            sem_id = m.get("semaphore_id", "Inconnu")[:8]
+            
+            print(f"{i+1} - {m.get('name', 'Sans nom')} | Sem: {sem_id}... | {m.get('state', 'N/A')} | {symb}")
         
         choix = input("Choix (numero) : ")
         
         try:
             index = int(choix) - 1
-            if index >= 0:
+            if index >= 0 and index < len(mes_missions):
                 afficher(formes.get(mes_missions[index]["shape_id"], "?"))
+            else:
+                print("Numero hors liste.")
         except:
             print("Erreur de saisie.")
             
     except:
-        print("Erreur serveur")
+        print("Erreur serveur...")
     
     fenetre.after(2000, boucle_principale)
 
