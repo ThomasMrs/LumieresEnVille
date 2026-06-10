@@ -1,12 +1,10 @@
 import sqlite3
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from database import DB_PATH
+from gestion import valider_id, valider_etat
 
 router = APIRouter(prefix="/api", tags=["Semaphore"])
-
-
-# --- Accès base de données ---
 
 def ajouter_semaphore(name, duration, type, coord_x, coord_y):
     id_semaphore = str(uuid.uuid4())
@@ -18,6 +16,7 @@ def ajouter_semaphore(name, duration, type, coord_x, coord_y):
     )
     conn.commit()
     conn.close()
+    return {"id": id_semaphore, "status": "ok"}
 
 
 def lire_semaphore():
@@ -49,8 +48,9 @@ def modifier_semaphore(id_semaphore, **champs):
     conn.commit()
     conn.close()
 
-
-# --- Routes ---
+# =======================
+# Route
+# =======================
 
 @router.get("/list_semaphore")
 def read_semaphore():
@@ -59,10 +59,11 @@ def read_semaphore():
 
 @router.get("/semaphore/{id}")
 def read_one_semaphore(id: str):
+    if not valider_id("semaphore", id):
+        raise HTTPException(status_code=404, detail="Semaphore introuvable")
     for s in lire_semaphore():
         if s["id"] == id:
             return s
-    return {}
 
 
 @router.post("/add_semaphore")
@@ -74,6 +75,10 @@ def add_semaphore(name: str, duration: int, type: str, coord_x: int, coord_y: in
 def update_semaphore(id: str, name: str | None = None, state: str | None = None,
                      duration: int | None = None, type: str | None = None,
                      coord_x: int | None = None, coord_y: int | None = None):
+    if not valider_id("semaphore", id):
+        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+    if state is not None and not valider_etat(state, "semaphore"):
+        raise HTTPException(status_code=400, detail="Etat invalide (Available | Occupied | Disabled)")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -87,9 +92,11 @@ def update_semaphore(id: str, name: str | None = None, state: str | None = None,
         champs["coord_x"] = coord_x
     if coord_y is not None:
         champs["coord_y"] = coord_y
-    return modifier_semaphore(id, **champs)
+    modifier_semaphore(id, **champs)
+    return {"id": id, "status": "updated"}
 
 
 @router.delete("/delete_semaphores")
 def delete_semaphores():
-    return supprimer_semaphores()
+    supprimer_semaphores()
+    return {"status": "deleted"}

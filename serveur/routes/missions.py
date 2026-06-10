@@ -1,12 +1,10 @@
 import sqlite3
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from database import DB_PATH
+from gestion import valider_id, valider_etat
 
 router = APIRouter(prefix="/api", tags=["Mission"])
-
-
-# --- Accès base de données ---
 
 def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id):
     id_missions = str(uuid.uuid4())
@@ -19,6 +17,7 @@ def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, 
     )
     conn.commit()
     conn.close()
+    return id_missions
 
 
 def lire_missions():
@@ -51,7 +50,9 @@ def modifier_missions(id_mission, **champs):
     conn.close()
 
 
-# --- Routes ---
+# =======================
+# Route
+# =======================
 
 @router.get("/list_missions")
 def read_missions():
@@ -67,7 +68,14 @@ def get_missions(team: str):
 def add_mission(semaphore_id: str, shape_id: str, team: str,
                 name: str | None = None, robot_id: str | None = None,
                 start_date: str = "", end_date: str = "", time: str = ""):
-    return ajouter_missions(name, semaphore_id, robot_id, "pending", start_date, end_date, team, time, shape_id)
+    if not valider_id("semaphore", semaphore_id):
+        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+    if not valider_id("shape", shape_id):
+        raise HTTPException(status_code=404, detail="Shape introuvable")
+    if robot_id and not valider_id("robot", robot_id):
+        raise HTTPException(status_code=404, detail="Robot introuvable")
+    id_mission = ajouter_missions(name, semaphore_id, robot_id, "pending", start_date, end_date, team, time, shape_id)
+    return {"id": id_mission, "status": "ok"}
 
 
 @router.put("/update_mission/{id}")
@@ -76,6 +84,16 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
                    state: str | None = None, start_date: str | None = None,
                    end_date: str | None = None, team: str | None = None,
                    time: str | None = None):
+    if not valider_id("mission", id):
+        raise HTTPException(status_code=404, detail="Mission introuvable")
+    if state is not None and not valider_etat(state, "mission"):
+        raise HTTPException(status_code=400, detail="Etat invalide (Pending | In progress | Done)")
+    if semaphore_id and not valider_id("semaphore", semaphore_id):
+        raise HTTPException(status_code=404, detail="Semaphore introuvable")
+    if shape_id and not valider_id("shape", shape_id):
+        raise HTTPException(status_code=404, detail="Shape introuvable")
+    if robot_id and not valider_id("robot", robot_id):
+        raise HTTPException(status_code=404, detail="Robot introuvable")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -95,9 +113,11 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
         champs["shape_id"] = shape_id
     if time is not None:
         champs["time"] = time
-    return modifier_missions(id, **champs)
+    modifier_missions(id, **champs)
+    return {"id": id, "status": "updated"}
 
 
 @router.delete("/delete_missions")
 def delete_missions():
-    return supprimer_missions()
+    supprimer_missions()
+    return {"status": "deleted"}

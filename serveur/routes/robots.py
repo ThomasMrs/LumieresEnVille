@@ -1,14 +1,12 @@
 import sqlite3
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from database import DB_PATH
+from gestion import valider_id, valider_etat
 
 from routes.missions import lire_missions
 
 router = APIRouter(prefix="/api", tags=["Robot"])
-
-
-# --- Accès base de données ---
 
 def ajouter_robots(**champs):
     id_robots = str(uuid.uuid4())
@@ -23,6 +21,7 @@ def ajouter_robots(**champs):
     )
     conn.commit()
     conn.close()
+    return id_robots
 
 
 def lire_robots():
@@ -54,8 +53,9 @@ def modifier_robots(id_robots, **champs):
     conn.commit()
     conn.close()
 
-
-# --- Routes ---
+# =======================
+# Route
+# =======================
 
 @router.get("/list_robots")
 def read_robots():
@@ -64,14 +64,17 @@ def read_robots():
 
 @router.get("/robot/{id}")
 def read_one_robot(id: str):
+    if not valider_id("robot", id):
+        raise HTTPException(status_code=404, detail="Robot introuvable")
     for r in lire_robots():
         if r["id"] == id:
             return r
-    return {}
 
 
 @router.get("/robot/{id}/mission")
 def read_robot_missions(id: str):
+    if not valider_id("robot", id):
+        raise HTTPException(status_code=404, detail="Robot introuvable")
     return [m for m in lire_missions() if m["robot_id"] == id]
 
 
@@ -87,13 +90,18 @@ def add_robot(name: str | None = None, speed: int | None = None,
         champs["position_x"] = position_x
     if position_y is not None:
         champs["position_y"] = position_y
-    return ajouter_robots(**champs)
+    id_robot = ajouter_robots(**champs)
+    return {"id": id_robot, "status": "ok"}
 
 
 @router.put("/update_robot/{id}")
 def update_robot(id: str, name: str | None = None, state: str | None = None,
                  speed: int | None = None, position_x: int | None = None,
                  position_y: int | None = None):
+    if not valider_id("robot", id):
+        raise HTTPException(status_code=404, detail="Robot introuvable")
+    if state is not None and not valider_etat(state, "robot"):
+        raise HTTPException(status_code=400, detail="Etat invalide (Available | Occupied | Disabled)")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -105,9 +113,11 @@ def update_robot(id: str, name: str | None = None, state: str | None = None,
         champs["position_x"] = position_x
     if position_y is not None:
         champs["position_y"] = position_y
-    return modifier_robots(id, **champs)
+    modifier_robots(id, **champs)
+    return {"id": id, "status": "updated"}
 
 
 @router.delete("/delete_robots")
 def delete_robots():
-    return supprimer_robots()
+    supprimer_robots()
+    return {"status": "deleted"}

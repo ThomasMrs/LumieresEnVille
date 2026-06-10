@@ -4,9 +4,6 @@ from database import DB_PATH
 
 router = APIRouter(prefix="/api", tags=["Config"])
 
-
-# --- Accès base de données ---
-
 def ajouter_config(grille, nbr_semaphore, nbr_robot):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -40,7 +37,9 @@ def modifier_config(**champs):
     conn.close()
 
 
-# --- Routes ---
+# =======================
+# Route
+# =======================
 
 @router.post("/add_config")
 def add_config(grille: str, nbr_semaphore: int, nbr_robot: int):

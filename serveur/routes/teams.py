@@ -1,11 +1,10 @@
 import sqlite3
 import uuid
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from database import DB_PATH
+from gestion import valider_id
 
 router = APIRouter(prefix="/api", tags=["Team"])
-
-# --- Accès base de données ---
 
 def ajouter_equipe(name, ip, allowed):
     id_equipe = str(uuid.uuid4())
@@ -17,6 +16,7 @@ def ajouter_equipe(name, ip, allowed):
     )
     conn.commit()
     conn.close()
+    return {"id": id_equipe, "status": "ok"}
 
 
 def lire_equipe():
@@ -30,7 +30,6 @@ def lire_equipe():
 
 
 def auth_equipe():
-    """Retourne uniquement les équipes autorisées à se connecter."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
@@ -59,8 +58,9 @@ def modifier_equipes(id_equipe, **champs):
     conn.commit()
     conn.close()
 
-
-# --- Routes ---
+# =======================
+# Route
+# =======================
 
 @router.get("/list_teams")
 def read_teams():
@@ -75,6 +75,8 @@ def add_team(name: str, ip: str | None = None, allowed: bool = False):
 @router.put("/update_team/{id}")
 def update_team(id: str, name: str | None = None, ip: str | None = None,
                 allowed: bool | None = None):
+    if not valider_id("team", id):
+        raise HTTPException(status_code=404, detail="Team introuvable")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -82,12 +84,14 @@ def update_team(id: str, name: str | None = None, ip: str | None = None,
         champs["ip"] = ip
     if allowed is not None:
         champs["allowed"] = allowed
-    return modifier_equipes(id, **champs)
+    modifier_equipes(id, **champs)
+    return {"id": id, "status": "updated"}
 
 
 @router.delete("/delete_teams")
 def delete_teams():
-    return supprimer_equipes()
+    supprimer_equipes()
+    return {"status": "deleted"}
 
 
 @router.get("/list_teams_allowed")
