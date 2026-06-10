@@ -23,6 +23,12 @@ public class AppRobots {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void main(String[] args) throws Exception {
+        if (get("/api/list_robots").startsWith("ERREUR")) {
+            System.out.println("Serveur injoignable (" + SERVEUR + ").");
+            System.out.println("Demarre le serveur FastAPI, puis relance.");
+            return;
+        }
+
         List<Robot> robots = lireRobotsDuServeur();
 
         if (robots.isEmpty()) {
@@ -211,9 +217,9 @@ public class AppRobots {
         return requete("PUT", chemin);
     }
 
-    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie,
-    // puis renvoie le corps ou un message d'erreur selon le code retour.
-    private static String requete(String methode, String chemin) throws Exception {
+    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
+    // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
+    private static String requete(String methode, String chemin) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(SERVEUR + chemin))
                 .timeout(Duration.ofSeconds(4));
@@ -226,15 +232,18 @@ public class AppRobots {
         } else if (methode.equals("DELETE")) {
             builder.DELETE();
         }
-
-        HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-        if (reponse.statusCode() != 200) {
-            return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
+        try {
+            HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (reponse.statusCode() != 200) {
+                return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
+            }
+            if (reponse.body() == null || reponse.body().equals("null")) {
+                return "OK";
+            }
+            return reponse.body();
+        } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+            return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
-        if (reponse.body() == null || reponse.body().equals("null")) {
-            return "OK";
-        }
-        return reponse.body();
     }
 
     private static String maintenant() {
