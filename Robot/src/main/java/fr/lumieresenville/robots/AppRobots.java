@@ -57,24 +57,40 @@ public class AppRobots {
         }
     }
 
-    // Deroulement d'une mission : robot -> OCCUPIED et mission -> "In progress",
-    // puis apres 2 s mission -> "Done" et robot -> AVAILABLE.
-    // Chaque changement est sauvegarde sur le serveur (PUT).
+    // Deroulement d'une mission : robot -> OCCUPIED, mission -> "In progress",
+    // le robot REVEILLE le semaphore (-> "Occupied"), puis apres 2 s mission -> "Done"
+    // et robot -> AVAILABLE. Le semaphore se rendort tout seul de son cote.
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
-        System.out.println("Semaphore lie   : " + get("/api/semaphore/" + enc(mission.getSemaphoreId())));
+
+        String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
+        System.out.println("Semaphore lie   : " + semaphoreJson);
 
         mission.demarrer(robot.getId(), maintenant());
         robot.setEtat(EtatRobot.OCCUPIED);
-        System.out.println("PUT robot   : " + modifierRobot(robot));
-        System.out.println("PUT mission : " + modifierMission(mission));
+        System.out.println("PUT robot      : " + modifierRobot(robot));
+        System.out.println("PUT mission    : " + modifierMission(mission));
+        System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
 
         Thread.sleep(2000);
 
         mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
-        System.out.println("PUT mission : " + modifierMission(mission));
-        System.out.println("PUT robot   : " + modifierRobot(robot));
+        System.out.println("PUT mission    : " + modifierMission(mission));
+        System.out.println("PUT robot      : " + modifierRobot(robot));
+    }
+
+    // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
+    // tout en passant state="Occupied". Le robot ne fait que l'allumer (cahier des charges).
+    private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
+        String url = "/api/update_semaphore/" + enc(id)
+                + "?name=" + enc(champ(semaphoreJson, "name"))
+                + "&state=Occupied"
+                + "&duration=" + (int) nombre(semaphoreJson, "duration")
+                + "&type=" + enc(champ(semaphoreJson, "type"))
+                + "&coord_x=" + (int) nombre(semaphoreJson, "coord_x")
+                + "&coord_y=" + (int) nombre(semaphoreJson, "coord_y");
+        return put(url);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -143,7 +159,7 @@ public class AppRobots {
     private static String modifierRobot(Robot robot) throws Exception {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
-                + "&state=" + enc(robot.getEtat().name())
+                + "&state=" + enc(etatServeur(robot.getEtat()))
                 + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
                 + "&position_x=" + robot.getX()
                 + "&position_y=" + robot.getY();
@@ -207,6 +223,13 @@ public class AppRobots {
         } catch (Exception e) {
             return EtatRobot.AVAILABLE;
         }
+    }
+
+    // Le serveur attend "Available"/"Occupied"/"Disabled" (1re lettre majuscule, reste minuscule),
+    // alors que l'enum donne "AVAILABLE". On convertit avant l'envoi.
+    private static String etatServeur(EtatRobot etat) {
+        String n = etat.name();
+        return n.charAt(0) + n.substring(1).toLowerCase();
     }
 
     private static String get(String chemin) throws Exception {
