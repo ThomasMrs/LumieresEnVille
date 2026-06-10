@@ -1,8 +1,8 @@
 import tkinter as tk
 import requests
 
-api_missions = "http://192.168.1.100:8000/api/list_missions"
-api_formes = "http://192.168.1.100:8000/api/list_shapes"
+api_missions = "http://192.168.1.14:8000/api/list_missions"
+api_formes = "http://192.168.1.14:8000/api/list_shapes"
 
 formes = {}
 
