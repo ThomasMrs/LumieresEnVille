@@ -16,13 +16,19 @@ import java.util.Scanner;
 
 public class AppRobots {
 
-    private static final String SERVEUR = "http://192.168.1.100:8000";
+    private static final String SERVEUR = "http://192.168.1.14:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void main(String[] args) throws Exception {
+        if (get("/api/list_robots").startsWith("ERREUR")) {
+            System.out.println("Serveur injoignable (" + SERVEUR + ").");
+            System.out.println("Demarre le serveur FastAPI, puis relance.");
+            return;
+        }
+
         List<Robot> robots = lireRobotsDuServeur();
 
         if (robots.isEmpty()) {
@@ -51,24 +57,40 @@ public class AppRobots {
         }
     }
 
-    // Deroulement d'une mission : robot -> OCCUPIED et mission -> "In progress",
-    // puis apres 2 s mission -> "Done" et robot -> AVAILABLE.
-    // Chaque changement est sauvegarde sur le serveur (PUT).
+    // Deroulement d'une mission : robot -> OCCUPIED, mission -> "In progress",
+    // le robot REVEILLE le semaphore (-> "Occupied"), puis apres 2 s mission -> "Done"
+    // et robot -> AVAILABLE. Le semaphore se rendort tout seul de son cote.
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
-        System.out.println("Semaphore lie   : " + get("/api/semaphore/" + enc(mission.getSemaphoreId())));
+
+        String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
+        System.out.println("Semaphore lie   : " + semaphoreJson);
 
         mission.demarrer(robot.getId(), maintenant());
         robot.setEtat(EtatRobot.OCCUPIED);
-        System.out.println("PUT robot   : " + modifierRobot(robot));
-        System.out.println("PUT mission : " + modifierMission(mission));
+        System.out.println("PUT robot      : " + modifierRobot(robot));
+        System.out.println("PUT mission    : " + modifierMission(mission));
+        System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
 
         Thread.sleep(2000);
 
         mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
-        System.out.println("PUT mission : " + modifierMission(mission));
-        System.out.println("PUT robot   : " + modifierRobot(robot));
+        System.out.println("PUT mission    : " + modifierMission(mission));
+        System.out.println("PUT robot      : " + modifierRobot(robot));
+    }
+
+    // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
+    // tout en passant state="Occupied". Le robot ne fait que l'allumer (cahier des charges).
+    private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
+        String url = "/api/update_semaphore/" + enc(id)
+                + "?name=" + enc(champ(semaphoreJson, "name"))
+                + "&state=Occupied"
+                + "&duration=" + (int) nombre(semaphoreJson, "duration")
+                + "&type=" + enc(champ(semaphoreJson, "type"))
+                + "&coord_x=" + (int) nombre(semaphoreJson, "coord_x")
+                + "&coord_y=" + (int) nombre(semaphoreJson, "coord_y");
+        return put(url);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -93,16 +115,18 @@ public class AppRobots {
     }
 
     private static Mission choisirMissionDansTerminal() throws Exception {
-        List<Mission> missions = lireMissionsDisponibles();
+        List<Mission> missions = lireMissions();
         if (missions.isEmpty()) {
             return null;
         }
 
-        System.out.println("=== Missions disponibles ===");
+        System.out.println("=== Missions (" + missions.size() + ") ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
+            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
             System.out.println((i + 1) + " - " + mission.getNom()
-                    + " | semaphore : " + mission.getSemaphoreId()
+                    + " | etat : " + mission.getEtat()
+                    + " | " + libre
                     + " | equipe : " + mission.getTeam());
         }
 
@@ -121,17 +145,13 @@ public class AppRobots {
         }
     }
 
-    // On garde seulement les missions libres : sans robot affecte, ni "In progress", ni "Done".
-    private static List<Mission> lireMissionsDisponibles() throws Exception {
+    private static List<Mission> lireMissions() throws Exception {
         List<Mission> missions = new ArrayList<>();
         for (String objet : objets(get("/api/list_missions"))) {
-            String robotId = champ(objet, "robot_id");
-            String etat = champ(objet, "state");
-            if (robotId.isBlank() && !etat.equalsIgnoreCase("In progress") && !etat.equalsIgnoreCase("Done")) {
-                missions.add(new Mission(
-                        champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
-                        robotId, etat, champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
-            }
+            missions.add(new Mission(
+                    champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
+                    champ(objet, "robot_id"), champ(objet, "state"),
+                    champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
         }
         return missions;
     }
@@ -139,8 +159,8 @@ public class AppRobots {
     private static String modifierRobot(Robot robot) throws Exception {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
-                + "&state=" + enc(robot.getEtat().name())
-                + "&speed=" + robot.getVitesse()
+                + "&state=" + enc(etatServeur(robot.getEtat()))
+                + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
                 + "&position_x=" + robot.getX()
                 + "&position_y=" + robot.getY();
         return put(url);
@@ -205,6 +225,13 @@ public class AppRobots {
         }
     }
 
+    // Le serveur attend "Available"/"Occupied"/"Disabled" (1re lettre majuscule, reste minuscule),
+    // alors que l'enum donne "AVAILABLE". On convertit avant l'envoi.
+    private static String etatServeur(EtatRobot etat) {
+        String n = etat.name();
+        return n.charAt(0) + n.substring(1).toLowerCase();
+    }
+
     private static String get(String chemin) throws Exception {
         return requete("GET", chemin);
     }
@@ -213,9 +240,9 @@ public class AppRobots {
         return requete("PUT", chemin);
     }
 
-    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie,
-    // puis renvoie le corps ou un message d'erreur selon le code retour.
-    private static String requete(String methode, String chemin) throws Exception {
+    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
+    // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
+    private static String requete(String methode, String chemin) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(SERVEUR + chemin))
                 .timeout(Duration.ofSeconds(4));
@@ -228,15 +255,18 @@ public class AppRobots {
         } else if (methode.equals("DELETE")) {
             builder.DELETE();
         }
-
-        HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-        if (reponse.statusCode() != 200) {
-            return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
+        try {
+            HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (reponse.statusCode() != 200) {
+                return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
+            }
+            if (reponse.body() == null || reponse.body().equals("null")) {
+                return "OK";
+            }
+            return reponse.body();
+        } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+            return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
-        if (reponse.body() == null || reponse.body().equals("null")) {
-            return "OK";
-        }
-        return reponse.body();
     }
 
     private static String maintenant() {
