@@ -16,7 +16,7 @@ import java.util.Scanner;
 
 public class AppRobots {
 
-    private static final String SERVEUR = "http://192.168.1.100:8000";
+    private static final String SERVEUR = "http://192.168.1.14:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
