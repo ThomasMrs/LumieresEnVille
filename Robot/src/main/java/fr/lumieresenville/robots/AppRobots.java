@@ -14,14 +14,18 @@ import java.util.List;
 import java.util.Scanner;
 
 public class AppRobots {
-
     private static final String SERVEUR = "http://192.168.1.14:8000";
+    private static final int BASE_X = 0;
+    private static final int BASE_Y = 0;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void main(String[] args) throws Exception {
+        ApercuGrilleRobots.lancer();
+        System.out.println("Apercu graphique de la grille lance.");
+
         if (get("/api/list_robots").startsWith("ERREUR")) {
             System.out.println("Serveur injoignable (" + SERVEUR + ").");
             System.out.println("Demarre le serveur FastAPI, puis relance.");
@@ -47,7 +51,7 @@ public class AppRobots {
 
     // Cycle d'une mission :
     //  - le robot reclame la mission (mission -> Pending_robot),
-    //  - il recupere les coordonnees du semaphore et s'y teleporte,
+    //  - il recupere les coordonnees du semaphore et s'y deplace selon sa vitesse,
     //  - quand il est arrive, il passe Occupied,
     //  - il signale l'arrivee au semaphore (mission -> Pending_semaphore),
     //  - il rentre a la base : robot Available et position (0, 0).
@@ -64,10 +68,8 @@ public class AppRobots {
         // Le robot se teleporte sur les coordonnees (x, y) du semaphore
         double coordX = nombre(semaphoreJson, "coord_x");
         double coordY = nombre(semaphoreJson, "coord_y");
-        robot.setPosition(coordX, coordY);
 
-        System.out.println("Robot teleporte -> (" + (int) coordX + ", " + (int) coordY + ")");
-        System.out.println("PUT robot      : " + modifierRobot(robot));
+        deplacerRobot(robot, coordX, coordY);
 
         robot.setEtat(EtatRobot.OCCUPIED);
         System.out.println("Robot arrive, passage en Occupied.");
@@ -77,10 +79,68 @@ public class AppRobots {
         System.out.println("Mission transmise au semaphore.");
         System.out.println("PUT mission    : " + modifierMission(mission));
 
+        deplacerRobot(robot, BASE_X, BASE_Y);
+
         robot.setEtat(EtatRobot.AVAILABLE);
-        robot.setPosition(0, 0);
-        System.out.println("Robot retourne a la base -> (0, 0)");
+        System.out.println("Robot arrive a la base, passage en Available.");
         System.out.println("PUT robot      : " + modifierRobot(robot));
+    }
+
+    private static void deplacerRobot(Robot robot, double destinationX, double destinationY) throws Exception {
+        int cibleX = (int) Math.round(destinationX);
+        int cibleY = (int) Math.round(destinationY);
+        int x = (int) Math.round(robot.getX());
+        int y = (int) Math.round(robot.getY());
+
+        verifierPositionDansGrille(cibleX, cibleY);
+        System.out.println("Deplacement robot -> depart=(" + x + ", " + y + ")"
+                + ", destination=(" + cibleX + ", " + cibleY + ")"
+                + ", vitesse=" + robot.getVitesse() + " case(s)/s");
+
+        while (x != cibleX || y != cibleY) {
+            if (x < cibleX) {
+                x++;
+            } else if (x > cibleX) {
+                x--;
+            } else if (y < cibleY) {
+                y++;
+            } else {
+                y--;
+            }
+
+            robot.setPosition(x, y);
+            System.out.println("Robot avance -> (" + x + ", " + y + ")");
+            System.out.println("PUT robot      : " + modifierRobot(robot));
+            attendreSelonVitesse(robot);
+        }
+    }
+
+    private static void verifierPositionDansGrille(int x, int y) throws Exception {
+        String grilleJson = get("/api/get_grille");
+        if (grilleJson.startsWith("ERREUR") || grilleJson.startsWith("erreur HTTP")) {
+            System.out.println("Grille non verifiee : " + grilleJson);
+            return;
+        }
+
+        int largeur = (int) nombre(grilleJson, "nombre_x");
+        int hauteur = (int) nombre(grilleJson, "nombre_y");
+        if (largeur <= 0 || hauteur <= 0) {
+            System.out.println("Grille non verifiee : dimensions inconnues.");
+            return;
+        }
+        if (x < 0 || y < 0 || x >= largeur || y >= hauteur) {
+            System.out.println("Attention : destination hors grille (" + x + ", " + y
+                    + ") pour une grille " + largeur + "x" + hauteur + ".");
+        }
+    }
+
+    private static void attendreSelonVitesse(Robot robot) throws InterruptedException {
+        double vitesse = robot.getVitesse();
+        if (vitesse <= 0) {
+            vitesse = 1.0;
+        }
+        long delaiMs = Math.max(100, Math.round(1000.0 / vitesse));
+        Thread.sleep(delaiMs);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -104,7 +164,7 @@ public class AppRobots {
         return null;
     }
 
-    // Affiche les missions Awaiting et demande d'en choisir une au clavier (0 pour quitter).
+    // Affiche les missions Awaiting encore libres et demande d'en choisir une au clavier.
     private static Mission choisirMissionDansTerminal() throws Exception {
         List<Mission> missions = lireMissionsAwaiting();
         if (missions.isEmpty()) {
@@ -140,11 +200,17 @@ public class AppRobots {
     private static List<Mission> lireMissionsAwaiting() throws Exception {
         List<Mission> missionsAwaiting = new ArrayList<>();
         for (Mission mission : lireMissions()) {
-            if (mission.getEtat().equalsIgnoreCase("Awaiting")) {
+            if (missionDisponiblePourRobot(mission)) {
                 missionsAwaiting.add(mission);
             }
         }
         return missionsAwaiting;
+    }
+
+    private static boolean missionDisponiblePourRobot(Mission mission) {
+        return mission.getEtat().equalsIgnoreCase("Awaiting")
+                && mission.getRobotId().isBlank()
+                && mission.getFinMission().isBlank();
     }
 
     private static List<Mission> lireMissions() throws Exception {
@@ -168,8 +234,8 @@ public class AppRobots {
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
                 + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
-                + "&position_x=" + robot.getX()
-                + "&position_y=" + robot.getY();
+                + "&position_x=" + (int) Math.round(robot.getX())
+                + "&position_y=" + (int) Math.round(robot.getY());
         return put(url);
     }
 
