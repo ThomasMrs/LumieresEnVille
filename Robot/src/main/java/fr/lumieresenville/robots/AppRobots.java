@@ -49,7 +49,7 @@ public class AppRobots {
     //  - le robot se TELEPORTE sur les coordonnees du semaphore et passe Occupied,
     //  - la mission passe "In progress" (robot_id + start_date),
     //  - le robot REVEILLE le semaphore (-> "Pending"),
-    //  - quand le semaphore n'est plus Pending/Occupied : mission "Done" + end_date, robot Available.
+    //  - apres la duree de la mission : mission "Done" + end_date, robot Available.
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
 
@@ -68,7 +68,7 @@ public class AppRobots {
         System.out.println("PUT mission    : " + modifierMission(mission));
         System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
 
-        attendreFinSemaphore(mission.getSemaphoreId());
+        attendreDureeMission(mission);
 
         mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
@@ -89,26 +89,10 @@ public class AppRobots {
         return put(url);
     }
 
-    private static void attendreFinSemaphore(String semaphoreId) throws Exception {
-        while (true) {
-            String semaphoreJson = get("/api/semaphore/" + enc(semaphoreId));
-
-            if (semaphoreJson.startsWith("ERREUR") || semaphoreJson.startsWith("erreur HTTP")) {
-                System.out.println("Lecture semaphore impossible : " + semaphoreJson);
-            } else {
-                String etat = champ(semaphoreJson, "state");
-                if (etat.isBlank()) {
-                    System.out.println("Etat semaphore inconnu, attente...");
-                } else if (!etat.equalsIgnoreCase("Pending") && !etat.equalsIgnoreCase("Occupied")) {
-                    System.out.println("Semaphore termine : etat=" + etat);
-                    return;
-                } else {
-                    System.out.println("Semaphore encore " + etat + ", attente...");
-                }
-            }
-
-            Thread.sleep(1000);
-        }
+    private static void attendreDureeMission(Mission mission) throws InterruptedException {
+        long dureeSecondes = mission.getDureeSecondes();
+        System.out.println("Duree mission  : " + dureeSecondes + " s");
+        Thread.sleep(dureeSecondes * 1000);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -171,7 +155,8 @@ public class AppRobots {
             missions.add(new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
                     champ(objet, "robot_id"), champ(objet, "state"),
-                    champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
+                    champ(objet, "start_date"), champ(objet, "end_date"),
+                    champ(objet, "team"), champ(objet, "time")));
         }
         return missions;
     }
@@ -194,7 +179,8 @@ public class AppRobots {
                 + "&state=" + enc(mission.getEtat())
                 + "&start_date=" + enc(mission.getDebutMission())
                 + "&end_date=" + enc(mission.getFinMission())
-                + "&team=" + enc(mission.getTeam());
+                + "&team=" + enc(mission.getTeam())
+                + "&time=" + enc(mission.getTempsMission());
         return put(url);
     }
 

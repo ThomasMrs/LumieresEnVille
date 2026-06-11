@@ -1,7 +1,7 @@
 package fr.lumieresenville.robots;
 
 // Cette classe represente une mission recue du serveur :
-// elle contient l'id de la mission, le semaphore, le robot affecte, l'etat et les dates.
+// elle contient l'id de la mission, le semaphore, le robot affecte, l'etat, les dates et la duree.
 public class Mission {
 
     private final String id;
@@ -12,10 +12,11 @@ public class Mission {
     private String debutMission;
     private String finMission;
     private final String team;
+    private final String tempsMission;
 
     // Ce constructeur cree une mission Java avec les informations lues dans le JSON du serveur.
     public Mission(String id, String nom, String semaphoreId, String robotId,
-                   String etat, String debutMission, String finMission, String team) {
+                   String etat, String debutMission, String finMission, String team, String tempsMission) {
         this.id = id;
         this.nom = nom;
         this.semaphoreId = semaphoreId;
@@ -24,6 +25,7 @@ public class Mission {
         this.debutMission = debutMission;
         this.finMission = finMission;
         this.team = team;
+        this.tempsMission = tempsMission;
     }
 
     // Ces methodes permettent de lire les informations de la mission.
@@ -35,6 +37,18 @@ public class Mission {
     public String getDebutMission() { return debutMission; }
     public String getFinMission()   { return finMission; }
     public String getTeam()         { return team; }
+    public String getTempsMission() { return tempsMission; }
+
+    public long getDureeSecondes() {
+        if (tempsMission == null || tempsMission.isBlank()) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Math.round(Double.parseDouble(tempsMission)));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
 
     // Cette methode demarre la mission :
     // elle ajoute l'id du robot, la date de debut et l'etat "In progress".
@@ -58,6 +72,7 @@ public class Mission {
         return nom + "  id=" + id
                 + "  semaphore_id=" + semaphoreId
                 + "  robot_id=" + robotId
-                + "  etat=" + etat;
+                + "  etat=" + etat
+                + "  duree=" + tempsMission;
     }
 }
