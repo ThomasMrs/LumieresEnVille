@@ -79,6 +79,11 @@ public class AppRobots {
     // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
     // tout en passant state="Pending". Le robot demande au semaphore de commencer.
     private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
+        System.out.println("Changement semaphore -> id=" + id
+                + ", state=Pending"
+                + ", duration=" + (int) nombre(semaphoreJson, "duration")
+                + ", coord=(" + (float) nombre(semaphoreJson, "coord_x")
+                + ", " + (float) nombre(semaphoreJson, "coord_y") + ")");
         String url = "/api/update_semaphore/" + enc(id)
                 + "?name=" + enc(champ(semaphoreJson, "name"))
                 + "&state=Pending"
@@ -162,6 +167,10 @@ public class AppRobots {
     }
 
     private static String modifierRobot(Robot robot) throws Exception {
+        System.out.println("Changement robot -> id=" + robot.getId()
+                + ", state=" + etatServeur(robot.getEtat())
+                + ", speed=" + (int) Math.round(robot.getVitesse())
+                + ", position=(" + robot.getX() + ", " + robot.getY() + ")");
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
@@ -172,6 +181,12 @@ public class AppRobots {
     }
 
     private static String modifierMission(Mission mission) throws Exception {
+        System.out.println("Changement mission -> id=" + mission.getId()
+                + ", robot_id=" + mission.getRobotId()
+                + ", state=" + mission.getEtat()
+                + ", start_date=" + mission.getDebutMission()
+                + ", end_date=" + mission.getFinMission()
+                + ", time=" + mission.getTempsMission());
         String url = "/api/update_mission/" + enc(mission.getId())
                 + "?name=" + enc(mission.getNom())
                 + "&semaphore_id=" + enc(mission.getSemaphoreId())
@@ -246,23 +261,39 @@ public class AppRobots {
         return requete("PUT", chemin);
     }
 
+    private static String post(String chemin) throws Exception {
+        return requete("POST", chemin);
+    }
+
     // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
     // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
     private static String requete(String methode, String chemin) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(SERVEUR + chemin))
-                .timeout(Duration.ofSeconds(4));
-        if (methode.equals("GET")) {
-            builder.GET();
-        } else if (methode.equals("POST")) {
-            builder.POST(HttpRequest.BodyPublishers.noBody());
-        } else if (methode.equals("PUT")) {
-            builder.PUT(HttpRequest.BodyPublishers.noBody());
-        } else if (methode.equals("DELETE")) {
-            builder.DELETE();
-        }
+        String urlComplete = SERVEUR + chemin;
+        System.out.println();
+        System.out.println("----- HTTP " + methode + " -----");
+        System.out.println("URL     : " + urlComplete);
+        System.out.println("Chemin  : " + chemin);
+        System.out.println("Body    : <vide>");
+
         try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(urlComplete))
+                    .timeout(Duration.ofSeconds(4));
+            if (methode.equals("GET")) {
+                builder.GET();
+            } else if (methode.equals("POST")) {
+                builder.POST(HttpRequest.BodyPublishers.noBody());
+            } else if (methode.equals("PUT")) {
+                builder.PUT(HttpRequest.BodyPublishers.noBody());
+            } else if (methode.equals("DELETE")) {
+                builder.DELETE();
+            }
+
             HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            System.out.println("Status  : " + reponse.statusCode());
+            System.out.println("Reponse : " + (reponse.body() == null ? "<null>" : reponse.body()));
+            System.out.println("----------------------");
+
             if (reponse.statusCode() != 200) {
                 return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
             }
@@ -271,6 +302,8 @@ public class AppRobots {
             }
             return reponse.body();
         } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+            System.out.println("Erreur  : " + e.getMessage());
+            System.out.println("----------------------");
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
     }
