@@ -75,7 +75,7 @@ def add_mission(semaphore_id: str, shape_id: str, team: str,
         return HTMLResponse(status_code=404, content="Shape introuvable")
     if robot_id and not valider_id("robot", robot_id):
         return HTMLResponse(status_code=404, content="Robot introuvable")
-    id_mission = ajouter_missions(name, semaphore_id, robot_id, "pending", start_date, end_date, team, time, shape_id)
+    id_mission = ajouter_missions(name, semaphore_id, robot_id, "Awaiting", start_date, end_date, team, time, shape_id)
     return {"id": id_mission, "status": "ok"}
 
 
