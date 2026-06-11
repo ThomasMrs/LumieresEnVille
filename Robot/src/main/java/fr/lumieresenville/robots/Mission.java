@@ -39,31 +39,19 @@ public class Mission {
     public String getTeam()         { return team; }
     public String getTempsMission() { return tempsMission; }
 
-    public long getDureeSecondes() {
-        if (tempsMission == null || tempsMission.isBlank()) {
-            return 0;
-        }
-        try {
-            return Math.max(0, Math.round(Double.parseDouble(tempsMission)));
-        } catch (NumberFormatException e) {
-            return 0;
-        }
-    }
-
-    // Cette methode demarre la mission :
-    // elle ajoute l'id du robot, la date de debut et l'etat "In progress".
-    public void demarrer(String robotId, String debutMission) {
+    // Le robot prend la mission en charge :
+    // il ajoute son id, la date de debut et l'etat "Pending_robot".
+    public void prendreEnChargeParRobot(String robotId, String debutMission) {
         this.robotId = robotId;
         this.debutMission = debutMission;
         this.finMission = "";
-        this.etat = "In progress";
+        this.etat = "Pending_robot";
     }
 
-    // Cette methode termine la mission :
-    // elle ajoute la date de fin et l'etat "Done".
-    public void terminer(String finMission) {
-        this.finMission = finMission;
-        this.etat = "Done";
+    // Le robot est arrive pres du semaphore :
+    // il laisse ensuite le semaphore prendre le relais.
+    public void signalerArriveeSemaphore() {
+        this.etat = "Pending_semaphore";
     }
 
     // Cette methode donne une version lisible de la mission dans le terminal.
