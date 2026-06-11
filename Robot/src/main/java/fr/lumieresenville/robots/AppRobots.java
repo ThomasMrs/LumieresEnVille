@@ -46,14 +46,17 @@ public class AppRobots {
     }
 
     // Cycle d'une mission :
-    //  - le robot se TELEPORTE sur les coordonnees du semaphore,
+    //  - le robot reclame la mission (mission -> Pending_robot),
+    //  - il recupere les coordonnees du semaphore et s'y teleporte,
     //  - quand il est arrive, il passe Occupied,
-    //  - la mission passe "In progress" (robot_id + start_date),
-    //  - le robot REVEILLE le semaphore (-> "Pending"),
-    //  - apres la duree de la mission : mission "Done" + end_date,
-    //    robot Available et retour en (0, 0).
+    //  - il signale l'arrivee au semaphore (mission -> Pending_semaphore),
+    //  - il rentre a la base : robot Available et position (0, 0).
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
+
+        mission.prendreEnChargeParRobot(robot.getId(), maintenant());
+        System.out.println("Mission reclamee par le robot.");
+        System.out.println("PUT mission    : " + modifierMission(mission));
 
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
         System.out.println("Semaphore lie   : " + semaphoreJson);
@@ -67,45 +70,17 @@ public class AppRobots {
         System.out.println("PUT robot      : " + modifierRobot(robot));
 
         robot.setEtat(EtatRobot.OCCUPIED);
-        mission.demarrer(robot.getId(), maintenant());
-
         System.out.println("Robot arrive, passage en Occupied.");
         System.out.println("PUT robot      : " + modifierRobot(robot));
+
+        mission.signalerArriveeSemaphore();
+        System.out.println("Mission transmise au semaphore.");
         System.out.println("PUT mission    : " + modifierMission(mission));
-        System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
 
-        attendreDureeMission(mission);
-
-        mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
         robot.setPosition(0, 0);
         System.out.println("Robot retourne a la base -> (0, 0)");
-        System.out.println("PUT mission    : " + modifierMission(mission));
         System.out.println("PUT robot      : " + modifierRobot(robot));
-    }
-
-    // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
-    // tout en passant state="Pending". Le robot demande au semaphore de commencer.
-    private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
-        System.out.println("Changement semaphore -> id=" + id
-                + ", state=Pending"
-                + ", duration=" + (int) nombre(semaphoreJson, "duration")
-                + ", coord=(" + (float) nombre(semaphoreJson, "coord_x")
-                + ", " + (float) nombre(semaphoreJson, "coord_y") + ")");
-        String url = "/api/update_semaphore/" + enc(id)
-                + "?name=" + enc(champ(semaphoreJson, "name"))
-                + "&state=Pending"
-                + "&duration=" + (int) nombre(semaphoreJson, "duration")
-                + "&type=" + enc(champ(semaphoreJson, "type"))
-                + "&coord_x=" + (float) nombre(semaphoreJson, "coord_x")
-                + "&coord_y=" + (float) nombre(semaphoreJson, "coord_y");
-        return put(url);
-    }
-
-    private static void attendreDureeMission(Mission mission) throws InterruptedException {
-        long dureeSecondes = mission.getDureeSecondes();
-        System.out.println("Duree mission  : " + dureeSecondes + " s");
-        Thread.sleep(dureeSecondes * 1000);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -129,21 +104,21 @@ public class AppRobots {
         return null;
     }
 
-    // Affiche toutes les missions et demande d'en choisir une au clavier (0 pour quitter).
+    // Affiche les missions Awaiting et demande d'en choisir une au clavier (0 pour quitter).
     private static Mission choisirMissionDansTerminal() throws Exception {
-        List<Mission> missions = lireMissions();
+        List<Mission> missions = lireMissionsAwaiting();
         if (missions.isEmpty()) {
+            System.out.println("Aucune mission Awaiting disponible.");
             return null;
         }
 
-        System.out.println("=== Missions (" + missions.size() + ") ===");
+        System.out.println("=== Missions Awaiting (" + missions.size() + ") ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
-            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
             System.out.println((i + 1) + " - " + mission.getNom()
                     + " | etat : " + mission.getEtat()
-                    + " | " + libre
-                    + " | equipe : " + mission.getTeam());
+                    + " | equipe : " + mission.getTeam()
+                    + " | duree : " + mission.getTempsMission());
         }
 
         while (true) {
@@ -160,6 +135,16 @@ public class AppRobots {
             }
             System.out.println("Numero invalide.");
         }
+    }
+
+    private static List<Mission> lireMissionsAwaiting() throws Exception {
+        List<Mission> missionsAwaiting = new ArrayList<>();
+        for (Mission mission : lireMissions()) {
+            if (mission.getEtat().equalsIgnoreCase("Awaiting")) {
+                missionsAwaiting.add(mission);
+            }
+        }
+        return missionsAwaiting;
     }
 
     private static List<Mission> lireMissions() throws Exception {
