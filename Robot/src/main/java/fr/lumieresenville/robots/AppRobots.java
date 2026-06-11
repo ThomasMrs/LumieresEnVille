@@ -8,7 +8,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,31 +28,20 @@ public class AppRobots {
             return;
         }
 
-        List<Robot> robots = lireRobotsDuServeur();
-
-        if (robots.isEmpty()) {
-            System.out.println("Aucun robot trouve sur le serveur.");
-        } else {
-            for (Robot robot : robots) {
-                System.out.println("Robot trouve : " + robot);
-            }
-        }
-
-        Robot robotDisponible = chercherRobotDisponible(robots);
-        Mission mission = choisirMissionDansTerminal();
-
-        if (mission == null) {
-            System.out.println("Aucune mission disponible.");
-        } else if (robotDisponible == null) {
-            System.out.println("Aucun robot disponible.");
-        } else {
-            faireLaMission(robotDisponible, mission);
-        }
-
+        // Boucle : on affiche la liste des missions (relue a chaque tour), tu en choisis une,
+        // le robot l'execute, puis on recommence (0 pour quitter).
         while (true) {
-            System.out.println(LocalTime.now().withNano(0) + " robots   : " + get("/api/list_robots"));
-            System.out.println(LocalTime.now().withNano(0) + " missions : " + get("/api/list_missions"));
-            Thread.sleep(5000);
+            Robot robotDisponible = chercherRobotDisponible(lireRobotsDuServeur());
+            Mission mission = choisirMissionDansTerminal();
+
+            if (mission == null) {
+                System.out.println("Au revoir.");
+                break;
+            } else if (robotDisponible == null) {
+                System.out.println("Aucun robot disponible.");
+            } else {
+                faireLaMission(robotDisponible, mission);
+            }
         }
     }
 
@@ -61,7 +49,7 @@ public class AppRobots {
     //  - le robot se TELEPORTE sur les coordonnees du semaphore et passe Occupied,
     //  - la mission passe "In progress" (robot_id + start_date),
     //  - le robot REVEILLE le semaphore (-> "Occupied"),
-    //  - apres 2 s (le semaphore a fini son affichage) : mission "Done" + end_date, robot Available.
+    //  - quand le semaphore n'est plus Occupied : mission "Done" + end_date, robot Available.
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
 
@@ -80,7 +68,7 @@ public class AppRobots {
         System.out.println("PUT mission    : " + modifierMission(mission));
         System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
 
-        Thread.sleep(2000);
+        attendreFinSemaphore(mission.getSemaphoreId());
 
         mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
@@ -99,6 +87,28 @@ public class AppRobots {
                 + "&coord_x=" + (int) nombre(semaphoreJson, "coord_x")
                 + "&coord_y=" + (int) nombre(semaphoreJson, "coord_y");
         return put(url);
+    }
+
+    private static void attendreFinSemaphore(String semaphoreId) throws Exception {
+        while (true) {
+            String semaphoreJson = get("/api/semaphore/" + enc(semaphoreId));
+
+            if (semaphoreJson.startsWith("ERREUR") || semaphoreJson.startsWith("erreur HTTP")) {
+                System.out.println("Lecture semaphore impossible : " + semaphoreJson);
+            } else {
+                String etat = champ(semaphoreJson, "state");
+                if (etat.isBlank()) {
+                    System.out.println("Etat semaphore inconnu, attente...");
+                } else if (!etat.equalsIgnoreCase("Occupied")) {
+                    System.out.println("Semaphore termine : etat=" + etat);
+                    return;
+                } else {
+                    System.out.println("Semaphore encore Occupied, attente...");
+                }
+            }
+
+            Thread.sleep(1000);
+        }
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -122,6 +132,7 @@ public class AppRobots {
         return null;
     }
 
+    // Affiche toutes les missions et demande d'en choisir une au clavier (0 pour quitter).
     private static Mission choisirMissionDansTerminal() throws Exception {
         List<Mission> missions = lireMissions();
         if (missions.isEmpty()) {
@@ -139,10 +150,11 @@ public class AppRobots {
         }
 
         while (true) {
-            System.out.print("Choisis une mission (1 a " + missions.size() + ") : ");
+            System.out.print("Choisis une mission (1 a " + missions.size() + ", 0 pour quitter) : ");
             String reponse = CLAVIER.nextLine();
             try {
                 int numero = Integer.parseInt(reponse);
+                if (numero == 0) return null;
                 if (numero >= 1 && numero <= missions.size()) {
                     return missions.get(numero - 1);
                 }
