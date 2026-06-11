@@ -46,10 +46,12 @@ public class AppRobots {
     }
 
     // Cycle d'une mission :
-    //  - le robot se TELEPORTE sur les coordonnees du semaphore et passe Occupied,
+    //  - le robot se TELEPORTE sur les coordonnees du semaphore,
+    //  - quand il est arrive, il passe Occupied,
     //  - la mission passe "In progress" (robot_id + start_date),
     //  - le robot REVEILLE le semaphore (-> "Pending"),
-    //  - apres la duree de la mission : mission "Done" + end_date, robot Available.
+    //  - apres la duree de la mission : mission "Done" + end_date,
+    //    robot Available et retour en (0, 0).
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
 
@@ -60,10 +62,14 @@ public class AppRobots {
         double coordX = nombre(semaphoreJson, "coord_x");
         double coordY = nombre(semaphoreJson, "coord_y");
         robot.setPosition(coordX, coordY);
+
+        System.out.println("Robot teleporte -> (" + (int) coordX + ", " + (int) coordY + ")");
+        System.out.println("PUT robot      : " + modifierRobot(robot));
+
         robot.setEtat(EtatRobot.OCCUPIED);
         mission.demarrer(robot.getId(), maintenant());
 
-        System.out.println("Robot teleporte -> (" + (int) coordX + ", " + (int) coordY + ")");
+        System.out.println("Robot arrive, passage en Occupied.");
         System.out.println("PUT robot      : " + modifierRobot(robot));
         System.out.println("PUT mission    : " + modifierMission(mission));
         System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
@@ -72,6 +78,8 @@ public class AppRobots {
 
         mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
+        robot.setPosition(0, 0);
+        System.out.println("Robot retourne a la base -> (0, 0)");
         System.out.println("PUT mission    : " + modifierMission(mission));
         System.out.println("PUT robot      : " + modifierRobot(robot));
     }
