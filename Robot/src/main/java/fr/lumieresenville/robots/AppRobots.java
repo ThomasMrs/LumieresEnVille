@@ -50,33 +50,32 @@ public class AppRobots {
     }
 
     // Cycle d'une mission :
-    //  - le robot reclame la mission (mission -> Pending_robot),
+    //  - le robot reclame la mission (mission -> Pending_robot) ET passe Occupied,
+    //    (il le reste pendant tout le trajet, jusqu'au retour a la base),
     //  - il recupere les coordonnees du semaphore et s'y deplace selon sa vitesse,
-    //  - quand il est arrive, il passe Occupied,
     //  - il signale l'arrivee au semaphore (mission -> Pending_semaphore),
     //  - il rentre a la base : robot Available et position (0, 0).
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
 
+        // Le robot reclame la mission et passe Occupied tout de suite.
         mission.prendreEnChargeParRobot(robot.getId(), maintenant());
-        System.out.println("Mission reclamee par le robot.");
+        robot.setEtat(EtatRobot.OCCUPIED);
+        System.out.println("Mission reclamee, robot en Occupied.");
         System.out.println("PUT mission    : " + modifierMission(mission));
+        System.out.println("PUT robot      : " + modifierRobot(robot));
 
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
         System.out.println("Semaphore lie   : " + semaphoreJson);
 
-        // Le robot se teleporte sur les coordonnees (x, y) du semaphore
+        // On recupere les coordonnees (x, y) du semaphore et le robot s'y deplace
         double coordX = nombre(semaphoreJson, "coord_x");
         double coordY = nombre(semaphoreJson, "coord_y");
 
         deplacerRobot(robot, coordX, coordY);
 
-        robot.setEtat(EtatRobot.OCCUPIED);
-        System.out.println("Robot arrive, passage en Occupied.");
-        System.out.println("PUT robot      : " + modifierRobot(robot));
-
         mission.signalerArriveeSemaphore();
-        System.out.println("Mission transmise au semaphore.");
+        System.out.println("Robot arrive, mission transmise au semaphore.");
         System.out.println("PUT mission    : " + modifierMission(mission));
 
         deplacerRobot(robot, BASE_X, BASE_Y);
