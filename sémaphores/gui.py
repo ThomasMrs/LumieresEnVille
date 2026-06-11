@@ -25,3 +25,22 @@ class Interface:
         for m in missions:
             text_bouton = f"{m.get('name')} (ID: {m.get('id')})"
             tk.Button(self.frame_choix, text=text_bouton, command=lambda mc=m: callback(mc)).pack(fill="x", pady=2)
+
+    def afficher_forme(self, shape_name):
+        self.canvas.delete("dessin")
+        val = str(shape_name).strip()
+        
+        if val == "Lettre A":
+            self.canvas.create_line(250, 150, 150, 350, fill="yellow", width=5, tags="dessin")
+            self.canvas.create_line(250, 150, 350, 350, fill="yellow", width=5, tags="dessin")
+            self.canvas.create_line(200, 260, 300, 260, fill="yellow", width=5, tags="dessin")
+        elif val == "Etoile":
+            self.canvas.create_line(250, 150, 250, 350, fill="cyan", width=3, tags="dessin")
+            self.canvas.create_line(150, 250, 350, 250, fill="cyan", width=3, tags="dessin")
+            self.canvas.create_line(180, 180, 320, 320, fill="cyan", width=3, tags="dessin")
+            self.canvas.create_line(180, 320, 320, 180, fill="cyan", width=3, tags="dessin")
+        elif val == "Barre a roue":
+            self.canvas.create_line(150, 250, 350, 250, fill="orange", width=10, tags="dessin")
+        else:
+            self.canvas.create_rectangle(150, 150, 350, 350, outline="magenta", width=3, tags="dessin")
+        self.canvas.update()

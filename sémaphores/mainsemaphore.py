@@ -1,60 +1,64 @@
 import threading
 import time
+import os
 from api_client import *
 from gui import Interface
+from table_tracante import simuler_table_tracante_csv
 
-# Initialisation
 ui = Interface()
 etat = "RECHERCHE_MISSION"
 mission_en_cours = None
 
 def lancer_dessin_physique():
-    """Exécute le dessin sans bloquer l'interface."""
     global etat, mission_en_cours
+    mission = mission_en_cours
+    if not mission: return
     
-    shape_id = mission_en_cours.get("shape_id")
-    ui.afficher_forme(shape_id)
-    ui.mettre_a_jour_statut(f"Impression : {mission_en_cours.get('name')}")
-    ui.mettre_a_jour_details(f"Forme {shape_id} en cours...")
+    # Récupération du nom réel de la forme depuis l'API
+    shape_data = get_shape(mission.get("shape_id"))
+    shape_name = shape_data.get("name", "Inconnu")
     
-    # --- Code de pilotage matériel ici ---
-    time.sleep(5) 
+    ui.afficher_forme(shape_name)
+    ui.mettre_a_jour_statut(f"Impression : {mission.get('name')}")
+    ui.mettre_a_jour_details("Simulation table traçante...")
     
-    # Clôture
-    put_mission_state(mission_en_cours.get("id"), "Done")
-    put_semaphore(mission_en_cours.get("semaphore_id"), "Awaiting")
+    # Chemin absolu sécurisé pour trouver le fichier CSV
+    dossier_actuel = os.path.dirname(os.path.abspath(__file__))
+    chemin_csv = os.path.join(dossier_actuel, "etoile-symbole (1).csv")
     
-    ui.mettre_a_jour_details("Mission terminée, ressource libérée.")
+    # Lancement de la simulation physique 100% Tkinter
+    simuler_table_tracante_csv(chemin_csv, ui.root) 
+    
+    # Clôture de la mission et libération de la ressource
+    put_mission_state(mission.get("id"), "Done")
+    put_semaphore(mission.get("semaphore_id"), "AVAILABLE")
+    
+    ui.mettre_a_jour_details("Mission terminée.")
     etat = "RECHERCHE_MISSION"
     mission_en_cours = None
 
 def choisir_mission(mission):
     global etat, mission_en_cours
     mission_en_cours = mission
-    put_semaphore(mission_en_cours.get("semaphore_id"), "Occupied")
-    etat = "ATTENTE_ROBOT"
+    
+    put_semaphore(mission_en_cours.get("semaphore_id"), "OCCUPIED")
+    etat = "IMPRESSION"
+    
+    threading.Thread(target=lancer_dessin_physique, daemon=True).start()
 
 def boucle():
-    global etat, mission_en_cours
-    
+    global etat
     if etat == "RECHERCHE_MISSION":
         ui.mettre_a_jour_statut("État : Recherche")
         missions = get_missions()
-        # Filtre conforme à l'étape 8
-        missions_pretes = [m for m in missions if m.get("state") == "Pending_semaphore"]
+        
+        missions_pretes = [m for m in missions if m.get("state") in ["Awaiting", "Pending_semaphore"]]
         
         if missions_pretes:
             ui.afficher_missions(missions_pretes, choisir_mission)
             etat = "CHOIX_MISSION"
         else:
             ui.mettre_a_jour_details("En attente de mission...")
-            
-    elif etat == "ATTENTE_ROBOT":
-        ui.mettre_a_jour_details(f"Robot attendu pour {mission_en_cours.get('name')}...")
-        # Vérifie si le robot est arrivé (Étape 6 du diagramme)
-        if get_robot(mission_en_cours.get("robot_id")):
-            etat = "IMPRESSION"
-            threading.Thread(target=lancer_dessin_physique, daemon=True).start()
             
     ui.root.after(1000, boucle)
 
