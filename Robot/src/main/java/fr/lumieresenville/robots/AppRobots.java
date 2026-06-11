@@ -57,17 +57,25 @@ public class AppRobots {
         }
     }
 
-    // Deroulement d'une mission : robot -> OCCUPIED, mission -> "In progress",
-    // le robot REVEILLE le semaphore (-> "Occupied"), puis apres 2 s mission -> "Done"
-    // et robot -> AVAILABLE. Le semaphore se rendort tout seul de son cote.
+    // Cycle d'une mission :
+    //  - le robot se TELEPORTE sur les coordonnees du semaphore et passe Occupied,
+    //  - la mission passe "In progress" (robot_id + start_date),
+    //  - le robot REVEILLE le semaphore (-> "Occupied"),
+    //  - apres 2 s (le semaphore a fini son affichage) : mission "Done" + end_date, robot Available.
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
 
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
         System.out.println("Semaphore lie   : " + semaphoreJson);
 
-        mission.demarrer(robot.getId(), maintenant());
+        // Le robot se teleporte sur les coordonnees (x, y) du semaphore
+        double coordX = nombre(semaphoreJson, "coord_x");
+        double coordY = nombre(semaphoreJson, "coord_y");
+        robot.setPosition(coordX, coordY);
         robot.setEtat(EtatRobot.OCCUPIED);
+        mission.demarrer(robot.getId(), maintenant());
+
+        System.out.println("Robot teleporte -> (" + (int) coordX + ", " + (int) coordY + ")");
         System.out.println("PUT robot      : " + modifierRobot(robot));
         System.out.println("PUT mission    : " + modifierMission(mission));
         System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
