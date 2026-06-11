@@ -1,163 +1,67 @@
-/* --- STYLES GENERAUX --- */
-* { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
-}
+/* --- BASE & POLICES --- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; } /* Rend le défilement fluide lors du clic sur le menu */
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #eee; padding-bottom: 60px; }
 
-body { 
-    font-family: Arial, sans-serif; 
-    background: #1a1a2e; 
-    color: #eee; 
-}
-
+/* --- HEADER FIXE AVEC NAVIGATION RAPIDE --- */
 header { 
     background: #16213e; 
-    padding: 20px; 
+    padding: 15px 20px; 
     text-align: center; 
-    border-bottom: 3px solid #e94560; 
+    border-bottom: 3px solid #e94560;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
+header h1 { color: #e94560; font-size: 1.5em; margin-bottom: 10px; }
 
-header h1 { 
-    color: #e94560; 
-}
+.fast-nav { display: flex; gap: 10px; justify-content: center; max-width: 1000px; margin: 0 auto; }
+.fast-nav a { color: #ccc; text-decoration: none; padding: 6px 12px; background: #0f3460; border-radius: 4px; font-weight: bold; font-size: 0.9em; transition: 0.2s; }
+.fast-nav a:hover { background: #e94560; color: white; }
 
-/* --- DISPOSITION EN COLONNES (LAYOUT) --- */
-main { 
-    max-width: 1200px; 
-    margin: 30px auto; 
-    padding: 0 20px; 
-    display: flex; 
-    gap: 20px; 
-    align-items: flex-start; 
-}
+/* --- STRUCTURATION DU CONTENU --- */
+main { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 40px; }
 
-/* Colonne de gauche (Formulaires) */
-.col-forms { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 20px; 
-}
+/* Blocs Majeurs */
+.supervision-block { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 20px; }
+.admin-section { width: 100%; scroll-margin-top: 130px; } /* Évite que le menu cache le titre du bloc lors du clic */
+.actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 15px; }
 
-/* Colonne de droite (La Carte) */
-.col-map { 
-    flex: 1; 
-    background: #16213e; 
-    border-radius: 8px; 
-    padding: 20px; 
-    position: sticky; 
-    top: 20px;
-}
+/* Sections standards */
+section { background: #16213e; border-radius: 8px; padding: 22px; border: 1px solid #222e50; }
+section h2 { color: #e94560; margin-bottom: 12px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; font-size: 1.2em; }
+.section-desc { color: #aaa; font-size: 0.85em; margin-bottom: 15px; }
+.message { background: #0f3460; color: #4ecca3; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; }
 
-/* --- FORMULAIRES & SECTIONS --- */
-.message { 
-    background: #0f3460; 
-    color: #4ecca3; 
-    padding: 12px; 
-    border-radius: 6px; 
-    margin-bottom: 20px; 
-    text-align: center; 
-    font-weight: bold; 
-}
+/* --- FORMULAIRES --- */
+form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8em; color: #aaa; font-weight: 600; }
+input, select { padding: 8px; border: 1px solid #0f3460; border-radius: 4px; background: #1a1a2e; color: #eee; width: 115px; font-size: 0.9em; }
+input:focus { border-color: #e94560; outline: none; }
+button { padding: 8px 15px; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-weight: bold; font-size: 0.85em; }
 
-section { 
-    background: #16213e; 
-    border-radius: 8px; 
-    padding: 20px; 
-}
+/* Boutons de couleur */
+.btn-primary { background: #0f3460; }
+.btn-success { background: #2ecc71; }
+.btn-warning { background: #e67e22; }
+.btn-danger { background: #e74c3c; width: 100%; padding: 10px; margin-top: 5px; }
+.danger-zone { border: 1px solid #ff7675; background: #221420; }
+.danger-zone h2 { color: #ff7675; border-bottom-color: #441a22; }
 
-section h2, .col-map h2 { 
-    color: #e94560; 
-    margin-bottom: 15px; 
-    border-bottom: 1px solid #0f3460; 
-    padding-bottom: 8px; 
-    font-size: 1.2em; 
-}
+/* --- GRILLE INTERACTIVE (MAP) --- */
+.map-section { background: #11192e; text-align: center; }
+.waiting-msg { color: #aaa; padding: 40px; font-style: italic; text-align: center; }
+.grid-table { border-collapse: collapse; margin: 15px auto; background: #0f3460; border-radius: 4px; overflow: hidden; }
+.grid-cell { width: 38px; height: 38px; border: 1px solid #1a1a2e; text-align: center; vertical-align: middle; font-size: 16px; }
+.cell-base { background: #16213e; }
+.cell-semaphore { background: rgba(233, 69, 96, 0.2); border: 1px solid #e94560; }
+.cell-robot { background: rgba(78, 204, 163, 0.2); border: 1px solid #4ecca3; }
+.legend { display: flex; gap: 15px; justify-content: center; font-size: 0.85em; color: #aaa; margin-top: 10px; }
 
-form { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 10px; 
-    align-items: end; 
-}
-
-label { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 4px; 
-    font-size: 0.85em; 
-    color: #aaa; 
-}
-
-input { 
-    padding: 8px; 
-    border: 1px solid #0f3460; 
-    border-radius: 4px; 
-    background: #1a1a2e; 
-    color: #eee; 
-    width: 130px; 
-}
-
-button { 
-    padding: 8px 15px; 
-    border: none; 
-    border-radius: 4px; 
-    background: #e94560; 
-    color: #fff; 
-    cursor: pointer; 
-    font-weight: bold; 
-    transition: 0.2s;
-}
-
-button:hover { 
-    background: #c73e54; 
-}
-
-/* --- GRILLE INTERACTIVE (CARTE) --- */
-#grid-container {
-    margin-top: 20px;
-}
-
-.waiting-msg {
-    text-align: center; 
-    color: #aaa; 
-}
-
-.grid-table { 
-    border-collapse: collapse; 
-    margin: 20px auto; 
-    background: #0f3460; 
-    border-radius: 4px; 
-    overflow: hidden; 
-}
-
-.grid-cell { 
-    width: 35px; 
-    height: 35px; 
-    border: 1px solid #1a1a2e; 
-    text-align: center; 
-    vertical-align: middle; 
-    font-size: 16px; 
-}
-
-.cell-base { 
-    background: #16213e; 
-}
-
-.cell-semaphore { 
-    background: #e94560; 
-}
-
-.cell-robot { 
-    background: #4ecca3; 
-}
-
-.legend { 
-    margin-top: 15px; 
-    display: flex; 
-    gap: 15px; 
-    justify-content: center; 
-    font-size: 0.9em; 
-    color: #aaa;
-}
+/* --- BLOC RÉCAP (TABLEAU DE BORD) --- */
+.recap-section { display: flex; flex-direction: column; }
+.recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; flex: 1; }
+.recap-card { background: #0f3460; border-radius: 6px; padding: 15px 10px; text-align: center; border-left: 4px solid #e94560; display: flex; flex-direction: column; justify-content: center; }
+.recap-card h3 { font-size: 0.85em; color: #aaa; margin-bottom: 5px; }
+.recap-card .counter { font-size: 1.8em; font-weight: bold; color: #4ecca3; }

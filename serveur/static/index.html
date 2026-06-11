@@ -9,89 +9,231 @@
 <body>
     <header>
         <h1>Lumières en Ville - Console d'Administration</h1>
+        <nav class="fast-nav">
+            <a href="#section-carte">🗺️ Carte & Récap</a>
+            <a href="#section-config">⚙️ Configuration</a>
+            <a href="#section-semaphore">🚦 Sémaphores</a>
+            <a href="#section-robot">🤖 Robots</a>
+            <a href="#section-shapes">👥 Équipes & Formes</a>
+            <a href="#section-mission">🚀 Missions</a>
+        </nav>
     </header>
 
     <main>
-        <div class="col-forms">
+        <div id="section-carte" class="supervision-block">
+            <section class="map-section">
+                <h2>🗺️ Carte de la Ville en Temps Réel</h2>
+                <div id="grid-container" class="waiting-msg">En attente de la configuration globale...</div>
+                <div class="legend">
+                    <span>🏠 Base Principale (0,0)</span>
+                    <span>🚦 Sémaphore</span>
+                    <span>🤖 Robot</span>
+                </div>
+            </section>
+
+            <section class="recap-section">
+                <h2>📊 Indicateurs Généraux (Récap)</h2>
+                <div class="recap-grid">
+                    <div class="recap-card"><h3>Sémaphores</h3><p class="counter" id="count-semaphore">0</p></div>
+                    <div class="recap-card"><h3>Robots</h3><p class="counter" id="count-robot">0</p></div>
+                    <div class="recap-card"><h3>Missions</h3><p class="counter" id="count-mission">0</p></div>
+                    <div class="recap-card"><h3>Équipes</h3><p class="counter" id="count-team">0</p></div>
+                </div>
+            </section>
+        </div>
+
+        <div id="section-config" class="admin-section">
             <section>
-                <h2>1. Configuration Globale</h2>
+                <h2>⚙️ Configuration Initiale du Système</h2>
+                <p class="section-desc">Définissez la taille de la grille (X × Y) avant d'injecter des robots ou sémaphores.</p>
                 <form action="/ihm/add_config" method="get">
                     <label>Largeur (X) <input type="number" name="nombre_x" required></label>
                     <label>Hauteur (Y) <input type="number" name="nombre_y" required></label>
                     <label>Sémaphores <input type="number" name="nombre_semaphore" required></label>
                     <label>Robots <input type="number" name="nombre_robot" required></label>
-                    <button type="submit">Configurer</button>
-                </form>
-            </section>
-
-            <section>
-                <h2>2. Déployer une entité</h2>
-                <form action="/ihm/add_semaphore" method="get" style="margin-bottom: 15px;">
-                    <label>Nom Sémaphore <input type="text" name="name" required></label>
-                    <label>Durée <input type="number" name="duration" required></label>
-                    <label>Type <input type="text" name="type" required></label>
-                    <label>Coord X <input type="number" name="coord_x" required></label>
-                    <label>Coord Y <input type="number" name="coord_y" required></label>
-                    <button type="submit">Ajouter Sémaphore</button>
-                </form>
-                <form action="/ihm/add_robot" method="get">
-                    <label>Nom Robot <input type="text" name="name"></label>
-                    <label>Vitesse <input type="number" name="speed"></label>
-                    <label>Position X <input type="number" name="position_x"></label>
-                    <label>Position Y <input type="number" name="position_y"></label>
-                    <button type="submit">Ajouter Robot</button>
-                </form>
-            </section>
-
-            <section>
-                <h2>3. Règles et Systèmes</h2>
-                <form action="/ihm/add_team" method="get" style="margin-bottom: 15px;">
-                    <label>Nom Équipe <input type="text" name="name" required></label>
-                    <label>IP Console <input type="text" name="ip"></label>
-                    <label>Autorisée ? <input type="checkbox" name="allowed" value="true" style="width:auto;"></label>
-                    <button type="submit">Autoriser Console</button>
-                </form>
-                <form action="/ihm/add_shape" method="get">
-                    <label>Nom Forme <input type="text" name="name" required></label>
-                    <label>Matrice Image <input type="text" name="image" required></label>
-                    <button type="submit">Ajouter Forme</button>
-                </form>
-            </section>
-
-            <section>
-                <h2>4. Lancer une mission manuellement</h2>
-                <form action="/ihm/add_mission" method="get">
-                    <label>Sémaphore ID <input type="text" name="semaphore_id" required></label>
-                    <label>Shape ID <input type="text" name="shape_id" required></label>
-                    <label>Équipe <input type="text" name="team" required></label>
-                    <button type="submit">Déclencher</button>
+                    <button type="submit" class="btn-primary">Appliquer la configuration</button>
                 </form>
             </section>
         </div>
 
-        <div class="col-map">
-            <h2>🗺️ Carte en Temps Réel</h2>
-            <div id="grid-container" class="waiting-msg">
-                En attente de la configuration...
+        <div id="section-semaphore" class="admin-section">
+            <div class="actions-grid">
+                <section>
+                    <h2>🚦 Ajouter un Sémaphore</h2>
+                    <form action="/ihm/add_semaphore" method="get">
+                        <label>Nom <input type="text" name="name" required></label>
+                        <label>Durée (sec) <input type="number" name="duration" required></label>
+                        <label>Type <input type="text" name="type" placeholder="HELICE / TABLE" required></label>
+                        <label>Coord X <input type="number" name="coord_x" required></label>
+                        <label>Coord Y <input type="number" name="coord_y" required></label>
+                        <button type="submit" class="btn-success">Créer</button>
+                    </form>
+                </section>
+                <section>
+                    <h2>✏️ Modifier un Sémaphore</h2>
+                    <form action="/ihm/update_semaphore" method="get">
+                        <label>Sémaphore à modifier 
+                            <select name="id" id="select-update-semaphore" required style="width: 160px;"></select>
+                        </label>
+                        <label>Nouveau Nom <input type="text" name="name"></label>
+                        <label>État <input type="text" name="state" placeholder="Available/Occupied"></label>
+                        <label>Durée <input type="number" name="duration"></label>
+                        <label>Type <input type="text" name="type"></label>
+                        <label>Coord X <input type="number" name="coord_x"></label>
+                        <label>Coord Y <input type="number" name="coord_y"></label>
+                        <button type="submit" class="btn-warning">Mettre à jour</button>
+                    </form>
+                </section>
             </div>
-            <div class="legend">
-                <span>🏠 Base (0,0)</span>
-                <span>🚦 Sémaphore</span>
-                <span>🤖 Robot</span>
+            <section class="danger-zone">
+                <h2>Zone de Danger Sémaphores</h2>
+                <form action="/ihm/delete_semaphores" method="get">
+                    <button type="submit" class="btn-danger" onclick="return confirm('Supprimer TOUS les sémaphores ?')">Supprimer tous les sémaphores de la base</button>
+                </form>
+            </section>
+        </div>
+
+        <div id="section-robot" class="admin-section">
+            <div class="actions-grid">
+                <section>
+                    <h2>🤖 Ajouter un Robot Virtuel</h2>
+                    <form action="/ihm/add_robot" method="get">
+                        <label>Nom Robot <input type="text" name="name"></label>
+                        <label>Vitesse <input type="number" name="speed" value="1"></label>
+                        <label>Position X <input type="number" name="position_x" value="0"></label>
+                        <label>Position Y <input type="number" name="position_y" value="0"></label>
+                        <button type="submit" class="btn-success">Déployer</button>
+                    </form>
+                </section>
+                <section>
+                    <h2>✏️ Modifier un Robot</h2>
+                    <form action="/ihm/update_robot" method="get">
+                        <label>Robot à modifier 
+                            <select name="id" id="select-update-robot" required style="width: 160px;"></select>
+                        </label>
+                        <label>Nouveau Nom <input type="text" name="name"></label>
+                        <label>État <input type="text" name="state" placeholder="Available/Occupied"></label>
+                        <label>Vitesse <input type="number" name="speed"></label>
+                        <label>Position X <input type="number" name="position_x"></label>
+                        <label>Position Y <input type="number" name="position_y"></label>
+                        <button type="submit" class="btn-warning">Mettre à jour</button>
+                    </form>
+                </section>
             </div>
+            <section class="danger-zone">
+                <h2>Zone de Danger Robots</h2>
+                <form action="/ihm/delete_robots" method="get">
+                    <button type="submit" class="btn-danger" onclick="return confirm('Supprimer TOUS les robots ?')">Supprimer tous les robots de la base</button>
+                </form>
+            </section>
+        </div>
+
+        <div id="section-shapes" class="admin-section">
+            <div class="actions-grid">
+                <section>
+                    <h2>👥 Équipes (Consoles Java autorisées)</h2>
+                    <form action="/ihm/add_team" method="get">
+                        <label>Nom Équipe <input type="text" name="name" required></label>
+                        <label>Adresse IP <input type="text" name="ip" placeholder="192.168.1.X"></label>
+                        <label>Autoriser d'office <input type="checkbox" name="allowed" value="true" style="width:auto;"></label>
+                        <button type="submit" class="btn-primary">Ajouter l'équipe</button>
+                    </form>
+                    <form action="/ihm/delete_teams" method="get" style="margin-top: 15px;">
+                        <button type="submit" class="btn-danger" onclick="return confirm('Vider la table équipe ?')">Purger les équipes</button>
+                    </form>
+                </section>
+                <section>
+                    <h2>⭐ Formes (Glyphes des Sémaphores)</h2>
+                    <form action="/ihm/add_shape" method="get" style="margin-bottom: 15px;">
+                        <label>Nom Forme/Lettre <input type="text" name="name" required></label>
+                        <label>Code Matrice <input type="text" name="image" required></label>
+                        <button type="submit" class="btn-success">Enregistrer la forme</button>
+                    </form>
+                    <form action="/ihm/update_shape" method="get" style="margin-bottom: 15px;">
+                        <label>Forme à modifier 
+                            <select name="id" id="select-update-shape" required style="width: 160px;"></select>
+                        </label>
+                        <label>Nouveau Nom <input type="text" name="name"></label>
+                        <label>Nouvelle Matrice <input type="text" name="image"></label>
+                        <button type="submit" class="btn-warning">Modifier</button>
+                    </form>
+                    <form action="/ihm/delete_shapes" method="get">
+                        <button type="submit" class="btn-danger" onclick="return confirm('Vider le catalogue de formes ?')">Vider le catalogue</button>
+                    </form>
+                </section>
+            </div>
+        </div>
+
+        <div id="section-mission" class="admin-section">
+            <section style="margin-bottom: 20px;">
+                <h2>🚀 Lancer une mission manuellement</h2>
+                <form action="/ihm/add_mission" method="get">
+                    <label>Nom Mission <input type="text" name="name"></label>
+                    <label>Sémaphore Cible 
+                        <select name="semaphore_id" id="select-mission-semaphore" required style="width: 160px;"></select>
+                    </label>
+                    <label>Forme à afficher 
+                        <select name="shape_id" id="select-mission-shape" required style="width: 160px;"></select>
+                    </label>
+                    <label>Nom Équipe <input type="text" name="team" required></label>
+                    <label>Robot Assigné 
+                        <select name="robot_id" id="select-mission-robot" style="width: 160px;"></select>
+                    </label>
+                    <button type="submit" class="btn-primary">Forcer le lancement</button>
+                </form>
+            </section>
+            <section class="danger-zone">
+                <h2>Zone de Danger Missions</h2>
+                <form action="/ihm/delete_missions" method="get">
+                    <button type="submit" class="btn-danger" onclick="return confirm('Purger l\'historique ?')">Réinitialiser l'historique des missions</button>
+                </form>
+            </section>
         </div>
     </main>
 
     <script>
-        function rafraichirCarte() {
+        function actualiserIHM() {
             Promise.all([
                 fetch('/api/get_config').then(r => r.json()),
                 fetch('/api/list_semaphore').then(r => r.json()),
-                fetch('/api/list_robots').then(r => r.json())
+                fetch('/api/list_robots').then(r => r.json()),
+                fetch('/api/list_missions').then(r => r.json()).catch(() => ({length: 0})),
+                fetch('/api/list_teams').then(r => r.json()).catch(() => ({length: 0})),
+                fetch('/api/list_shapes').then(r => r.json()).catch(() => ({length: 0}))
             ])
-            .then(([config, semaphores, robots]) => {
+            .then(([config, semaphores, robots, missions, teams, shapes]) => {
+                
+                let listSem = semaphores.semaphores || semaphores || [];
+                let listRob = robots.robots || robots || [];
+                let listMis = missions.missions || missions || [];
+                let listTea = teams.teams || teams || [];
+                let listSha = shapes.shapes || shapes || [];
+
+                // 1. Mettre à jour les compteurs (Récap)
+                document.getElementById('count-semaphore').innerText = listSem.length;
+                document.getElementById('count-robot').innerText = listRob.length;
+                document.getElementById('count-mission').innerText = listMis.length;
+                document.getElementById('count-team').innerText = listTea.length;
+
+                // 2. Remplissage automatique des menus déroulants (Évite la saisie manuelle d'ID)
+                let htmlSemOptions = "";
+                listSem.forEach(s => { htmlSemOptions += `<option value="${s.id}">${s.name} (${s.coord_x},${s.coord_y})</option>`; });
+                document.getElementById('select-update-semaphore').innerHTML = htmlSemOptions;
+                document.getElementById('select-mission-semaphore').innerHTML = htmlSemOptions;
+
+                let htmlRobOptions = '<option value="">-- Aucun --</option>';
+                listRob.forEach(r => { htmlRobOptions += `<option value="${r.id}">${r.name || 'Robot sans nom'}</option>`; });
+                document.getElementById('select-update-robot').innerHTML = listRob.length ? htmlRobOptions.replace('<option value="">-- Aucun --</option>', '') : '';
+                document.getElementById('select-mission-robot').innerHTML = htmlRobOptions;
+
+                let htmlShaOptions = "";
+                listSha.forEach(s => { htmlShaOptions += `<option value="${s.id}">${s.name}</option>`; });
+                document.getElementById('select-update-shape').innerHTML = htmlShaOptions;
+                document.getElementById('select-mission-shape').innerHTML = htmlShaOptions;
+
+                // 3. Dessiner la grille de la carte
                 if (!config || !config.nombre_x) {
-                    document.getElementById('grid-container').innerHTML = "Veuillez d'abord créer la configuration globale (Étape 1).";
+                    document.getElementById('grid-container').innerHTML = "Veuillez d'abord créer la configuration (Section Configuration).";
                     return;
                 }
 
@@ -102,12 +244,12 @@
                         let classCell = "grid-cell";
                         let icone = "";
 
-                        if (semaphores && semaphores.find(s => s.coord_x == x && s.coord_y == y)) {
+                        if (listSem.find(s => s.coord_x == x && s.coord_y == y)) {
                             classCell += " cell-semaphore";
                             icone = "🚦";
                         }
                         
-                        if (robots && robots.find(r => r.position_x == x && r.position_y == y)) {
+                        if (listRob.find(r => r.position_x == x && r.position_y == y)) {
                             classCell += " cell-robot";
                             icone = "🤖";
                         }
@@ -124,11 +266,12 @@
                 html += '</table>';
                 document.getElementById('grid-container').innerHTML = html;
             })
-            .catch(e => console.log("Erreur chargement carte", e));
+            .catch(e => console.log("Erreur synchro", e));
         }
 
-        setInterval(rafraichirCarte, 1000);
-        rafraichirCarte();
+        // Rafraîchir toutes les 1 seconde
+        setInterval(actualiserIHM, 1000);
+        actualiserIHM();
     </script>
 </body>
 </html>
