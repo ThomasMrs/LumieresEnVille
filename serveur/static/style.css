@@ -1,67 +1,174 @@
-/* --- BASE & POLICES --- */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; } /* Rend le défilement fluide lors du clic sur le menu */
-body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #eee; padding-bottom: 60px; }
+/* --- LE DESIGN DE L'APPLICATION EN MODE CLAIR --- */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background-color: #f4f6f9; /* Gris très clair de fond */
+    color: #333333;
+    padding-bottom: 50px;
+    margin: 0;
+}
 
-/* --- HEADER FIXE AVEC NAVIGATION RAPIDE --- */
-header { 
-    background: #16213e; 
-    padding: 15px 20px; 
-    text-align: center; 
-    border-bottom: 3px solid #e94560;
+header {
+    background: #ffffff;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
-header h1 { color: #e94560; font-size: 1.5em; margin-bottom: 10px; }
+header h1 {
+    color: #2c3e50;
+    font-size: 1.6em;
+    margin-bottom: 12px;
+}
 
-.fast-nav { display: flex; gap: 10px; justify-content: center; max-width: 1000px; margin: 0 auto; }
-.fast-nav a { color: #ccc; text-decoration: none; padding: 6px 12px; background: #0f3460; border-radius: 4px; font-weight: bold; font-size: 0.9em; transition: 0.2s; }
-.fast-nav a:hover { background: #e94560; color: white; }
+.fast-nav { display: flex; gap: 10px; justify-content: center; max-width: 1000px; margin: 0 auto; flex-wrap: wrap; }
+.fast-nav a { 
+    color: #495057; 
+    text-decoration: none; 
+    padding: 6px 15px; 
+    background: #e9ecef; 
+    border: 1px solid #ced4da;
+    border-radius: 4px; 
+    font-weight: bold; 
+    font-size: 0.9em; 
+    transition: 0.2s; 
+}
+.fast-nav a:hover { background: #dee2e6; color: #000; }
 
-/* --- STRUCTURATION DU CONTENU --- */
-main { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: flex; flex-direction: column; gap: 40px; }
+/* --- DEUX GRANDES COLONNES --- */
+main {
+    max-width: 1250px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+}
+.col-left { flex: 1.1; display: flex; flex-direction: column; gap: 20px; }
+.col-right { flex: 0.9; display: flex; flex-direction: column; gap: 20px; position: sticky; top: 20px; }
 
-/* Blocs Majeurs */
-.supervision-block { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 20px; }
-.admin-section { width: 100%; scroll-margin-top: 130px; } /* Évite que le menu cache le titre du bloc lors du clic */
-.actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 15px; }
+/* --- SECTIONS EN MODE CASIER BLANC --- */
+.card {
+    background: #ffffff;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 22px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.04);
+}
+.card h2 {
+    color: #2c3e50;
+    font-size: 1.05em;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #f0f2f5;
+    padding-bottom: 8px;
+}
+.sub-form {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #e1e4e8;
+}
+.sub-form h3 {
+    font-size: 0.9em;
+    color: #555;
+    margin-bottom: 10px;
+}
 
-/* Sections standards */
-section { background: #16213e; border-radius: 8px; padding: 22px; border: 1px solid #222e50; }
-section h2 { color: #e94560; margin-bottom: 12px; border-bottom: 1px solid #0f3460; padding-bottom: 6px; font-size: 1.2em; }
-.section-desc { color: #aaa; font-size: 0.85em; margin-bottom: 15px; }
-.message { background: #0f3460; color: #4ecca3; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; }
+.message {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: bold;
+}
 
-/* --- FORMULAIRES --- */
-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8em; color: #aaa; font-weight: 600; }
-input, select { padding: 8px; border: 1px solid #0f3460; border-radius: 4px; background: #1a1a2e; color: #eee; width: 115px; font-size: 0.9em; }
-input:focus { border-color: #e94560; outline: none; }
-button { padding: 8px 15px; border: none; border-radius: 4px; color: #fff; cursor: pointer; font-weight: bold; font-size: 0.85em; }
+/* --- STRUCTURE DES LIGNES DES FORMULAIRES --- */
+form { display: flex; flex-direction: column; gap: 12px; }
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
-/* Boutons de couleur */
-.btn-primary { background: #0f3460; }
-.btn-success { background: #2ecc71; }
-.btn-warning { background: #e67e22; }
-.btn-danger { background: #e74c3c; width: 100%; padding: 10px; margin-top: 5px; }
-.danger-zone { border: 1px solid #ff7675; background: #221420; }
-.danger-zone h2 { color: #ff7675; border-bottom-color: #441a22; }
+label {
+    font-size: 0.85em;
+    color: #495057;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 110px;
+}
+input, select {
+    padding: 7px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #333;
+    font-size: 0.9em;
+}
+input:focus, select:focus {
+    border-color: #80bdff;
+    outline: none;
+}
 
-/* --- GRILLE INTERACTIVE (MAP) --- */
-.map-section { background: #11192e; text-align: center; }
-.waiting-msg { color: #aaa; padding: 40px; font-style: italic; text-align: center; }
-.grid-table { border-collapse: collapse; margin: 15px auto; background: #0f3460; border-radius: 4px; overflow: hidden; }
-.grid-cell { width: 38px; height: 38px; border: 1px solid #1a1a2e; text-align: center; vertical-align: middle; font-size: 16px; }
-.cell-base { background: #16213e; }
-.cell-semaphore { background: rgba(233, 69, 96, 0.2); border: 1px solid #e94560; }
-.cell-robot { background: rgba(78, 204, 163, 0.2); border: 1px solid #4ecca3; }
-.legend { display: flex; gap: 15px; justify-content: center; font-size: 0.85em; color: #aaa; margin-top: 10px; }
+/* --- BOUTONS --- */
+button {
+    padding: 9px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.88em;
+    transition: background 0.15s;
+}
+.btn-primary { background: #0056b3; color: white; }
+.btn-primary:hover { background: #004085; }
 
-/* --- BLOC RÉCAP (TABLEAU DE BORD) --- */
-.recap-section { display: flex; flex-direction: column; }
-.recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; flex: 1; }
-.recap-card { background: #0f3460; border-radius: 6px; padding: 15px 10px; text-align: center; border-left: 4px solid #e94560; display: flex; flex-direction: column; justify-content: center; }
-.recap-card h3 { font-size: 0.85em; color: #aaa; margin-bottom: 5px; }
-.recap-card .counter { font-size: 1.8em; font-weight: bold; color: #4ecca3; }
+.btn-warning { background: #e67e22; color: white; }
+.btn-warning:hover { background: #d35400; }
+
+.btn-danger { background: #dc3545; color: white; }
+.btn-danger:hover { background: #bd2130; }
+
+/* Boîte verte spéciale pour la mission (comme ton image d'exemple) */
+.mission-card { border: 1px solid #c3e6cb; }
+.mission-card h2 { color: #155724; border-bottom-color: #c3e6cb; }
+.btn-success { background: #2f853a; color: white; width: 100%; padding: 12px; font-size: 1em; }
+.btn-success:hover { background: #21612a; }
+
+/* --- UNE VRAIE GRILLE DE CELLULES SÉPARÉES --- */
+.map-card { text-align: center; }
+.waiting-msg { color: #888; padding: 40px; font-style: italic; text-align: center; }
+
+.grid-table {
+    border-collapse: separate;
+    border-spacing: 4px; /* Crée l'espace quadrillé entre les cases */
+    margin: 15px auto;
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #e1e4e8;
+}
+.grid-cell {
+    width: 42px;
+    height: 42px;
+    border: 1px solid #ced4da;
+    border-radius: 4px; /* Arrondit les coins de chaque case */
+    text-align: center;
+    vertical-align: middle;
+    font-size: 18px;
+    background: #ffffff;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.02);
+}
+.cell-base { background: #e9ecef; }
+.cell-semaphore { background: #ffeeba; border-color: #ffc107; }
+.cell-robot { background: #d4edda; border-color: #28a745; }
+.legend { display: flex; gap: 15px; justify-content: center; font-size: 0.85em; color: #666; margin-top: 10px; font-weight: bold; }
+
+/* --- BOITES DU RECAP --- */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.stat-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 12px 5px; text-align: center; }
+.stat-box h4 { font-size: 0.8em; color: #6c757d; margin-bottom: 3px; }
+.stat-box p { font-size: 1.6em; font-weight: bold; color: #2c3e50; }
