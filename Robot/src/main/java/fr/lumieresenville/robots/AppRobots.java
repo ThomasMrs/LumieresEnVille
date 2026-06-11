@@ -16,6 +16,7 @@ import java.util.Scanner;
 public class AppRobots {
 
     private static final String SERVEUR = "http://192.168.1.14:8000";
+    private static final String SERVEUR = "http://192.168.1.14:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
@@ -115,6 +116,7 @@ public class AppRobots {
         System.out.println("=== Missions Awaiting (" + missions.size() + ") ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
+            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
             System.out.println((i + 1) + " - " + mission.getNom()
                     + " | etat : " + mission.getEtat()
                     + " | equipe : " + mission.getTeam()
@@ -166,6 +168,8 @@ public class AppRobots {
                 + ", position=(" + robot.getX() + ", " + robot.getY() + ")");
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
+                + "&state=" + enc(etatServeur(robot.getEtat()))
+                + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
                 + "&state=" + enc(etatServeur(robot.getEtat()))
                 + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
                 + "&position_x=" + robot.getX()
@@ -237,6 +241,13 @@ public class AppRobots {
         } catch (Exception e) {
             return EtatRobot.AVAILABLE;
         }
+    }
+
+    // Le serveur attend "Available"/"Occupied"/"Disabled" (1re lettre majuscule, reste minuscule),
+    // alors que l'enum donne "AVAILABLE". On convertit avant l'envoi.
+    private static String etatServeur(EtatRobot etat) {
+        String n = etat.name();
+        return n.charAt(0) + n.substring(1).toLowerCase();
     }
 
     // Le serveur attend "Available"/"Occupied"/"Disabled" (1re lettre majuscule, reste minuscule),
