@@ -3,114 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumières en Ville</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; }
-        header { background: #16213e; padding: 20px; text-align: center; }
-        header h1 { color: #e94560; }
-        nav { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
-        nav a { color: #eee; text-decoration: none; padding: 8px 16px; background: #0f3460; border-radius: 5px; }
-        nav a:hover { background: #e94560; }
-        main { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-        .message { background: #0f3460; color: #4ecca3; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
-        section { background: #16213e; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        section h2 { color: #e94560; margin-bottom: 15px; border-bottom: 1px solid #0f3460; padding-bottom: 8px; }
-        form { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-        label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85em; color: #aaa; }
-        input { padding: 8px; border: 1px solid #0f3460; border-radius: 4px; background: #1a1a2e; color: #eee; width: 150px; }
-        button { padding: 8px 20px; border: none; border-radius: 4px; background: #e94560; color: #fff; cursor: pointer; font-weight: bold; }
-        button:hover { background: #c73e54; }
-        .info { color: #aaa; font-size: 0.9em; margin-top: 10px; }
-    </style>
+    <title>Console - Lumières en Ville</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <header>
-        <h1>Lumières en Ville</h1>
-        <nav>
-            <a href="/">Accueil</a>
-            <a href="/docs">API Docs</a>
-        </nav>
+        <h1>Lumières en Ville - Console d'Administration</h1>
     </header>
+
     <main>
-        <!--MESSAGE-->
+        <div class="col-forms">
+            <section>
+                <h2>1. Configuration Globale</h2>
+                <form action="/ihm/add_config" method="get">
+                    <label>Largeur (X) <input type="number" name="nombre_x" required></label>
+                    <label>Hauteur (Y) <input type="number" name="nombre_y" required></label>
+                    <label>Sémaphores <input type="number" name="nombre_semaphore" required></label>
+                    <label>Robots <input type="number" name="nombre_robot" required></label>
+                    <button type="submit">Configurer</button>
+                </form>
+            </section>
 
-        <section>
-            <h2>Configuration</h2>
-            <form action="/ihm/add_config" method="get">
-                <label>Nombre X <input type="number" name="nombre_x" required></label>
-                <label>Nombre Y <input type="number" name="nombre_y" required></label>
-                <label>Semaphores <input type="number" name="nombre_semaphore" required></label>
-                <label>Robots <input type="number" name="nombre_robot" required></label>
-                <button type="submit">Créer config</button>
-            </form>
-        </section>
+            <section>
+                <h2>2. Déployer une entité</h2>
+                <form action="/ihm/add_semaphore" method="get" style="margin-bottom: 15px;">
+                    <label>Nom Sémaphore <input type="text" name="name" required></label>
+                    <label>Durée <input type="number" name="duration" required></label>
+                    <label>Type <input type="text" name="type" required></label>
+                    <label>Coord X <input type="number" name="coord_x" required></label>
+                    <label>Coord Y <input type="number" name="coord_y" required></label>
+                    <button type="submit">Ajouter Sémaphore</button>
+                </form>
+                <form action="/ihm/add_robot" method="get">
+                    <label>Nom Robot <input type="text" name="name"></label>
+                    <label>Vitesse <input type="number" name="speed"></label>
+                    <label>Position X <input type="number" name="position_x"></label>
+                    <label>Position Y <input type="number" name="position_y"></label>
+                    <button type="submit">Ajouter Robot</button>
+                </form>
+            </section>
 
-        <section>
-            <h2>Grille</h2>
-            <form action="/ihm/create_grille" method="get">
-                <label>Nom <input type="text" name="name" required></label>
-                <button type="submit">Générer la grille</button>
-            </form>
-            <p class="info">Crée la grille à partir de la config (nombre_x × nombre_y)</p>
-        </section>
+            <section>
+                <h2>3. Règles et Systèmes</h2>
+                <form action="/ihm/add_team" method="get" style="margin-bottom: 15px;">
+                    <label>Nom Équipe <input type="text" name="name" required></label>
+                    <label>IP Console <input type="text" name="ip"></label>
+                    <label>Autorisée ? <input type="checkbox" name="allowed" value="true" style="width:auto;"></label>
+                    <button type="submit">Autoriser Console</button>
+                </form>
+                <form action="/ihm/add_shape" method="get">
+                    <label>Nom Forme <input type="text" name="name" required></label>
+                    <label>Matrice Image <input type="text" name="image" required></label>
+                    <button type="submit">Ajouter Forme</button>
+                </form>
+            </section>
 
-        <section>
-            <h2>Ajouter un sémaphore</h2>
-            <form action="/ihm/add_semaphore" method="get">
-                <label>Nom <input type="text" name="name" required></label>
-                <label>Durée <input type="number" name="duration" required></label>
-                <label>Type <input type="text" name="type" required></label>
-                <label>Coord X <input type="number" name="coord_x" required></label>
-                <label>Coord Y <input type="number" name="coord_y" required></label>
-                <button type="submit">Ajouter</button>
-            </form>
-        </section>
+            <section>
+                <h2>4. Lancer une mission manuellement</h2>
+                <form action="/ihm/add_mission" method="get">
+                    <label>Sémaphore ID <input type="text" name="semaphore_id" required></label>
+                    <label>Shape ID <input type="text" name="shape_id" required></label>
+                    <label>Équipe <input type="text" name="team" required></label>
+                    <button type="submit">Déclencher</button>
+                </form>
+            </section>
+        </div>
 
-        <section>
-            <h2>Ajouter un robot</h2>
-            <form action="/ihm/add_robot" method="get">
-                <label>Nom <input type="text" name="name"></label>
-                <label>Vitesse <input type="number" name="speed"></label>
-                <label>Position X <input type="number" name="position_x"></label>
-                <label>Position Y <input type="number" name="position_y"></label>
-                <button type="submit">Ajouter</button>
-            </form>
-        </section>
-
-        <section>
-            <h2>Ajouter une équipe</h2>
-            <form action="/ihm/add_team" method="get">
-                <label>Nom <input type="text" name="name" required></label>
-                <label>IP <input type="text" name="ip"></label>
-                <label>Autorisée <input type="checkbox" name="allowed" value="true" style="width:auto;"></label>
-                <button type="submit">Ajouter</button>
-            </form>
-        </section>
-
-        <section>
-            <h2>Ajouter une forme</h2>
-            <form action="/ihm/add_shape" method="get">
-                <label>Nom <input type="text" name="name" required></label>
-                <label>Image <input type="text" name="image" required></label>
-                <button type="submit">Ajouter</button>
-            </form>
-        </section>
-
-        <section>
-            <h2>Ajouter une mission</h2>
-            <form action="/ihm/add_mission" method="get">
-                <label>Nom <input type="text" name="name"></label>
-                <label>Semaphore ID <input type="text" name="semaphore_id" required></label>
-                <label>Shape ID <input type="text" name="shape_id" required></label>
-                <label>Équipe <input type="text" name="team" required></label>
-                <label>Robot ID <input type="text" name="robot_id"></label>
-                <label>Début <input type="date" name="start_date"></label>
-                <label>Fin <input type="date" name="end_date"></label>
-                <label>Temps <input type="text" name="time"></label>
-                <button type="submit">Ajouter</button>
-            </form>
-        </section>
+        <div class="col-map">
+            <h2>🗺️ Carte en Temps Réel</h2>
+            <div id="grid-container" class="waiting-msg">
+                En attente de la configuration...
+            </div>
+            <div class="legend">
+                <span>🏠 Base (0,0)</span>
+                <span>🚦 Sémaphore</span>
+                <span>🤖 Robot</span>
+            </div>
+        </div>
     </main>
+
+    <script>
+        function rafraichirCarte() {
+            Promise.all([
+                fetch('/api/get_config').then(r => r.json()),
+                fetch('/api/list_semaphore').then(r => r.json()),
+                fetch('/api/list_robots').then(r => r.json())
+            ])
+            .then(([config, semaphores, robots]) => {
+                if (!config || !config.nombre_x) {
+                    document.getElementById('grid-container').innerHTML = "Veuillez d'abord créer la configuration globale (Étape 1).";
+                    return;
+                }
+
+                let html = '<table class="grid-table">';
+                for (let y = 0; y < config.nombre_y; y++) {
+                    html += '<tr>';
+                    for (let x = 0; x < config.nombre_x; x++) {
+                        let classCell = "grid-cell";
+                        let icone = "";
+
+                        if (semaphores && semaphores.find(s => s.coord_x == x && s.coord_y == y)) {
+                            classCell += " cell-semaphore";
+                            icone = "🚦";
+                        }
+                        
+                        if (robots && robots.find(r => r.position_x == x && r.position_y == y)) {
+                            classCell += " cell-robot";
+                            icone = "🤖";
+                        }
+
+                        if (x === 0 && y === 0 && icone === "") {
+                            classCell += " cell-base";
+                            icone = "🏠";
+                        }
+
+                        html += `<td class="${classCell}" title="X:${x}, Y:${y}">${icone}</td>`;
+                    }
+                    html += '</tr>';
+                }
+                html += '</table>';
+                document.getElementById('grid-container').innerHTML = html;
+            })
+            .catch(e => console.log("Erreur chargement carte", e));
+        }
+
+        setInterval(rafraichirCarte, 1000);
+        rafraichirCarte();
+    </script>
 </body>
 </html>

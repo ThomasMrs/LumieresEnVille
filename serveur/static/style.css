@@ -1,0 +1,163 @@
+/* --- STYLES GENERAUX --- */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body { 
+    font-family: Arial, sans-serif; 
+    background: #1a1a2e; 
+    color: #eee; 
+}
+
+header { 
+    background: #16213e; 
+    padding: 20px; 
+    text-align: center; 
+    border-bottom: 3px solid #e94560; 
+}
+
+header h1 { 
+    color: #e94560; 
+}
+
+/* --- DISPOSITION EN COLONNES (LAYOUT) --- */
+main { 
+    max-width: 1200px; 
+    margin: 30px auto; 
+    padding: 0 20px; 
+    display: flex; 
+    gap: 20px; 
+    align-items: flex-start; 
+}
+
+/* Colonne de gauche (Formulaires) */
+.col-forms { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+}
+
+/* Colonne de droite (La Carte) */
+.col-map { 
+    flex: 1; 
+    background: #16213e; 
+    border-radius: 8px; 
+    padding: 20px; 
+    position: sticky; 
+    top: 20px;
+}
+
+/* --- FORMULAIRES & SECTIONS --- */
+.message { 
+    background: #0f3460; 
+    color: #4ecca3; 
+    padding: 12px; 
+    border-radius: 6px; 
+    margin-bottom: 20px; 
+    text-align: center; 
+    font-weight: bold; 
+}
+
+section { 
+    background: #16213e; 
+    border-radius: 8px; 
+    padding: 20px; 
+}
+
+section h2, .col-map h2 { 
+    color: #e94560; 
+    margin-bottom: 15px; 
+    border-bottom: 1px solid #0f3460; 
+    padding-bottom: 8px; 
+    font-size: 1.2em; 
+}
+
+form { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 10px; 
+    align-items: end; 
+}
+
+label { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    font-size: 0.85em; 
+    color: #aaa; 
+}
+
+input { 
+    padding: 8px; 
+    border: 1px solid #0f3460; 
+    border-radius: 4px; 
+    background: #1a1a2e; 
+    color: #eee; 
+    width: 130px; 
+}
+
+button { 
+    padding: 8px 15px; 
+    border: none; 
+    border-radius: 4px; 
+    background: #e94560; 
+    color: #fff; 
+    cursor: pointer; 
+    font-weight: bold; 
+    transition: 0.2s;
+}
+
+button:hover { 
+    background: #c73e54; 
+}
+
+/* --- GRILLE INTERACTIVE (CARTE) --- */
+#grid-container {
+    margin-top: 20px;
+}
+
+.waiting-msg {
+    text-align: center; 
+    color: #aaa; 
+}
+
+.grid-table { 
+    border-collapse: collapse; 
+    margin: 20px auto; 
+    background: #0f3460; 
+    border-radius: 4px; 
+    overflow: hidden; 
+}
+
+.grid-cell { 
+    width: 35px; 
+    height: 35px; 
+    border: 1px solid #1a1a2e; 
+    text-align: center; 
+    vertical-align: middle; 
+    font-size: 16px; 
+}
+
+.cell-base { 
+    background: #16213e; 
+}
+
+.cell-semaphore { 
+    background: #e94560; 
+}
+
+.cell-robot { 
+    background: #4ecca3; 
+}
+
+.legend { 
+    margin-top: 15px; 
+    display: flex; 
+    gap: 15px; 
+    justify-content: center; 
+    font-size: 0.9em; 
+    color: #aaa;
+}
