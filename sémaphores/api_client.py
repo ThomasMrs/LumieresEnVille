@@ -8,26 +8,20 @@ def get_missions():
         return req.json() if req.status_code == 200 else []
     except: return []
 
-def get_semaphore(id):
+def get_shape(shape_id):
     try:
-        req = requests.get(f"{URL_BASE}/semaphore/{id}", timeout=2)
+        req = requests.get(f"{URL_BASE}/shape/{shape_id}", timeout=2)
         return req.json() if req.status_code == 200 else {}
     except: return {}
 
-def get_robot(id):
+def put_semaphore(semaphore_id, state):
     try:
-        req = requests.get(f"{URL_BASE}/robot/{id}", timeout=2)
-        if req.status_code == 200:
-            return req.json().get("state") == "Occupied"
-        return False
-    except: return False
-
-def put_semaphore(id, state):
-    try:
-        requests.put(f"{URL_BASE}/update_semaphore/{id}?state={state}", timeout=2)
+        url = f"{URL_BASE}/update_semaphore/{semaphore_id}?state={state}"
+        requests.put(url, timeout=2)
     except: pass
 
-def put_mission_state(id, state):
+def put_mission_state(mission_id, state):
     try:
-        requests.put(f"{URL_BASE}/update_mission/{id}?state={state}", timeout=2)
+        url = f"{URL_BASE}/update_mission/{mission_id}?state={state}"
+        requests.put(url, timeout=2)
     except: pass
