@@ -161,7 +161,7 @@ public class AppRobots {
         return null;
     }
 
-    // Affiche les missions Awaiting et demande d'en choisir une au clavier (0 pour quitter).
+    // Affiche les missions Awaiting encore libres et demande d'en choisir une au clavier.
     private static Mission choisirMissionDansTerminal() throws Exception {
         List<Mission> missions = lireMissionsAwaiting();
         if (missions.isEmpty()) {
@@ -172,7 +172,6 @@ public class AppRobots {
         System.out.println("=== Missions Awaiting (" + missions.size() + ") ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
-            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
             System.out.println((i + 1) + " - " + mission.getNom()
                     + " | etat : " + mission.getEtat()
                     + " | equipe : " + mission.getTeam()
@@ -198,11 +197,17 @@ public class AppRobots {
     private static List<Mission> lireMissionsAwaiting() throws Exception {
         List<Mission> missionsAwaiting = new ArrayList<>();
         for (Mission mission : lireMissions()) {
-            if (mission.getEtat().equalsIgnoreCase("Awaiting")) {
+            if (missionDisponiblePourRobot(mission)) {
                 missionsAwaiting.add(mission);
             }
         }
         return missionsAwaiting;
+    }
+
+    private static boolean missionDisponiblePourRobot(Mission mission) {
+        return mission.getEtat().equalsIgnoreCase("Awaiting")
+                && mission.getRobotId().isBlank()
+                && mission.getFinMission().isBlank();
     }
 
     private static List<Mission> lireMissions() throws Exception {
