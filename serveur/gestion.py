@@ -10,8 +10,8 @@ def valider_id(table, id_verifier):
     conn.close()
     return resultat is not None
 
-ETATS_SEMAPHORE_ROBOT = {"Available", "Occupied", "Disabled"}
-ETATS_MISSION = {"Pending", "In progress", "Done"}
+ETATS_SEMAPHORE_ROBOT = {"Available", "Occupied","Pending", "Disabled"}
+ETATS_MISSION = {"Available","Pending", "In progress", "Done"}
 
 def valider_etat(state, type_entite):
     """Verifie que l'etat est valide.
@@ -23,3 +23,5 @@ def valider_etat(state, type_entite):
     elif type_entite == "mission":
         return state in ETATS_MISSION
     return False
+
+# state de szmaphiore et robot dans mission

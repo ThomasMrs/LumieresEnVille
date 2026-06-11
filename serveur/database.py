@@ -61,13 +61,22 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS mission (
     FOREIGN KEY (team)         REFERENCES team(name)
 )""")
 
-# Table config (une seule ligne possible, id = 1)
+# Table config
 cursor.execute("""CREATE TABLE IF NOT EXISTS config (
-    id              INTEGER PRIMARY KEY CHECK (id = 1),
-    grille          TEXT NOT NULL,
-    nbr_semaphore   INTEGER NOT NULL,
-    nbr_robot       INTEGER NOT NULL
+    id                 TEXT PRIMARY KEY,
+    grille_id          TEXT,
+    grille_name        TEXT,
+    nombre_x           INTEGER,
+    nombre_y           INTEGER,
+    nombre_semaphore   INTEGER NOT NULL,
+    nombre_robot       INTEGER NOT NULL
 )""")
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS segment (
+    id       TEXT PRIMARY KEY,
+    x        INTEGER NOT NULL,
+    y        INTEGER NOT NULL,
+    contenu  TEXT DEFAULT NULL
+)""")
 conn.commit()
 conn.close()
