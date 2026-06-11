@@ -48,8 +48,8 @@ public class AppRobots {
     // Cycle d'une mission :
     //  - le robot se TELEPORTE sur les coordonnees du semaphore et passe Occupied,
     //  - la mission passe "In progress" (robot_id + start_date),
-    //  - le robot REVEILLE le semaphore (-> "Occupied"),
-    //  - quand le semaphore n'est plus Occupied : mission "Done" + end_date, robot Available.
+    //  - le robot REVEILLE le semaphore (-> "Pending"),
+    //  - quand le semaphore n'est plus Pending/Occupied : mission "Done" + end_date, robot Available.
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
 
@@ -77,15 +77,15 @@ public class AppRobots {
     }
 
     // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
-    // tout en passant state="Occupied". Le robot ne fait que l'allumer (cahier des charges).
+    // tout en passant state="Pending". Le robot demande au semaphore de commencer.
     private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
         String url = "/api/update_semaphore/" + enc(id)
                 + "?name=" + enc(champ(semaphoreJson, "name"))
-                + "&state=Occupied"
+                + "&state=Pending"
                 + "&duration=" + (int) nombre(semaphoreJson, "duration")
                 + "&type=" + enc(champ(semaphoreJson, "type"))
-                + "&coord_x=" + (int) nombre(semaphoreJson, "coord_x")
-                + "&coord_y=" + (int) nombre(semaphoreJson, "coord_y");
+                + "&coord_x=" + (float) nombre(semaphoreJson, "coord_x")
+                + "&coord_y=" + (float) nombre(semaphoreJson, "coord_y");
         return put(url);
     }
 
@@ -99,11 +99,11 @@ public class AppRobots {
                 String etat = champ(semaphoreJson, "state");
                 if (etat.isBlank()) {
                     System.out.println("Etat semaphore inconnu, attente...");
-                } else if (!etat.equalsIgnoreCase("Occupied")) {
+                } else if (!etat.equalsIgnoreCase("Pending") && !etat.equalsIgnoreCase("Occupied")) {
                     System.out.println("Semaphore termine : etat=" + etat);
                     return;
                 } else {
-                    System.out.println("Semaphore encore Occupied, attente...");
+                    System.out.println("Semaphore encore " + etat + ", attente...");
                 }
             }
 
