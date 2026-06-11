@@ -23,6 +23,9 @@ public class AppRobots {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static void main(String[] args) throws Exception {
+        ApercuGrilleRobots.lancer();
+        System.out.println("Apercu graphique de la grille lance.");
+
         if (get("/api/list_robots").startsWith("ERREUR")) {
             System.out.println("Serveur injoignable (" + SERVEUR + ").");
             System.out.println("Demarre le serveur FastAPI, puis relance.");

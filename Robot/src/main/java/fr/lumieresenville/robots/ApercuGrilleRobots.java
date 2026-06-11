@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.RenderingHints;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -29,10 +30,19 @@ public class ApercuGrilleRobots {
     private static final HttpClient HTTP = HttpClient.newHttpClient();
 
     public static void main(String[] args) {
+        lancer();
+    }
+
+    public static void lancer() {
+        if (GraphicsEnvironment.isHeadless()) {
+            System.out.println("Apercu graphique indisponible : environnement sans interface graphique.");
+            return;
+        }
+
         SwingUtilities.invokeLater(() -> {
             GrillePanel panel = new GrillePanel();
             JFrame fenetre = new JFrame("Apercu temporaire - Robots et grille");
-            fenetre.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            fenetre.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             fenetre.setContentPane(panel);
             fenetre.pack();
             fenetre.setLocationRelativeTo(null);
