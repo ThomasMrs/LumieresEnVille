@@ -22,9 +22,12 @@ def creer_grille(name):
     segments = []
     for y in range(nombre_y):
         for x in range(nombre_x):
-            segments.append((str(uuid4()), x, y, None))
+            if x + 1 < nombre_x:
+                segments.append((str(uuid4()), x, y, x + 1, y))
+            if y + 1 < nombre_y:
+                segments.append((str(uuid4()), x, y, x, y + 1))
     cursor.executemany(
-        "INSERT INTO segment (id, x, y, contenu) VALUES (?, ?, ?, ?)",
+        "INSERT INTO segment (id, coord_a_x, coord_a_y, coord_b_x, coord_b_y) VALUES (?, ?, ?, ?, ?)",
         segments,
     )
     conn.commit()
@@ -36,18 +39,32 @@ def lire_grille():
     config = lire_config()
     if not config or not config.get("grille_id"):
         return None
+    nombre_x = config["nombre_x"]
     nombre_y = config["nombre_y"]
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM segment ORDER BY y, x")
+    cursor.execute("SELECT * FROM segment ORDER BY coord_a_y, coord_a_x")
     segments = [dict(row) for row in cursor.fetchall()]
+    cursor.execute("SELECT * FROM semaphore")
+    semaphores = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    grille = []
+    noeuds = []
     for y in range(nombre_y):
-        ligne = [s for s in segments if s["y"] == y]
-        grille.append(ligne)
-    return {"grille_id": config["grille_id"], "name": config["grille_name"], "grille": grille}
+        for x in range(nombre_x):
+            noeud = {"x": x, "y": y, "semaphore": None}
+            for s in semaphores:
+                if s["coord_x"] == x and s["coord_y"] == y:
+                    noeud["semaphore"] = s
+            noeuds.append(noeud)
+    return {
+        "grille_id": config["grille_id"],
+        "name": config["grille_name"],
+        "nombre_x": nombre_x,
+        "nombre_y": nombre_y,
+        "noeuds": noeuds,
+        "segments": segments,
+    }
 
 # =======================
 # Route

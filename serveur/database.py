@@ -50,7 +50,7 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS mission (
     semaphore_id  TEXT,
     robot_id      TEXT,
     shape_id      TEXT,
-    state         TEXT DEFAULT 'Pending',
+    state         TEXT DEFAULT 'Awaiting',
     start_date    TEXT DEFAULT '',
     end_date      TEXT DEFAULT '',
     team          TEXT DEFAULT '',
@@ -73,10 +73,12 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS config (
 )""")
 
 cursor.execute("""CREATE TABLE IF NOT EXISTS segment (
-    id       TEXT PRIMARY KEY,
-    x        INTEGER NOT NULL,
-    y        INTEGER NOT NULL,
-    contenu  TEXT DEFAULT NULL
+    id         TEXT PRIMARY KEY,
+    coord_a_x  INTEGER NOT NULL,
+    coord_a_y  INTEGER NOT NULL,
+    coord_b_x  INTEGER NOT NULL,
+    coord_b_y  INTEGER NOT NULL,
+    UNIQUE (coord_a_x, coord_a_y, coord_b_x, coord_b_y)
 )""")
 conn.commit()
 conn.close()

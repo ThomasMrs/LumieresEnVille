@@ -3,7 +3,7 @@ from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from database import DB_PATH
-from gestion import valider_id, valider_etat
+from gestion import valider_id, valider_etat, valider_type_semaphore, valider_coordonnees
 
 router = APIRouter(prefix="/api", tags=["Semaphore"])
 
@@ -70,6 +70,10 @@ def read_one_semaphore(id: str):
 
 @router.post("/add_semaphore")
 def add_semaphore(name: str, duration: int, type: str, coord_x: int, coord_y: int):
+    if not valider_type_semaphore(type):
+        return HTMLResponse(status_code=400, content="400 - Type invalide (Ascii | Helice | Tracant)")
+    if not valider_coordonnees(coord_x, coord_y):
+        return HTMLResponse(status_code=400, content="400 - Coordonnees hors limites de la grille")
     return ajouter_semaphore(name, duration, type, coord_x, coord_y)
 
 
@@ -81,6 +85,13 @@ def update_semaphore(id: str, name: str | None = None, state: str | None = None,
         return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if state is not None and not valider_etat(state, "semaphore"):
         return HTMLResponse(status_code=400, content="Etat invalide (Available | Occupied | Disabled)")
+    if type is not None and not valider_type_semaphore(type):
+        return HTMLResponse(status_code=400, content="400 - Type invalide (Ascii | Helice | Tracant)")
+    if coord_x is not None or coord_y is not None:
+        check_x = coord_x if coord_x is not None else 0
+        check_y = coord_y if coord_y is not None else 0
+        if not valider_coordonnees(check_x, check_y):
+            return HTMLResponse(status_code=400, content="400 - Coordonnees hors limites de la grille")
     champs = {}
     if name is not None:
         champs["name"] = name
