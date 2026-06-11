@@ -8,7 +8,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,68 +28,59 @@ public class AppRobots {
             return;
         }
 
-        List<Robot> robots = lireRobotsDuServeur();
-
-        if (robots.isEmpty()) {
-            System.out.println("Aucun robot trouve sur le serveur.");
-        } else {
-            for (Robot robot : robots) {
-                System.out.println("Robot trouve : " + robot);
-            }
-        }
-
-        Robot robotDisponible = chercherRobotDisponible(robots);
-        Mission mission = choisirMissionDansTerminal();
-
-        if (mission == null) {
-            System.out.println("Aucune mission disponible.");
-        } else if (robotDisponible == null) {
-            System.out.println("Aucun robot disponible.");
-        } else {
-            faireLaMission(robotDisponible, mission);
-        }
-
+        // Boucle : on affiche la liste des missions (relue a chaque tour), tu en choisis une,
+        // le robot l'execute, puis on recommence (0 pour quitter).
         while (true) {
-            System.out.println(LocalTime.now().withNano(0) + " robots   : " + get("/api/list_robots"));
-            System.out.println(LocalTime.now().withNano(0) + " missions : " + get("/api/list_missions"));
-            Thread.sleep(5000);
+            Robot robotDisponible = chercherRobotDisponible(lireRobotsDuServeur());
+            Mission mission = choisirMissionDansTerminal();
+
+            if (mission == null) {
+                System.out.println("Au revoir.");
+                break;
+            } else if (robotDisponible == null) {
+                System.out.println("Aucun robot disponible.");
+            } else {
+                faireLaMission(robotDisponible, mission);
+            }
         }
     }
 
-    // Deroulement d'une mission : robot -> OCCUPIED, mission -> "In progress",
-    // le robot REVEILLE le semaphore (-> "Occupied"), puis apres 2 s mission -> "Done"
-    // et robot -> AVAILABLE. Le semaphore se rendort tout seul de son cote.
+    // Cycle d'une mission :
+    //  - le robot reclame la mission (mission -> Pending_robot),
+    //  - il recupere les coordonnees du semaphore et s'y teleporte,
+    //  - quand il est arrive, il passe Occupied,
+    //  - il signale l'arrivee au semaphore (mission -> Pending_semaphore),
+    //  - il rentre a la base : robot Available et position (0, 0).
     private static void faireLaMission(Robot robot, Mission mission) throws Exception {
         System.out.println("Mission choisie : " + mission);
+
+        mission.prendreEnChargeParRobot(robot.getId(), maintenant());
+        System.out.println("Mission reclamee par le robot.");
+        System.out.println("PUT mission    : " + modifierMission(mission));
 
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
         System.out.println("Semaphore lie   : " + semaphoreJson);
 
-        mission.demarrer(robot.getId(), maintenant());
+        // Le robot se teleporte sur les coordonnees (x, y) du semaphore
+        double coordX = nombre(semaphoreJson, "coord_x");
+        double coordY = nombre(semaphoreJson, "coord_y");
+        robot.setPosition(coordX, coordY);
+
+        System.out.println("Robot teleporte -> (" + (int) coordX + ", " + (int) coordY + ")");
+        System.out.println("PUT robot      : " + modifierRobot(robot));
+
         robot.setEtat(EtatRobot.OCCUPIED);
+        System.out.println("Robot arrive, passage en Occupied.");
         System.out.println("PUT robot      : " + modifierRobot(robot));
+
+        mission.signalerArriveeSemaphore();
+        System.out.println("Mission transmise au semaphore.");
         System.out.println("PUT mission    : " + modifierMission(mission));
-        System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
 
-        Thread.sleep(2000);
-
-        mission.terminer(maintenant());
         robot.setEtat(EtatRobot.AVAILABLE);
-        System.out.println("PUT mission    : " + modifierMission(mission));
+        robot.setPosition(0, 0);
+        System.out.println("Robot retourne a la base -> (0, 0)");
         System.out.println("PUT robot      : " + modifierRobot(robot));
-    }
-
-    // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
-    // tout en passant state="Occupied". Le robot ne fait que l'allumer (cahier des charges).
-    private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
-        String url = "/api/update_semaphore/" + enc(id)
-                + "?name=" + enc(champ(semaphoreJson, "name"))
-                + "&state=Occupied"
-                + "&duration=" + (int) nombre(semaphoreJson, "duration")
-                + "&type=" + enc(champ(semaphoreJson, "type"))
-                + "&coord_x=" + (int) nombre(semaphoreJson, "coord_x")
-                + "&coord_y=" + (int) nombre(semaphoreJson, "coord_y");
-        return put(url);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -114,27 +104,29 @@ public class AppRobots {
         return null;
     }
 
+    // Affiche les missions Awaiting et demande d'en choisir une au clavier (0 pour quitter).
     private static Mission choisirMissionDansTerminal() throws Exception {
-        List<Mission> missions = lireMissions();
+        List<Mission> missions = lireMissionsAwaiting();
         if (missions.isEmpty()) {
+            System.out.println("Aucune mission Awaiting disponible.");
             return null;
         }
 
-        System.out.println("=== Missions (" + missions.size() + ") ===");
+        System.out.println("=== Missions Awaiting (" + missions.size() + ") ===");
         for (int i = 0; i < missions.size(); i++) {
             Mission mission = missions.get(i);
-            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
             System.out.println((i + 1) + " - " + mission.getNom()
                     + " | etat : " + mission.getEtat()
-                    + " | " + libre
-                    + " | equipe : " + mission.getTeam());
+                    + " | equipe : " + mission.getTeam()
+                    + " | duree : " + mission.getTempsMission());
         }
 
         while (true) {
-            System.out.print("Choisis une mission (1 a " + missions.size() + ") : ");
+            System.out.print("Choisis une mission (1 a " + missions.size() + ", 0 pour quitter) : ");
             String reponse = CLAVIER.nextLine();
             try {
                 int numero = Integer.parseInt(reponse);
+                if (numero == 0) return null;
                 if (numero >= 1 && numero <= missions.size()) {
                     return missions.get(numero - 1);
                 }
@@ -145,18 +137,33 @@ public class AppRobots {
         }
     }
 
+    private static List<Mission> lireMissionsAwaiting() throws Exception {
+        List<Mission> missionsAwaiting = new ArrayList<>();
+        for (Mission mission : lireMissions()) {
+            if (mission.getEtat().equalsIgnoreCase("Awaiting")) {
+                missionsAwaiting.add(mission);
+            }
+        }
+        return missionsAwaiting;
+    }
+
     private static List<Mission> lireMissions() throws Exception {
         List<Mission> missions = new ArrayList<>();
         for (String objet : objets(get("/api/list_missions"))) {
             missions.add(new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
                     champ(objet, "robot_id"), champ(objet, "state"),
-                    champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
+                    champ(objet, "start_date"), champ(objet, "end_date"),
+                    champ(objet, "team"), champ(objet, "time")));
         }
         return missions;
     }
 
     private static String modifierRobot(Robot robot) throws Exception {
+        System.out.println("Changement robot -> id=" + robot.getId()
+                + ", state=" + etatServeur(robot.getEtat())
+                + ", speed=" + (int) Math.round(robot.getVitesse())
+                + ", position=(" + robot.getX() + ", " + robot.getY() + ")");
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
@@ -167,6 +174,12 @@ public class AppRobots {
     }
 
     private static String modifierMission(Mission mission) throws Exception {
+        System.out.println("Changement mission -> id=" + mission.getId()
+                + ", robot_id=" + mission.getRobotId()
+                + ", state=" + mission.getEtat()
+                + ", start_date=" + mission.getDebutMission()
+                + ", end_date=" + mission.getFinMission()
+                + ", time=" + mission.getTempsMission());
         String url = "/api/update_mission/" + enc(mission.getId())
                 + "?name=" + enc(mission.getNom())
                 + "&semaphore_id=" + enc(mission.getSemaphoreId())
@@ -174,7 +187,8 @@ public class AppRobots {
                 + "&state=" + enc(mission.getEtat())
                 + "&start_date=" + enc(mission.getDebutMission())
                 + "&end_date=" + enc(mission.getFinMission())
-                + "&team=" + enc(mission.getTeam());
+                + "&team=" + enc(mission.getTeam())
+                + "&time=" + enc(mission.getTempsMission());
         return put(url);
     }
 
@@ -240,23 +254,39 @@ public class AppRobots {
         return requete("PUT", chemin);
     }
 
+    private static String post(String chemin) throws Exception {
+        return requete("POST", chemin);
+    }
+
     // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
     // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
     private static String requete(String methode, String chemin) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(SERVEUR + chemin))
-                .timeout(Duration.ofSeconds(4));
-        if (methode.equals("GET")) {
-            builder.GET();
-        } else if (methode.equals("POST")) {
-            builder.POST(HttpRequest.BodyPublishers.noBody());
-        } else if (methode.equals("PUT")) {
-            builder.PUT(HttpRequest.BodyPublishers.noBody());
-        } else if (methode.equals("DELETE")) {
-            builder.DELETE();
-        }
+        String urlComplete = SERVEUR + chemin;
+        System.out.println();
+        System.out.println("----- HTTP " + methode + " -----");
+        System.out.println("URL     : " + urlComplete);
+        System.out.println("Chemin  : " + chemin);
+        System.out.println("Body    : <vide>");
+
         try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(urlComplete))
+                    .timeout(Duration.ofSeconds(4));
+            if (methode.equals("GET")) {
+                builder.GET();
+            } else if (methode.equals("POST")) {
+                builder.POST(HttpRequest.BodyPublishers.noBody());
+            } else if (methode.equals("PUT")) {
+                builder.PUT(HttpRequest.BodyPublishers.noBody());
+            } else if (methode.equals("DELETE")) {
+                builder.DELETE();
+            }
+
             HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            System.out.println("Status  : " + reponse.statusCode());
+            System.out.println("Reponse : " + (reponse.body() == null ? "<null>" : reponse.body()));
+            System.out.println("----------------------");
+
             if (reponse.statusCode() != 200) {
                 return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
             }
@@ -265,6 +295,8 @@ public class AppRobots {
             }
             return reponse.body();
         } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+            System.out.println("Erreur  : " + e.getMessage());
+            System.out.println("----------------------");
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
     }

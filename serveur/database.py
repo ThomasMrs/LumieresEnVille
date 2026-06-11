@@ -22,7 +22,7 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS semaphore (
 cursor.execute("""CREATE TABLE IF NOT EXISTS robot (
     id          TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
-    state       TEXT NOT NULL DEFAULT 'Available',
+    state       TEXT NOT NULL DEFAULT 'Awaiting',
     speed       REAL NOT NULL DEFAULT 1.0,
     position_x  REAL NOT NULL DEFAULT 0.0,
     position_y  REAL NOT NULL DEFAULT 0.0
@@ -50,7 +50,7 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS mission (
     semaphore_id  TEXT,
     robot_id      TEXT,
     shape_id      TEXT,
-    state         TEXT DEFAULT 'Pending',
+    state         TEXT DEFAULT 'Awaiting',
     start_date    TEXT DEFAULT '',
     end_date      TEXT DEFAULT '',
     team          TEXT DEFAULT '',
@@ -61,13 +61,24 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS mission (
     FOREIGN KEY (team)         REFERENCES team(name)
 )""")
 
-# Table config (une seule ligne possible, id = 1)
+# Table config
 cursor.execute("""CREATE TABLE IF NOT EXISTS config (
-    id              INTEGER PRIMARY KEY CHECK (id = 1),
-    grille          TEXT NOT NULL,
-    nbr_semaphore   INTEGER NOT NULL,
-    nbr_robot       INTEGER NOT NULL
+    id                 TEXT PRIMARY KEY,
+    grille_id          TEXT,
+    grille_name        TEXT,
+    nombre_x           INTEGER,
+    nombre_y           INTEGER,
+    nombre_semaphore   INTEGER NOT NULL,
+    nombre_robot       INTEGER NOT NULL
 )""")
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS segment (
+    id         TEXT PRIMARY KEY,
+    coord_a_x  INTEGER NOT NULL,
+    coord_a_y  INTEGER NOT NULL,
+    coord_b_x  INTEGER NOT NULL,
+    coord_b_y  INTEGER NOT NULL,
+    UNIQUE (coord_a_x, coord_a_y, coord_b_x, coord_b_y)
+)""")
 conn.commit()
 conn.close()

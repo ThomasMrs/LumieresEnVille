@@ -65,11 +65,14 @@ def read_robots():
 
 @router.get("/robot/{id}")
 def read_one_robot(id: str):
+    if not id:
+        return HTMLResponse(status_code=400, content="400 - ID manquant")
     if not valider_id("robot", id):
-        return HTMLResponse(status_code=404, content="Robot introuvable")
+        return HTMLResponse(status_code=404, content="404 - Robot introuvable")
     for r in lire_robots():
         if r["id"] == id:
             return r
+    return HTMLResponse(status_code=500, content="500 - Erreur interne")
 
 
 @router.get("/robot/{id}/mission")
