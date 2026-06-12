@@ -1,114 +1,44 @@
 import tkinter as tk
-import time
+import math
 import os
 
-def lire_points_csv(fichier_csv):
-    """Lit un fichier CSV et retourne la liste des coordonnées (X, Y)"""
-    cibles = []
-    try:
-        with open(fichier_csv, 'r') as f:
-            lignes = f.readlines()
-            for ligne in lignes:
-                ligne = ligne.strip()
-                if not ligne or ';' not in ligne:
-                    continue
-                parties = ligne.split(';')
-                try:
-                    cibles.append((float(parties[1]), float(parties[2])))
-                except ValueError:
-                    continue
-    except FileNotFoundError:
-        print(f"ERREUR : Le fichier {fichier_csv} est introuvable.")
-    return cibles
-
-def simuler_table_tracante_csv(fichier_csv, fenetre_parente):
-    cibles = lire_points_csv(fichier_csv)
-    if not cibles or len(cibles) < 2:
+def simuler_table_tracante_csv(nom_fichier, root_parent):
+    """Lit un fichier CSV polaire (r;a;s) et le convertit en Cartésien pour affichage"""
+    if not os.path.exists(nom_fichier):
+        print(f"Erreur Table : Le fichier {nom_fichier} est introuvable.")
         return
 
-    # 1. Calcul des échelles
-    xs = [p[0] for p in cibles]
-    ys = [p[1] for p in cibles]
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
+    top = tk.Toplevel(root_parent)
+    top.title("Simulateur Table Traçante - Rendu Cartésien")
     
-    if max_x == min_x: max_x += 1
-    if max_y == min_y: max_y += 1
+    canvas = tk.Canvas(top, width=500, height=500, bg="white")
+    canvas.pack(padx=10, pady=10)
 
-    W, H = 400, 400
-    PAD = 40
+    cx, cy = 250, 250  # Centre de la table
+    x_prec, y_prec = None, None
 
-    def scale_x(x_val):
-        return PAD + (x_val - min_x) / (max_x - min_x) * (W - 2 * PAD)
-    
-    def scale_y(y_val):
-        return H - PAD - (y_val - min_y) / (max_y - min_y) * (H - 2 * PAD)
+    try:
+        with open(nom_fichier, "r") as f:
+            for ligne in f:
+                ligne = ligne.strip()
+                if not ligne or ligne.startswith("rayon") or ligne.startswith("Name"):
+                    continue
+                
+                parties = ligne.split(";")
+                if len(parties) >= 3:
+                    r = float(parties[0])
+                    # Conversion de l'angle du CSV en radians pour les fonctions mathématiques
+                    a = math.radians(float(parties[1]))
+                    stylo = int(parties[2])
 
-    # 2. Création de la fenêtre
-    top = tk.Toplevel(fenetre_parente)
-    top.title(f"Simulation Physique - {os.path.basename(fichier_csv)}")
-    top.configure(bg="#2d2d2d")
+                    # Formule de passage Polaire -> Cartésien
+                    x = cx + r * math.cos(a)
+                    y = cy + r * math.sin(a)
 
-    cv_draw = tk.Canvas(top, width=W, height=H, bg="white", highlightthickness=2, highlightbackground="blue")
-    cv_draw.pack(side=tk.LEFT, padx=10, pady=10)
-    cv_draw.create_text(W/2, 15, text="Tracé de la table", fill="black", font=("Arial", 12, "bold"))
+                    # Si le stylo est abaissé (1), on trace la ligne depuis le point précédent
+                    if stylo == 1 and x_prec is not None:
+                        canvas.create_line(x_prec, y_prec, x, y, fill="black", width=2)
 
-    cv_motor = tk.Canvas(top, width=W, height=H, bg="black", highlightthickness=2, highlightbackground="gray")
-    cv_motor.pack(side=tk.RIGHT, padx=10, pady=10)
-    cv_motor.create_text(W/2, 15, text="Tension Moteurs (Rouge=X, Vert=Y)", fill="white", font=("Arial", 10))
-    cv_motor.create_line(PAD, H/2, W-PAD, H/2, fill="gray", dash=(4, 4))
-
-    PAS = 0.5
-    total_etapes = 0
-    x_calc, y_calc = cibles[0]
-    for tx, ty in cibles[1:]:
-        dist_x, dist_y = tx - x_calc, ty - y_calc
-        total_etapes += max(int(abs(dist_x) / PAS), int(abs(dist_y) / PAS)) or 1
-        x_calc, y_calc = tx, ty
-
-    def scale_t(t_val):
-        return PAD + (t_val / total_etapes) * (W - 2 * PAD)
-    def scale_m(m_val):
-        return H/2 - m_val * 80
-
-    x, y = cibles[0]
-    t = 0
-    prev_x_draw, prev_y_draw = scale_x(x), scale_y(y)
-    prev_t, prev_m1, prev_m2 = scale_t(0), scale_m(0), scale_m(0)
-
-    for tx, ty in cibles[1:]:
-        distance_x = tx - x
-        distance_y = ty - y
-        
-        nb_etapes = max(int(abs(distance_x) / PAS), int(abs(distance_y) / PAS))
-        if nb_etapes == 0: nb_etapes = 1
-            
-        pas_x = distance_x / nb_etapes
-        pas_y = distance_y / nb_etapes
-
-        for i in range(nb_etapes):
-            t += 1
-            x += pas_x
-            y += pas_y
-            
-            moteur1 = 1 if pas_x > 0 else (-1 if pas_x < 0 else 0)
-            moteur2 = 1 if pas_y > 0 else (-1 if pas_y < 0 else 0)
-            
-            curr_x_draw, curr_y_draw = scale_x(x), scale_y(y)
-            curr_t = scale_t(t)
-            curr_m1, curr_m2 = scale_m(moteur1), scale_m(moteur2)
-
-            cv_draw.create_line(prev_x_draw, prev_y_draw, curr_x_draw, curr_y_draw, fill="blue", width=3)
-            cv_motor.create_line(prev_t, prev_m1, curr_t, curr_m1, fill="red", width=2)
-            cv_motor.create_line(prev_t, prev_m2, curr_t, curr_m2, fill="green", width=2)
-
-            prev_x_draw, prev_y_draw = curr_x_draw, curr_y_draw
-            prev_t, prev_m1, prev_m2 = curr_t, curr_m1, curr_m2
-
-            if t % 3 == 0:
-                top.update()
-                time.sleep(0.01)
-
-    top.update()
-    time.sleep(2)
-    top.destroy()
+                    x_prec, y_prec = x, y
+    except Exception as e:
+        print(f"Erreur lors du tracé de la table : {e}")

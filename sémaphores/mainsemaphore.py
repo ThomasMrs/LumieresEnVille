@@ -1,107 +1,99 @@
 import threading
-import time
 import os
 from api_client import *
 from gui import Interface
 from table_tracante import simuler_table_tracante_csv
 from simulateur_helice import lancer_helice_ui
 
+# --- Initialisation de l'IHM ---
 ui = Interface()
 etat = "RECHERCHE_MISSION"
 mission_en_cours = None
 
-def lancer_table_locale():
-    nom_fichier = "etoile-symbole (1).csv" 
-    dossier_actuel = os.path.dirname(os.path.abspath(__file__))
-    chemin_csv = os.path.join(dossier_actuel, nom_fichier)
-    
-    ui.mettre_a_jour_statut("Test Manuel : Table Traçante")
-    ui.mettre_a_jour_details(f"Fichier : {nom_fichier}")
-    ui.afficher_forme("✒️")
-    
-    if os.path.exists(chemin_csv):
-        threading.Thread(target=lambda: simuler_table_tracante_csv(chemin_csv, ui.root), daemon=True).start()
-    else:
-        print(f"ERREUR : Fichier {nom_fichier} introuvable.")
+DOSSIER_ACTUEL = os.path.dirname(os.path.abspath(__file__))
 
-def lancer_helice_locale():
-    ui.mettre_a_jour_statut("Test Manuel : Hélice LED")
-    ui.mettre_a_jour_details("Interface POV (Cahier des charges)")
-    ui.afficher_forme("🌀")
-    
-    lancer_helice_ui(ui.root, "A")
-
-ui.set_commande_table(lancer_table_locale)
-ui.set_commande_helice(lancer_helice_locale)
+def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
+    chemin = os.path.join(DOSSIER_ACTUEL, nom_fichier)
+    try:
+        with open(chemin, 'w') as f:
+            f.write("rayon;angle;stylo\n")
+            for p in liste_points:
+                f.write(f"{p['r']};{p['a']};{p['s']}\n")
+    except Exception as e:
+        print(f"Erreur lors de la création du CSV temporaire : {e}")
+    return chemin
 
 def lancer_dessin_physique():
     global etat, mission_en_cours
     mission = mission_en_cours
     if not mission: return
     
+    # 1. Le sémaphore annonce qu'il commence le travail
+    ui.mettre_a_jour_statut("Téléchargement de la forme...")
+    put_mission_state(mission.get("id"), "In progress") # Statut exigé par le serveur
+    
+    # 2. Requête API
     shape_data = get_shape(mission.get("shape_id"))
-    shape_name = shape_data.get("name", "Inconnu")
-    symbole_ascii = shape_data.get("image", "?")
+    nom_forme = shape_data.get("name", "inconnu").lower()
+    chaine_image = shape_data.get("image", "")
     
-    ui.afficher_forme(symbole_ascii)
-    ui.mettre_a_jour_statut(f"Mission API : {mission.get('name')}")
-    ui.mettre_a_jour_details(f"Forme : {shape_name}")
+    liste_points = decoder_chaine_image(chaine_image)
+    ui.mettre_a_jour_statut(f"Exécution : {nom_forme}")
+    chemin_csv = ecrire_csv_temporaire(liste_points)
     
-    nom_propre = shape_name.strip().lower()
-    fichier_csv = "default.csv"
-    type_machine = "table"
-    lettre_pov = "A"
-    
-    if "lettre b" in nom_propre:
-        type_machine = "helice"
-        lettre_pov = "B"
-    elif "lettre c" in nom_propre:
-        type_machine = "helice"
-        lettre_pov = "C"
-    elif "lettre a" in nom_propre:
-        type_machine = "helice"
-        lettre_pov = "A"
-    elif "etoile" in nom_propre:
-        fichier_csv = "etoile-symbole (1).csv"
-        type_machine = "table"
-        
-    dossier_actuel = os.path.dirname(os.path.abspath(__file__))
-    chemin_csv = os.path.join(dossier_actuel, fichier_csv)
-    
-    if type_machine == "helice":
-        lancer_helice_ui(ui.root, lettre_pov)
+    # 3. Exécution mécanique (on bloque jusqu'à ce que la fenêtre se ferme)
+    if "helice" in nom_forme:
+        lancer_helice_ui(ui.root, chemin_csv)
     else:
-        if os.path.exists(chemin_csv):
-            simuler_table_tracante_csv(chemin_csv, ui.root)
-        else:
-            print(f"DEBUG : Fichier {fichier_csv} introuvable pour la table.")
-            time.sleep(2)
+        simuler_table_tracante_csv(chemin_csv, ui.root)
     
+    # 4. Le sémaphore a fini ! Il clôture tout proprement
     put_mission_state(mission.get("id"), "Done")
-    put_semaphore(mission.get("semaphore_id"), "AVAILABLE")
-    ui.mettre_a_jour_details("Mission terminée.")
+    put_semaphore_state(mission.get("semaphore_id"), "Available")
+    
+    ui.mettre_a_jour_statut("En attente de mission...")
     etat = "RECHERCHE_MISSION"
     mission_en_cours = None
 
 def choisir_mission(mission):
     global etat, mission_en_cours
     mission_en_cours = mission
-    put_semaphore(mission_en_cours.get("semaphore_id"), "OCCUPIED")
     etat = "IMPRESSION"
+    
+    # Le robot aurait dû le mettre en Occupied, mais on s'en assure ici au cas où
+    put_semaphore_state(mission.get("semaphore_id"), "Occupied")
+    
     threading.Thread(target=lancer_dessin_physique, daemon=True).start()
 
-def boucle():
+def boucle_automatisation():
     global etat
     if etat == "RECHERCHE_MISSION":
-        ui.mettre_a_jour_statut("État : Écoute du Serveur")
         missions = get_missions()
-        missions_pretes = [m for m in missions if m.get("state") in ["Awaiting", "Pending_semaphore"]]
+        
+        
+        missions_pretes = [m for m in missions if m.get("state") in ["Pending", "Pending_semaphore"]]        
         if missions_pretes:
             ui.afficher_missions(missions_pretes, choisir_mission)
             etat = "CHOIX_MISSION"
-        else:
-            ui.mettre_a_jour_details("En attente de mission API...")
-    ui.root.after(1000, boucle)
+            
+    ui.root.after(3000, boucle_automatisation)
 
-boucle()
-ui.root.mainloop()
+# ==========================================
+# TESTS MANUELS (Pour le jury)
+# ==========================================
+def lancer_table_locale():
+    chemin = os.path.join(DOSSIER_ACTUEL, "test_ligne.csv")
+    ui.mettre_a_jour_statut("Test Manuel : Table")
+    threading.Thread(target=lambda: simuler_table_tracante_csv(chemin, ui.root), daemon=True).start()
+
+def lancer_helice_locale():
+    chemin = os.path.join(DOSSIER_ACTUEL, "test_ligne.csv")
+    ui.mettre_a_jour_statut("Test Manuel : Hélice")
+    lancer_helice_ui(ui.root, chemin)
+
+ui.set_commande_table(lancer_table_locale)
+ui.set_commande_helice(lancer_helice_locale)
+
+if __name__ == "__main__":
+    boucle_automatisation()
+    ui.root.mainloop()
