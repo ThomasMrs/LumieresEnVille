@@ -1,71 +1,67 @@
 import requests
+from datetime import datetime
 
-BASE_URL = "http://192.168.1.18:8000/api"
+# URL de ton serveur
+BASE_URL = "http://192.168.1.5"
 
-# ==========================================
-# MISSIONS
-# ==========================================
 def get_missions():
     try:
-        req = requests.get(f"{BASE_URL}/list_missions", timeout=2)
-        return req.json() if req.status_code == 200 else []
-    except: return []
+        response = requests.get(f"{BASE_URL}/api/list_missions")
+        return response.json() if response.status_code == 200 else []
+    except Exception as e:
+        print(f"Erreur get_missions : {e}")
+        return []
 
-def add_mission(semaphore_id, shape_id, team, name="Test", robot_id=None):
-    """Utilisé par le ROBOT pour demander un dessin"""
-    params = {
-        'semaphore_id': semaphore_id, 'shape_id': shape_id, 
-        'team': team, 'name': name, 'robot_id': robot_id
-    }
-    try:
-        req = requests.post(f"{BASE_URL}/add_mission", params=params, timeout=2)
-        return req.json() if req.status_code == 200 else None
-    except: return None
-
-def put_mission_state(mission_id, state):
-    """Utilisé par le SÉMAPHORE (états autorisés: Pending, In progress, Done)"""
-    try:
-        requests.put(f"{BASE_URL}/update_mission/{mission_id}", params={'state': state}, timeout=2)
-    except: pass
-
-# ==========================================
-# SEMAPHORES
-# ==========================================
-def get_semaphore(semaphore_id):
-    try:
-        req = requests.get(f"{BASE_URL}/semaphore/{semaphore_id}", timeout=2)
-        return req.json() if req.status_code == 200 else None
-    except: return None
-
-def put_semaphore_state(semaphore_id, state):
-    """États autorisés: Available, Occupied, Disabled"""
-    try:
-        requests.put(f"{BASE_URL}/update_semaphore/{semaphore_id}", params={'state': state}, timeout=2)
-    except: pass
-
-# ==========================================
-# SHAPES (FORMES)
-# ==========================================
 def get_shape(shape_id):
     try:
-        req = requests.get(f"{BASE_URL}/shape/{shape_id}", timeout=2)
-        return req.json() if req.status_code == 200 else {}
-    except: return {}
+        response = requests.get(f"{BASE_URL}/api/shape/{shape_id}")
+        return response.json() if response.status_code == 200 else {}
+    except:
+        return {}
 
-def decoder_chaine_image(chaine_image):
-    """Décode 'etoileP19.432.01P...' en [{'r':19, 'a':432, 's':1}]"""
+def get_semaphore(semaphore_id):
+    try:
+        response = requests.get(f"{BASE_URL}/api/list_semaphore")
+        sems = response.json()
+        for s in sems:
+            if s.get("id") == semaphore_id:
+                return s
+    except:
+        pass
+    return {}
+
+def put_mission_state(mission_id, state):
+    url = f"{BASE_URL}/api/update_mission/{mission_id}"
+    params = {
+        "state": state,
+        "end_date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    }
+    try:
+        response = requests.put(url, params=params)
+        return response.status_code == 200
+    except:
+        return False
+
+def put_semaphore_state(semaphore_id, state):
+    url = f"{BASE_URL}/api/update_semaphore/{semaphore_id}"
+    params = {"state": state}
+    try:
+        response = requests.put(url, params=params)
+        return response.status_code == 200
+    except:
+        return False
+
+def decoder_chaine_image(chaine):
+    """Décode la chaîne format Pxxx.xxx.x en liste de points"""
     points = []
-    if not chaine_image: return points
-    morceaux = chaine_image.split('P')
-    for morceau in morceaux[1:]:
-        valeurs = morceau.split('.')
-        if len(valeurs) >= 3:
-            try:
-                points.append({
-                    'r': float(valeurs[0]),
-                    'a': int(valeurs[1]) % 360,
-                    's': int(valeurs[2])
-                })
-            except ValueError:
-                continue
+    if not chaine or chaine == "T": return points
+    
+    segments = chaine.split('P')
+    for seg in segments:
+        if not seg: continue
+        try:
+            parts = seg.split('.')
+            points.append({'r': float(parts[0]), 'a': int(parts[1]), 's': int(parts[2])})
+        except:
+            continue
     return points
