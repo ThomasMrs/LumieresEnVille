@@ -58,7 +58,6 @@ def simuler_table_tracante_csv(fichier_csv, fenetre_parente):
     cv_motor.create_text(W/2, 15, text="Tension Moteurs (Rouge=X, Vert=Y)", fill="white", font=("Arial", 10))
     cv_motor.create_line(PAD, H/2, W-PAD, H/2, fill="gray", dash=(4, 4))
 
-    # 3. Pré-calcul
     PAS = 0.5
     total_etapes = 0
     x_calc, y_calc = cibles[0]
@@ -72,7 +71,6 @@ def simuler_table_tracante_csv(fichier_csv, fenetre_parente):
     def scale_m(m_val):
         return H/2 - m_val * 80
 
-    # 4. Animation
     x, y = cibles[0]
     t = 0
     prev_x_draw, prev_y_draw = scale_x(x), scale_y(y)

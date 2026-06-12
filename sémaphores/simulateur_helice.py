@@ -1,9 +1,6 @@
 import tkinter as tk
 import math
 
-# ==========================================
-# ÉTAPE 1 : DICTIONNAIRE ET MATRICES DE GLYPHES
-# ==========================================
 DICTIONNAIRE_LETTRES = {
     "A": [
         [
@@ -56,9 +53,7 @@ class HelicePOV:
         self._creer_interface()
         self._initialiser_matrice_rotation()
 
-    # ==========================================
-    # ÉTAPE 4 : INTERFACE GRAPHIQUE
-    # ==========================================
+
     def _creer_interface(self):
         self.canvas = tk.Canvas(self.root, width=self.W, height=self.H, bg="black", highlightthickness=0)
         self.canvas.pack(pady=10)
@@ -92,9 +87,6 @@ class HelicePOV:
     def maj_vitesse(self, val):
         self.vitesse = int(val)
 
-    # ==========================================
-    # ÉTAPE 2 : MATRICE DE ROTATION (Positions Initiales)
-    # ==========================================
     def _initialiser_matrice_rotation(self):
         self.leds_initiales = [] 
         for i in range(10):
@@ -114,9 +106,7 @@ class HelicePOV:
             self.en_rotation = True
             self._boucle_animation()
 
-    # ==========================================
-    # ÉTAPE 3 ET DÉFIS : ROTATION ET RÉMANENCE
-    # ==========================================
+
     def _gerer_remanence(self):
         pixels_restants = []
         for p in self.pixels_remanents:
@@ -182,7 +172,6 @@ class HelicePOV:
 
         self.root.after(20, self._boucle_animation)
 
-# --- Lanceur pour intégration dans mainsemaphore ---
 def lancer_helice_ui(fenetre_parente, lettre_initiale="A"):
     top = tk.Toplevel(fenetre_parente)
     app = HelicePOV(top)
@@ -194,7 +183,6 @@ def lancer_helice_ui(fenetre_parente, lettre_initiale="A"):
         
     app.demarrer()
 
-# --- Point d'entrée autonome ---
 if __name__ == "__main__":
     root = tk.Tk()
     app = HelicePOV(root)

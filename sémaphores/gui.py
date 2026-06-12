@@ -6,20 +6,17 @@ class Interface:
         self.root.title("Sémaphore - Panneau de Contrôle")
         self.root.configure(bg="black")
         
-        # --- NOUVELLE ZONE : BOUTONS DE TEST LOCAUX ---
         self.frame_local = tk.Frame(self.root, bg="#1a1a1a", bd=2, relief="groove")
         self.frame_local.pack(fill="x", padx=20, pady=10)
         
         tk.Label(self.frame_local, text="🔧 Tests Manuels (Hors-Ligne)", bg="#1a1a1a", fg="gray", font=("Arial", 9)).pack(pady=2)
         
-        # Bouton Table Traçante
         self.btn_table = tk.Button(
             self.frame_local, text="✒️ Ouvrir Table Traçante", 
             bg="#333333", fg="white", font=("Arial", 10, "bold")
         )
         self.btn_table.pack(side="left", expand=True, fill="x", padx=10, pady=5)
 
-        # Bouton Hélice POV
         self.btn_helice = tk.Button(
             self.frame_local, text="🌀 Ouvrir Hélice LED", 
             bg="#333333", fg="white", font=("Arial", 10, "bold")
@@ -27,18 +24,15 @@ class Interface:
         self.btn_helice.pack(side="right", expand=True, fill="x", padx=10, pady=5)
         # ----------------------------------------------
 
-        # Zone d'affichage ASCII
         self.canvas = tk.Canvas(self.root, width=500, height=350, bg="black", highlightthickness=0)
         self.canvas.pack(padx=20, pady=5)
         
         self.txt_statut = self.canvas.create_text(250, 30, text="Initialisation...", fill="white", font=("Arial", 12))
         self.txt_details = self.canvas.create_text(250, 70, text="En attente...", fill="yellow", font=("Arial", 10))
         
-        # Zone des missions serveur
         self.frame_choix = tk.Frame(self.root, bg="black")
         self.frame_choix.pack(fill="x", padx=20, pady=10)
 
-    # Fonctions pour lier les clics aux actions
     def set_commande_table(self, callback):
         self.btn_table.config(command=callback)
 
