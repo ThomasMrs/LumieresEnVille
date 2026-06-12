@@ -4,7 +4,7 @@ public class Grille {
 
     private Grille() {
     }
-
+//deplacement du robot vers une destination en utilisant un thread pour simuler le mouvement progressif et respecter la vitesse du robot.
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
         Exception[] erreur = new Exception[1];
         Thread threadDeplacement = new Thread(() -> {
@@ -23,6 +23,8 @@ public class Grille {
         }
     }
 
+// La méthode deplacerDansThread effectue le déplacement du robot en vérifiant d'abord que la destination est valide,
+//  puis en mettant à jour la position du robot progressivement jusqu'à atteindre la destination. Elle utilise des pauses pour simuler la vitesse du robot.
     private static void deplacerDansThread(Robot robot, double destinationX, double destinationY) throws Exception {
         int cibleX = (int) Math.round(destinationX);
         int cibleY = (int) Math.round(destinationY);
