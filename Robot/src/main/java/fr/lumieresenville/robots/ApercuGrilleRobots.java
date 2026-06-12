@@ -26,7 +26,7 @@ import javax.swing.Timer;
 
 public class ApercuGrilleRobots {
 
-    private static final String SERVEUR = "http://192.168.1.14:8000";
+    private static final String SERVEUR = "http://192.168.1.18:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
 
     public static void main(String[] args) {
