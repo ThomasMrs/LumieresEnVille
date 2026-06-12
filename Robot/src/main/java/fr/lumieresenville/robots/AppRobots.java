@@ -12,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
 public class AppRobots {
     private static final String SERVEUR = "http://192.168.1.18:8000";
     private static final int BASE_X = 0;
@@ -323,8 +322,6 @@ public class AppRobots {
         return requete("POST", chemin);
     }
 
-    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
-    // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
     private static String requete(String methode, String chemin) {
         String urlComplete = SERVEUR + chemin;
         System.out.println();
@@ -359,7 +356,7 @@ public class AppRobots {
                 return "OK";
             }
             return reponse.body();
-        } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+        } catch (Exception e) {                              // serveur eteint, mauvaise IP
             System.out.println("Erreur  : " + e.getMessage());
             System.out.println("----------------------");
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
