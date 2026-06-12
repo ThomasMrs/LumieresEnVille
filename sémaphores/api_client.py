@@ -1,6 +1,6 @@
 import requests
 
-URL_BASE = "http://192.168.1.14:8000/api"
+URL_BASE = "http://192.168.1.18:8000/api"
 
 def get_missions():
     try:
