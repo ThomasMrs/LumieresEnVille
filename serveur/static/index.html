@@ -2,263 +2,74 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrôleur Web - Lumières en Ville</title>
-    <link rel="stylesheet" href="/style.css">
-</head>
+    <title>Contrôleur Basique</title>
+    </head>
 <body>
-    <header>
-        <h1>Contrôleur Web : Lumières en Ville</h1>
-        <nav class="fast-nav">
-            <a href="#section-carte">🗺️ Supervision</a>
-            <a href="#section-config">⚙️ Config</a>
-            <a href="#section-semaphore">🚦 Sémaphores</a>
-            <a href="#section-robot">🤖 Robots</a>
-            <a href="#section-shapes">👥 Équipes & Formes</a>
-            <a href="#section-mission">🚀 Missions</a>
-        </nav>
-    </header>
+    <h1>Panneau de Contrôle - Lumières en Ville</h1>
+    
+    <fieldset>
+        <legend>1. Configuration</legend>
+        <form action="/ihm/add_config" method="get">
+            Nombre X: <input type="number" name="nombre_x" value="10" required>
+            Nombre Y: <input type="number" name="nombre_y" value="10" required><br><br>
+            Sémaphores: <input type="number" name="nombre_semaphore" value="4" required>
+            Robots: <input type="number" name="nombre_robot" value="2" required><br><br>
+            <button type="submit">Configurer</button>
+        </form>
+    </fieldset>
 
-    <main>
-        <div class="col-left">
-            <div class="card">
-                <h2>1. Connexion et Configuration du Serveur</h2>
-                <form action="/ihm/add_config" method="get">
-                    <div class="form-row">
-                        <label>Nombre X <input type="number" name="nombre_x" value="10" required></label>
-                        <label>Nombre Y <input type="number" name="nombre_y" value="10" required></label>
-                    </div>
-                    <div class="form-row">
-                        <label>Sémaphores <input type="number" name="nombre_semaphore" value="4" required></label>
-                        <label>Robots <input type="number" name="nombre_robot" value="2" required></label>
-                    </div>
-                    <button type="submit" class="btn-primary">Synchroniser les données</button>
-                </form>
-            </div>
+    <fieldset>
+        <legend>2. Ajouter un Sémaphore</legend>
+        <form action="/ihm/add_semaphore" method="get">
+            Nom: <input type="text" name="name" required>
+            Durée: <input type="number" name="duration" value="15" required>
+            Type: <input type="text" name="type" value="HELICE" required><br><br>
+            Pos X: <input type="number" name="coord_x" required>
+            Pos Y: <input type="number" name="coord_y" required><br><br>
+            <button type="submit">Ajouter Sémaphore</button>
+        </form>
+    </fieldset>
 
-            <div class="card">
-                <h2>2. Paramètres d'Éclairage (Sémaphores)</h2>
-                <form action="/ihm/add_semaphore" method="get" style="margin-bottom: 20px;">
-                    <div class="form-row">
-                        <label>Nom <input type="text" name="name" placeholder="Ex: Feu_Nord" required></label>
-                        <label>Durée (s) <input type="number" name="duration" value="15" required></label>
-                        <label>Type <input type="text" name="type" placeholder="HELICE" required></label>
-                    </div>
-                    <div class="form-row">
-                        <label>Position X <input type="number" name="coord_x" required></label>
-                        <label>Position Y <input type="number" name="coord_y" required></label>
-                    </div>
-                    <button type="submit" class="btn-primary">Enregistrer le sémaphore</button>
-                </form>
+    <fieldset>
+        <legend>3. Ajouter un Robot</legend>
+        <form action="/ihm/add_robot" method="get">
+            Nom: <input type="text" name="name" required>
+            Vitesse: <input type="number" name="speed" value="1" required><br><br>
+            Pos X: <input type="number" name="position_x" value="0" required>
+            Pos Y: <input type="number" name="position_y" value="0" required><br><br>
+            <button type="submit">Ajouter Robot</button>
+        </form>
+    </fieldset>
 
-                <div class="sub-form">
-                    <h3>Modifier / Supprimer un Sémaphore</h3>
-                    <div class="form-row">
-                        <label>Sélectionner : <select id="select-update-semaphore"></select></label>
-                        <label>Nouveau Nom <input type="text" id="up-sem-name"></label>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button type="button" class="btn-warning" onclick="modifierSemaphore()">Appliquer</button>
-                        <button type="button" class="btn-danger" onclick="purgerSemaphores()">Vider la table</button>
-                    </div>
-                </div>
-            </div>
+    <fieldset>
+        <legend>4. Ajouter une Équipe</legend>
+        <form action="/ihm/add_team" method="get">
+            Nom: <input type="text" name="name" required>
+            IP: <input type="text" name="ip" value="127.0.0.1"><br><br>
+            Autoriser: <input type="checkbox" name="allowed" value="true" checked><br><br>
+            <button type="submit">Ajouter Équipe</button>
+        </form>
+    </fieldset>
 
-            <div class="card">
-                <h2>3. Gestion des Robots Virtuels</h2>
-                <form action="/ihm/add_robot" method="get" style="margin-bottom: 20px;">
-                    <div class="form-row">
-                        <label>Nom Robot <input type="text" name="name" placeholder="Ex: Rob_1"></label>
-                        <label>Vitesse <input type="number" name="speed" value="1"></label>
-                    </div>
-                    <div class="form-row">
-                        <label>Position X <input type="number" name="position_x" value="0"></label>
-                        <label>Position Y <input type="number" name="position_y" value="0"></label>
-                    </div>
-                    <button type="submit" class="btn-primary">Déployer le robot</button>
-                </form>
+    <fieldset style="background-color: #f9f9f9; border: 2px solid #333;">
+        <legend>5. Ajouter une Forme (via fichier CSV)</legend>
+        <form action="/ihm/add_shape_csv" method="post" enctype="multipart/form-data">
+            Nom de la forme: <input type="text" name="name" required><br><br>
+            <b>Fichier CSV:</b> <input type="file" name="file" accept=".csv" required><br><br>
+            <button type="submit" style="padding: 10px; cursor: pointer;">Envoyer et Enregistrer</button>
+        </form>
+    </fieldset>
 
-                <div class="sub-form">
-                    <h3>Modifier / Supprimer un Robot</h3>
-                    <div class="form-row">
-                        <label>Sélectionner : <select id="select-update-robot"></select></label>
-                        <label>Nouvelle Vitesse <input type="number" id="up-rob-speed"></label>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button type="button" class="btn-warning" onclick="modifierRobot()">Modifier Vitesse</button>
-                        <button type="button" class="btn-danger" onclick="purgerRobots()">Vider la table</button>
-                    </div>
-                </div>
-            </div>
+    <fieldset>
+        <legend>6. Lancer une Mission</legend>
+        <form action="/ihm/add_mission" method="get">
+            Nom Mission: <input type="text" name="name" required><br><br>
+            Équipe: <input type="text" name="team" required><br><br>
+            ID Sémaphore: <input type="text" name="semaphore_id" required><br><br>
+            ID Forme: <input type="text" name="shape_id" required><br><br>
+            <button type="submit">Activer Mission</button>
+        </form>
+    </fieldset>
 
-            <div class="card">
-                <h2>4. Sécurité & Catalogue de Formes</h2>
-                <form action="/ihm/add_team" method="get" style="margin-bottom: 15px;">
-                    <div class="form-row">
-                        <label>Équipe <input type="text" name="name" required></label>
-                        <label>Adresse IP <input type="text" name="ip" placeholder="127.0.0.1"></label>
-                        <label style="flex-direction:row; align-items:center; margin-top:25px; cursor:pointer;">
-                            <input type="checkbox" name="allowed" value="true" style="width:auto; margin-right:5px;"> Autoriser
-                        </label>
-                    </div>
-                    <button type="submit" class="btn-primary">Déclarer la console</button>
-                </form>
-                
-                <form action="/ihm/add_shape" method="get" class="sub-form">
-                    <h3>Ajouter une Forme (via CSV)</h3>
-                    <div class="form-row">
-                        <label>Nom Lettre <input type="text" name="name" required></label>
-                        
-                        <div class="csv-box-container">
-                            <span class="csv-title-label">Importer un fichier CSV</span>
-                            <input type="file" id="csv-file" accept=".csv" onchange="lireFichierCSV()">
-                        </div>
-
-                        <label>Code Matrice <input type="text" name="image" id="input-matrice" required placeholder="Généré automatiquement"></label>
-                    </div>
-                    <button type="submit" class="btn-primary" style="margin-top: 15px;">Ajouter au Catalogue</button>
-                </form>
-            </div>
-
-            <div class="card mission-card">
-                <h2>5. Ordonnancement Manuel de Mission</h2>
-                <form action="/ihm/add_mission" method="get">
-                    <div class="form-row">
-                        <label>Nom Mission <input type="text" name="name" placeholder="Mission_A"></label>
-                        <label>Nom de l'équipe <input type="text" name="team" required></label>
-                    </div>
-                    <div class="form-row">
-                        <label>Cible (Sémaphore) <select name="semaphore_id" id="select-mission-semaphore" required></select></label>
-                        <label>Motif (Lettre) <select name="shape_id" id="select-mission-shape" required></select></label>
-                    </div>
-                    <button type="submit" class="btn-success">Activer l'Éclairage</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="col-right">
-            <div class="card map-card">
-                <h2>Grid / Plan de la Ville</h2>
-                <div id="grid-container" class="waiting-msg">En attente de synchronisation...</div>
-                <div class="legend">
-                    <span>🏠 Base (0,0)</span>
-                    <span>🚦 Sémaphore</span>
-                    <span>🤖 Robot</span>
-                </div>
-                
-                <form action="/ihm/create_grille" method="get" style="margin-top: 15px; border-top: 1px solid #eee; padding-top:15px;">
-                    <div class="form-row" style="justify-content: center;">
-                        <label>Nom du Plan <input type="text" name="name" value="Grille_Principale" required></label>
-                        <button type="submit" class="btn-primary" style="margin-top:0;">Générer / Reset la grille SQL</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="card">
-                <h2>📊 Indicateurs de la Base de Données</h2>
-                <div class="stats-grid">
-                    <div class="stat-box"><h4>Sémaphores</h4><p id="count-semaphore">0</p></div>
-                    <div class="stat-box"><h4>Robots</h4><p id="count-robot">0</p></div>
-                    <div class="stat-box"><h4>Missions</h4><p id="count-mission">0</p></div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        // Fonction magique de traitement du fichier CSV
-        function lireFichierCSV() {
-            const fileInput = document.getElementById('csv-file');
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const texteCSV = e.target.result;
-                // Nettoie le CSV en supprimant virgules, espaces, sauts de ligne et points-virgules
-                const matricePropre = texteCSV.replace(/[\n\r\s,;]/g, '');
-                document.getElementById('input-matrice').value = matricePropre;
-            };
-            reader.readAsText(file);
-        }
-
-        function rafraichirDonnees() {
-            Promise.all([
-                fetch('/api/get_config').then(r => r.json()),
-                fetch('/api/list_semaphore').then(r => r.json()),
-                fetch('/api/list_robots').then(r => r.json()),
-                fetch('/api/list_missions').then(r => r.json()).catch(() => []),
-                fetch('/api/list_shapes').then(r => r.json()).catch(() => [])
-            ])
-            .then(([config, semaphores, robots, missions, shapes]) => {
-                let listSem = semaphores.semaphores || semaphores || [];
-                let listRob = robots.robots || robots || [];
-                let listMis = missions.missions || missions || [];
-                let listSha = shapes.shapes || shapes || [];
-
-                document.getElementById('count-semaphore').innerText = listSem.length;
-                document.getElementById('count-robot').innerText = listRob.length;
-                document.getElementById('count-mission').innerText = listMis.length;
-
-                let semOptions = "";
-                listSem.forEach(s => { semOptions += `<option value="${s.id}">${s.name} (${s.coord_x},${s.coord_y})</option>`; });
-                document.getElementById('select-update-semaphore').innerHTML = semOptions;
-                document.getElementById('select-mission-semaphore').innerHTML = semOptions;
-
-                let robOptions = '<option value="">-- Automatique --</option>';
-                listRob.forEach(r => { robOptions += `<option value="${r.id}">${r.name || 'Robot'}</option>`; });
-                document.getElementById('select-update-robot').innerHTML = listRob.length ? robOptions.replace('<option value="">-- Automatique --</option>', '') : '';
-
-                let shaOptions = "";
-                listSha.forEach(s => { shaOptions += `<option value="${s.id}">${s.name}</option>`; });
-                document.getElementById('select-mission-shape').innerHTML = shaOptions;
-
-                if (!config || !config.nombre_x) {
-                    document.getElementById('grid-container').innerHTML = "Système non configuré. Remplissez l'étape 1.";
-                    return;
-                }
-
-                let html = '<table class="grid-table">';
-                for (let y = 0; y < config.nombre_y; y++) {
-                    html += '<tr>';
-                    for (let x = 0; x < config.nombre_x; x++) {
-                        let cellClass = "grid-cell";
-                        let icon = "";
-
-                        if (listSem.find(s => s.coord_x == x && s.coord_y == y)) { cellClass += " cell-semaphore"; icon = "🚦"; }
-                        if (listRob.find(r => r.position_x == x && r.position_y == y)) { cellClass += " cell-robot"; icon = "🤖"; }
-                        if (x === 0 && y === 0 && icon === "") { cellClass += " cell-base"; icon = "🏠"; }
-
-                        html += `<td class="${cellClass}" title="Position: ${x},${y}">${icon}</td>`;
-                    }
-                    html += '</tr>';
-                }
-                document.getElementById('grid-container').innerHTML = html + '</table>';
-            })
-            .catch(e => console.log("Erreur de rafraîchissement", e));
-        }
-
-        function modifierSemaphore() {
-            const id = document.getElementById('select-update-semaphore').value;
-            const name = document.getElementById('up-sem-name').value;
-            if(!id) return;
-            fetch(`/api/update_semaphore/${id}?name=${name}`, { method: 'PUT' }).then(() => window.location.reload());
-        }
-        function purgerSemaphores() {
-            if(confirm("Tout supprimer ?")) fetch('/api/delete_semaphores', { method: 'DELETE' }).then(() => window.location.reload());
-        }
-        function modifierRobot() {
-            const id = document.getElementById('select-update-robot').value;
-            const speed = document.getElementById('up-rob-speed').value;
-            if(!id) return;
-            fetch(`/api/update_robot/${id}?speed=${speed}`, { method: 'PUT' }).then(() => window.location.reload());
-        }
-        function purgerRobots() {
-            if(confirm("Tout supprimer ?")) fetch('/api/delete_robots', { method: 'DELETE' }).then(() => window.location.reload());
-        }
-
-        setInterval(rafraichirDonnees, 1000);
-        rafraichirDonnees();
-    </script>
 </body>
 </html>
