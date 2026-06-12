@@ -6,8 +6,10 @@ from routes import semaphores, robots, teams, missions, shapes, health, config, 
 app = FastAPI()
 
 # Chemins d'accès absolus vers tes deux fichiers séparés
-IHM_PATH = Path(__file__).parent / "static" / "index.html"
-CSS_PATH = Path(__file__).parent / "static" / "style.css"
+# Remplacer ces deux lignes tout en haut de ton main.py :
+
+IHM_PATH = Path(__file__).parent / "serveur" / "static" / "index.html"
+CSS_PATH = Path(__file__).parent / "serveur" / "static" / "style.css"
 
 def page_html(message=""):
     html = IHM_PATH.read_text(encoding="utf-8")
