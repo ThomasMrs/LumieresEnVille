@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contrôleur Web - Lumières en Ville</title>
-    <link rel="stylesheet" href="/style.css">
-</head>
+    </head>
 <body>
     <header>
         <h1>Contrôleur Web : Lumières en Ville</h1>
+        <nav class="fast-nav">
+            <a href="#section-carte">🗺️ Supervision</a>
+            <a href="#section-config">⚙️ Config</a>
+            <a href="#section-semaphore">🚦 Sémaphores</a>
+            <a href="#section-robot">🤖 Robots</a>
+            <a href="#section-shapes">👥 Équipes & Formes</a>
+            <a href="#section-mission">🚀 Missions</a>
+        </nav>
     </header>
 
     <main>
@@ -95,12 +102,19 @@
                     </div>
                     <button type="submit" class="btn-primary">Déclarer la console</button>
                 </form>
+                
                 <form action="/ihm/add_shape" method="get" class="sub-form">
-                    <div class="form-row">
+                    <h3>Ajouter une Forme (via CSV)</h3>
+                    <div class="form-row" style="align-items: center;">
                         <label>Nom Lettre <input type="text" name="name" required></label>
-                        <label>Code Matrice <input type="text" name="image" required></label>
+                        
+                        <label style="background: #e9ecef; padding: 5px; border-radius: 4px; border: 1px solid #ced4da;">Importer CSV
+                            <input type="file" id="csv-file" accept=".csv" onchange="lireFichierCSV()" style="padding: 2px; font-size: 0.8em; border: none; background: transparent;">
+                        </label>
+
+                        <label>Code Matrice <input type="text" name="image" id="input-matrice" required placeholder="Sera rempli auto"></label>
                     </div>
-                    <button type="submit" class="btn-primary">Ajouter au Catalogue</button>
+                    <button type="submit" class="btn-primary" style="margin-top: 10px;">Ajouter au Catalogue</button>
                 </form>
             </div>
 
@@ -150,6 +164,22 @@
     </main>
 
     <script>
+        // Fonction qui lit le fichier CSV et remplit la case Matrice
+        function lireFichierCSV() {
+            const fileInput = document.getElementById('csv-file');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const texteCSV = e.target.result;
+                // Retire tous les sauts de ligne, espaces, virgules et points-virgules pour faire une matrice propre (ex: 101100)
+                const matricePropre = texteCSV.replace(/[\n\r\s,;]/g, '');
+                document.getElementById('input-matrice').value = matricePropre;
+            };
+            reader.readAsText(file);
+        }
+
         function rafraichirDonnees() {
             Promise.all([
                 fetch('/api/get_config').then(r => r.json()),
@@ -173,9 +203,9 @@
                 document.getElementById('select-update-semaphore').innerHTML = semOptions;
                 document.getElementById('select-mission-semaphore').innerHTML = semOptions;
 
-                let robOptions = "";
+                let robOptions = '<option value="">-- Automatique --</option>';
                 listRob.forEach(r => { robOptions += `<option value="${r.id}">${r.name || 'Robot'}</option>`; });
-                document.getElementById('select-update-robot').innerHTML = robOptions;
+                document.getElementById('select-update-robot').innerHTML = listRob.length ? robOptions.replace('<option value="">-- Automatique --</option>', '') : '';
 
                 let shaOptions = "";
                 listSha.forEach(s => { shaOptions += `<option value="${s.id}">${s.name}</option>`; });
