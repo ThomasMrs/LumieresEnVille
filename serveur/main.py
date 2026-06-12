@@ -5,7 +5,7 @@ from routes import semaphores, robots, teams, missions, shapes, health, config, 
 
 app = FastAPI()
 
-# Chemins propres vers tes deux fichiers séparés
+# Chemins d'accès absolus vers tes deux fichiers séparés
 IHM_PATH = Path(__file__).parent / "static" / "index.html"
 CSS_PATH = Path(__file__).parent / "static" / "style.css"
 
@@ -15,19 +15,19 @@ def page_html(message=""):
         html = html.replace("", f'<div class="message">{message}</div>')
     return HTMLResponse(content=html)
 
-# --- 1. ROUTE POUR AFFICHER LA PAGE HTML ---
+# --- ROUTE PRINCIPALE POUR L'IHM ---
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     return page_html()
 
-# --- 2. ROUTE POUR ENVOYER LE FICHIER CSS ---
+# --- ROUTE TECHNIQUE POUR LE FICHIER CSS SÉPARÉ ---
 @app.get("/style.css")
 def read_css():
     css_content = CSS_PATH.read_text(encoding="utf-8")
     return HTMLResponse(content=css_content, media_type="text/css")
 
 
-# --- TES AUTRES ROUTES ---
+# --- UNIFICATION DES ROUTES FORMULAIRES ---
 @app.get("/ihm/add_config", response_class=HTMLResponse)
 def ihm_add_config(nombre_x: int, nombre_y: int, nombre_semaphore: int, nombre_robot: int):
     config.ajouter_config(nombre_x, nombre_y, nombre_semaphore, nombre_robot)

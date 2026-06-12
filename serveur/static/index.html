@@ -9,6 +9,14 @@
 <body>
     <header>
         <h1>Contrôleur Web : Lumières en Ville</h1>
+        <nav class="fast-nav">
+            <a href="#section-carte">🗺️ Supervision</a>
+            <a href="#section-config">⚙️ Config</a>
+            <a href="#section-semaphore">🚦 Sémaphores</a>
+            <a href="#section-robot">🤖 Robots</a>
+            <a href="#section-shapes">👥 Équipes & Formes</a>
+            <a href="#section-mission">🚀 Missions</a>
+        </nav>
     </header>
 
     <main>
@@ -95,12 +103,20 @@
                     </div>
                     <button type="submit" class="btn-primary">Déclarer la console</button>
                 </form>
+                
                 <form action="/ihm/add_shape" method="get" class="sub-form">
+                    <h3>Ajouter une Forme (via CSV)</h3>
                     <div class="form-row">
                         <label>Nom Lettre <input type="text" name="name" required></label>
-                        <label>Code Matrice <input type="text" name="image" required></label>
+                        
+                        <div class="csv-box-container">
+                            <span class="csv-title-label">Importer un fichier CSV</span>
+                            <input type="file" id="csv-file" accept=".csv" onchange="lireFichierCSV()">
+                        </div>
+
+                        <label>Code Matrice <input type="text" name="image" id="input-matrice" required placeholder="Généré automatiquement"></label>
                     </div>
-                    <button type="submit" class="btn-primary">Ajouter au Catalogue</button>
+                    <button type="submit" class="btn-primary" style="margin-top: 15px;">Ajouter au Catalogue</button>
                 </form>
             </div>
 
@@ -150,6 +166,22 @@
     </main>
 
     <script>
+        // Fonction magique de traitement du fichier CSV
+        function lireFichierCSV() {
+            const fileInput = document.getElementById('csv-file');
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const texteCSV = e.target.result;
+                // Nettoie le CSV en supprimant virgules, espaces, sauts de ligne et points-virgules
+                const matricePropre = texteCSV.replace(/[\n\r\s,;]/g, '');
+                document.getElementById('input-matrice').value = matricePropre;
+            };
+            reader.readAsText(file);
+        }
+
         function rafraichirDonnees() {
             Promise.all([
                 fetch('/api/get_config').then(r => r.json()),
@@ -173,9 +205,9 @@
                 document.getElementById('select-update-semaphore').innerHTML = semOptions;
                 document.getElementById('select-mission-semaphore').innerHTML = semOptions;
 
-                let robOptions = "";
+                let robOptions = '<option value="">-- Automatique --</option>';
                 listRob.forEach(r => { robOptions += `<option value="${r.id}">${r.name || 'Robot'}</option>`; });
-                document.getElementById('select-update-robot').innerHTML = robOptions;
+                document.getElementById('select-update-robot').innerHTML = listRob.length ? robOptions.replace('<option value="">-- Automatique --</option>', '') : '';
 
                 let shaOptions = "";
                 listSha.forEach(s => { shaOptions += `<option value="${s.id}">${s.name}</option>`; });
