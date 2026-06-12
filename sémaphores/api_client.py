@@ -2,7 +2,7 @@ import requests
 from datetime import datetime
 
 # URL de ton serveur
-BASE_URL = "http://192.168.1.5"
+BASE_URL = "http://192.168.1.18:8000"  # <--- Change cette adresse si besoin !
 
 def get_missions():
     try:
