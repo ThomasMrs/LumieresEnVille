@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class AppRobots {
-    private static final String SERVEUR = "http://192.168.1.14:8000";
+    private static final String SERVEUR = "http://192.168.1.18:8000";
     private static final int BASE_X = 0;
     private static final int BASE_Y = 0;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
