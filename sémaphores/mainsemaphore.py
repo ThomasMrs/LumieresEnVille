@@ -10,11 +10,8 @@ ui = Interface()
 etat = "RECHERCHE_MISSION"
 mission_en_cours = None
 
-# ==========================================
-# MODES LOCAUX : TESTS MANUELS
-# ==========================================
 def lancer_table_locale():
-    nom_fichier = "etoile-symbole (1).csv" # Assure-toi que ce fichier existe bien pour la table
+    nom_fichier = "etoile-symbole (1).csv" 
     dossier_actuel = os.path.dirname(os.path.abspath(__file__))
     chemin_csv = os.path.join(dossier_actuel, nom_fichier)
     
@@ -36,11 +33,7 @@ def lancer_helice_locale():
 
 ui.set_commande_table(lancer_table_locale)
 ui.set_commande_helice(lancer_helice_locale)
-# ==========================================
 
-# ==========================================
-# MODE SERVEUR : GESTION DES MISSIONS API
-# ==========================================
 def lancer_dessin_physique():
     global etat, mission_en_cours
     mission = mission_en_cours
