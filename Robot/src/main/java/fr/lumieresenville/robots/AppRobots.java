@@ -72,74 +72,17 @@ public class AppRobots {
         double coordX = nombre(semaphoreJson, "coord_x");
         double coordY = nombre(semaphoreJson, "coord_y");
 
-        deplacerRobot(robot, coordX, coordY);
+        Grille.deplacer(robot, coordX, coordY);
 
         mission.signalerArriveeSemaphore();
         System.out.println("Robot arrive, mission transmise au semaphore.");
         System.out.println("PUT mission    : " + modifierMission(mission));
 
-        deplacerRobot(robot, BASE_X, BASE_Y);
+        Grille.deplacer(robot, BASE_X, BASE_Y);
 
         robot.setEtat(EtatRobot.AVAILABLE);
         System.out.println("Robot arrive a la base, passage en Available.");
         System.out.println("PUT robot      : " + modifierRobot(robot));
-    }
-
-    private static void deplacerRobot(Robot robot, double destinationX, double destinationY) throws Exception {
-        int cibleX = (int) Math.round(destinationX);
-        int cibleY = (int) Math.round(destinationY);
-        int x = (int) Math.round(robot.getX());
-        int y = (int) Math.round(robot.getY());
-
-        verifierPositionDansGrille(cibleX, cibleY);
-        System.out.println("Deplacement robot -> depart=(" + x + ", " + y + ")"
-                + ", destination=(" + cibleX + ", " + cibleY + ")"
-                + ", vitesse=" + robot.getVitesse() + " case(s)/s");
-
-        while (x != cibleX || y != cibleY) {
-            if (x < cibleX) {
-                x++;
-            } else if (x > cibleX) {
-                x--;
-            } else if (y < cibleY) {
-                y++;
-            } else {
-                y--;
-            }
-
-            robot.setPosition(x, y);
-            System.out.println("Robot avance -> (" + x + ", " + y + ")");
-            System.out.println("PUT robot      : " + modifierRobot(robot));
-            attendreSelonVitesse(robot);
-        }
-    }
-
-    private static void verifierPositionDansGrille(int x, int y) throws Exception {
-        String grilleJson = get("/api/get_grille");
-        if (grilleJson.startsWith("ERREUR") || grilleJson.startsWith("erreur HTTP")) {
-            System.out.println("Grille non verifiee : " + grilleJson);
-            return;
-        }
-
-        int largeur = (int) nombre(grilleJson, "nombre_x");
-        int hauteur = (int) nombre(grilleJson, "nombre_y");
-        if (largeur <= 0 || hauteur <= 0) {
-            System.out.println("Grille non verifiee : dimensions inconnues.");
-            return;
-        }
-        if (x < 0 || y < 0 || x >= largeur || y >= hauteur) {
-            System.out.println("Attention : destination hors grille (" + x + ", " + y
-                    + ") pour une grille " + largeur + "x" + hauteur + ".");
-        }
-    }
-
-    private static void attendreSelonVitesse(Robot robot) throws InterruptedException {
-        double vitesse = robot.getVitesse();
-        if (vitesse <= 0) {
-            vitesse = 1.0;
-        }
-        long delaiMs = Math.max(100, Math.round(1000.0 / vitesse));
-        Thread.sleep(delaiMs);
     }
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
@@ -224,7 +167,7 @@ public class AppRobots {
         return missions;
     }
 
-    private static String modifierRobot(Robot robot) throws Exception {
+    static String modifierRobot(Robot robot) throws Exception {
         System.out.println("Changement robot -> id=" + robot.getId()
                 + ", state=" + etatServeur(robot.getEtat())
                 + ", speed=" + (int) Math.round(robot.getVitesse())
@@ -291,7 +234,7 @@ public class AppRobots {
         return valeur.equals("null") ? "" : valeur;
     }
 
-    private static double nombre(String objet, String nom) {
+    static double nombre(String objet, String nom) {
         String valeur = champ(objet, nom);
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
@@ -311,7 +254,7 @@ public class AppRobots {
         return n.charAt(0) + n.substring(1).toLowerCase();
     }
 
-    private static String get(String chemin) throws Exception {
+    static String get(String chemin) throws Exception {
         return requete("GET", chemin);
     }
 
@@ -323,8 +266,6 @@ public class AppRobots {
         return requete("POST", chemin);
     }
 
-    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
-    // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
     private static String requete(String methode, String chemin) {
         String urlComplete = SERVEUR + chemin;
         System.out.println();
@@ -359,7 +300,7 @@ public class AppRobots {
                 return "OK";
             }
             return reponse.body();
-        } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+        } catch (Exception e) {                              // serveur eteint, mauvaise IP
             System.out.println("Erreur  : " + e.getMessage());
             System.out.println("----------------------");
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";

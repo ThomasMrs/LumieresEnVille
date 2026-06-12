@@ -1,7 +1,5 @@
 package fr.lumieresenville.robots;
 
-// Cette classe represente un robot :
-// son id serveur, son nom, sa position, sa vitesse, son etat et sa mission.
 public class Robot {
 
     private String id;
@@ -24,7 +22,7 @@ public class Robot {
         this.mission = null;
     }
 
-    // Ces methodes permettent de lire les informations du robot.
+    // lire info robot
     public String getId()      { return id; }
     public String getNom()     { return nom; }
     public double getVitesse() { return vitesse; }
@@ -33,14 +31,14 @@ public class Robot {
     public EtatRobot getEtat() { return etat; }
     public Mission getMission() { return mission; }
 
-    // Ces methodes permettent de modifier les informations du robot.
+    // modif info robot
     public void setId(String id)             { this.id = id; }
     public void setVitesse(double vitesse)   { this.vitesse = vitesse; }
     public void setPosition(double x, double y) { this.x = x; this.y = y; }
     public void setEtat(EtatRobot etat)      { this.etat = etat; }
     public void setMission(Mission mission)  { this.mission = mission; }
 
-    // Cette methode donne une version lisible du robot dans le terminal.
+
     @Override
     public String toString() {
         String texteMission = (mission == null)

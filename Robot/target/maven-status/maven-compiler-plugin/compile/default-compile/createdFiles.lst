@@ -6,4 +6,5 @@ fr\lumieresenville\robots\EtatRobot.class
 fr\lumieresenville\robots\Mission.class
 fr\lumieresenville\robots\AppRobots.class
 fr\lumieresenville\robots\ApercuGrilleRobots$SemaphoreVue.class
+fr\lumieresenville\robots\Grille.class
 fr\lumieresenville\robots\Robot.class
