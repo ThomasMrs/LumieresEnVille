@@ -6,6 +6,24 @@ public class Grille {
     }
 
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
+        Exception[] erreur = new Exception[1];
+        Thread threadDeplacement = new Thread(() -> {
+            try {
+                deplacerDansThread(robot, destinationX, destinationY);
+            } catch (Exception e) {
+                erreur[0] = e;
+            }
+        }, "deplacement-" + robot.getNom());
+
+        threadDeplacement.start();
+        threadDeplacement.join();
+
+        if (erreur[0] != null) {
+            throw erreur[0];
+        }
+    }
+
+    private static void deplacerDansThread(Robot robot, double destinationX, double destinationY) throws Exception {
         int cibleX = (int) Math.round(destinationX);
         int cibleY = (int) Math.round(destinationY);
         int x = (int) Math.round(robot.getX());
@@ -14,7 +32,8 @@ public class Grille {
         verifierPositionDansGrille(cibleX, cibleY);
         System.out.println("Deplacement robot -> depart=(" + x + ", " + y + ")"
                 + ", destination=(" + cibleX + ", " + cibleY + ")"
-                + ", vitesse=" + robot.getVitesse() + " case(s)/s");
+                + ", vitesse=" + robot.getVitesse() + " case(s)/s"
+                + ", thread=" + Thread.currentThread().getName());
 
         while (x != cibleX || y != cibleY) {
             if (x < cibleX) {
