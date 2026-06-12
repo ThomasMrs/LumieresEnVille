@@ -14,22 +14,38 @@ def lancer_dessin_physique():
     mission = mission_en_cours
     if not mission: return
     
-    # Récupération du nom réel de la forme depuis l'API
+    # Récupération des données
     shape_data = get_shape(mission.get("shape_id"))
     shape_name = shape_data.get("name", "Inconnu")
+    symbole_ascii = shape_data.get("image", "?")
     
-    ui.afficher_forme(shape_name)
+    # Mise à jour GUI avec le symbole
+    ui.afficher_forme(symbole_ascii)
     ui.mettre_a_jour_statut(f"Impression : {mission.get('name')}")
-    ui.mettre_a_jour_details("Simulation table traçante...")
+    ui.mettre_a_jour_details(f"Forme : {shape_name}")
     
-    # Chemin absolu sécurisé pour trouver le fichier CSV
+    # Choix du CSV
+    nom_propre = shape_name.strip().lower()
+    fichier_csv = "default.csv"
+    
+    if "etoile" in nom_propre:
+        fichier_csv = "etoile-symbole (1).csv"
+    elif "lettre a" in nom_propre:
+        fichier_csv = "lettre_a.csv"
+    elif "barre" in nom_propre:
+        fichier_csv = "barre.csv"
+        
+    # Lancement simulation
     dossier_actuel = os.path.dirname(os.path.abspath(__file__))
-    chemin_csv = os.path.join(dossier_actuel, "etoile-symbole (1).csv")
+    chemin_csv = os.path.join(dossier_actuel, fichier_csv)
     
-    # Lancement de la simulation physique 100% Tkinter
-    simuler_table_tracante_csv(chemin_csv, ui.root) 
+    if os.path.exists(chemin_csv):
+        simuler_table_tracante_csv(chemin_csv, ui.root)
+    else:
+        print(f"DEBUG : Fichier {fichier_csv} introuvable.")
+        time.sleep(2)
     
-    # Clôture de la mission et libération de la ressource
+    # Fin de mission
     put_mission_state(mission.get("id"), "Done")
     put_semaphore(mission.get("semaphore_id"), "AVAILABLE")
     
@@ -43,7 +59,6 @@ def choisir_mission(mission):
     
     put_semaphore(mission_en_cours.get("semaphore_id"), "OCCUPIED")
     etat = "IMPRESSION"
-    
     threading.Thread(target=lancer_dessin_physique, daemon=True).start()
 
 def boucle():
