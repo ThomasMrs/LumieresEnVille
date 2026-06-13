@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from gestion import valider_id
-# Couche stockage : tout le SQL est defini dans stockage/shape.py
 from stockage.shape import (
     ajouter_shape,
     lire_shape,

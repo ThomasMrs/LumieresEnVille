@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from gestion import valider_id
-# Couche stockage : tout le SQL est defini dans stockage/team.py
 from stockage.team import (
     ajouter_equipe,
     lire_equipe,

@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from gestion import valider_id, valider_coordonnees
-# Couche stockage : tout le SQL est defini dans stockage/segment.py
 from stockage.segment import (
     ajouter_segment,
     lire_segment,

@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from gestion import valider_id, valider_etat, valider_type_semaphore, valider_coordonnees
-# Couche stockage : tout le SQL est defini dans stockage/semaphore.py
 from stockage.semaphore import (
     ajouter_semaphore,
     lire_semaphore,

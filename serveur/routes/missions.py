@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from gestion import valider_id, valider_etat
-# Couche stockage : tout le SQL est defini dans stockage/mission.py
 from stockage.mission import (
     ajouter_missions,
     lire_missions,
