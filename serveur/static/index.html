@@ -2,46 +2,81 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAGE IHM — K-talents</title>
-    <link rel="stylesheet" href="style.css">
-</head>
+    <title>Contrôleur Basique</title>
+    </head>
 <body>
-    <header>
-        <img src="../templates/logo.png" alt="logo K-talents">
-        <h1>K-talents</h1>
-    </header>
-    <main>
-        <section class="card">
-            <h2>Sémaphore</h2>
-            <p>Supervision des sémaphores</p>
-            <input type="text" name="name" placeholder="Nom">
-            <input type="text" name="state" placeholder="État">
-            <input type="text" name="type_semaphore" placeholder="Type de sémaphore">
-            <input type="number" name="duration" placeholder="Durée (s)">
-            <button data-endpoint="/api/add_semaphore">Ajouter</button>
-        </section>
+    <h1>Panneau de Contrôle - Lumières en Ville</h1>
 
-        <section class="card">
-            <h2>Robot</h2>
-            <p>Supervision des robots</p>
-            <input type="text" name="name" placeholder="Nom">
-            <input type="text" name="state" placeholder="État">
-            <input type="number" name="speed" placeholder="Vitesse">
-            <input type="number" name="position_x" placeholder="Position X">
-            <input type="number" name="position_y" placeholder="Position Y">
-            <button data-endpoint="/api/add_robot">Ajouter</button>
-        </section>
+    <!--MESSAGE-->
 
-        <section class="card">
-            <h2>Forme</h2>
-            <p>Supervision des formes</p>
-            <input type="text" name="name" placeholder="Nom">
-            <input type="text" name="image" placeholder="Image (URL)">
-            <button data-endpoint="/api/add_shape">Ajouter</button>
-        </section>
-    </main>
+    <fieldset>
+        <legend>1. Configuration</legend>
+        <form action="/ihm/add_config" method="get">
+            Nombre X: <input type="number" name="nombre_x" value="10" required>
+            Nombre Y: <input type="number" name="nombre_y" value="10" required><br><br>
+            Sémaphores: <input type="number" name="nombre_semaphore" value="4" required>
+            Robots: <input type="number" name="nombre_robot" value="2" required><br><br>
+            <button type="submit">Configurer</button>
+        </form>
+    </fieldset>
 
-    <script src="script.js"></script>
+    <fieldset>
+        <legend>2. Ajouter un Sémaphore</legend>
+        <form action="/ihm/add_semaphore" method="get">
+            Nom: <input type="text" name="name" required>
+            Durée: <input type="number" name="duration" value="15" required>
+            Type:
+            <select name="type" required>
+                <option value="Ascii">Ascii</option>
+                <option value="Tracant">Tracant</option>
+                <option value="Helice" selected>Helice</option>
+            </select><br><br>
+            Pos X: <input type="number" name="coord_x" required>
+            Pos Y: <input type="number" name="coord_y" required><br><br>
+            <button type="submit">Ajouter Sémaphore</button>
+        </form>
+    </fieldset>
+
+    <fieldset>
+        <legend>3. Ajouter un Robot</legend>
+        <form action="/ihm/add_robot" method="get">
+            Nom: <input type="text" name="name" required>
+            Vitesse: <input type="number" name="speed" value="1" required><br><br>
+            Pos X: <input type="number" name="position_x" value="0" required>
+            Pos Y: <input type="number" name="position_y" value="0" required><br><br>
+            <button type="submit">Ajouter Robot</button>
+        </form>
+    </fieldset>
+
+    <fieldset>
+        <legend>4. Ajouter une Équipe</legend>
+        <form action="/ihm/add_team" method="get">
+            Nom: <input type="text" name="name" required>
+            IP: <input type="text" name="ip" value="127.0.0.1"><br><br>
+            Autoriser: <input type="checkbox" name="allowed" value="true" checked><br><br>
+            <button type="submit">Ajouter Équipe</button>
+        </form>
+    </fieldset>
+
+    <fieldset style="background-color: #f9f9f9; border: 2px solid #333;">
+        <legend>5. Ajouter une Forme (via fichier CSV)</legend>
+        <form action="/ihm/add_shape_csv" method="post" enctype="multipart/form-data">
+            Nom de la forme: <input type="text" name="name" required><br><br>
+            <b>Fichier CSV:</b> <input type="file" name="file" accept=".csv" required><br><br>
+            <button type="submit" style="padding: 10px; cursor: pointer;">Envoyer et Enregistrer</button>
+        </form>
+    </fieldset>
+
+    <fieldset>
+        <legend>6. Lancer une Mission</legend>
+        <form action="/ihm/add_mission" method="get">
+            Nom Mission: <input type="text" name="name" required><br><br>
+            Équipe: <input type="text" name="team" required><br><br>
+            ID Sémaphore: <input type="text" name="semaphore_id" required><br><br>
+            ID Forme: <input type="text" name="shape_id" required><br><br>
+            <button type="submit">Activer Mission</button>
+        </form>
+    </fieldset>
+
 </body>
 </html>

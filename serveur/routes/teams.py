@@ -1,66 +1,20 @@
-import sqlite3
-import uuid
 from fastapi import APIRouter
-from database import DB_PATH
+from fastapi.responses import HTMLResponse
+from gestion import valider_id
+# Couche stockage : tout le SQL est defini dans stockage/team.py
+from stockage.team import (
+    ajouter_equipe,
+    lire_equipe,
+    auth_equipe,
+    supprimer_equipes,
+    modifier_equipes,
+)
 
 router = APIRouter(prefix="/api", tags=["Team"])
 
-# --- Accès base de données ---
-
-def ajouter_equipe(name, ip, allowed):
-    id_equipe = str(uuid.uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO team (id, name, ip, allowed) VALUES (?, ?, ?, ?)",
-        (id_equipe, name, ip, allowed),
-    )
-    conn.commit()
-    conn.close()
-
-
-def lire_equipe():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM team")
-    resultats = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultats
-
-
-def auth_equipe():
-    """Retourne uniquement les équipes autorisées à se connecter."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM team WHERE allowed = 1")
-    resultats = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultats
-
-
-def supprimer_equipes():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM team")
-    conn.commit()
-    conn.close()
-
-
-def modifier_equipes(id_equipe, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_equipe]
-    cursor.execute(f"UPDATE team SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
-
-# --- Routes ---
+# =======================
+# Routes
+# =======================
 
 @router.get("/list_teams")
 def read_teams():
@@ -75,6 +29,8 @@ def add_team(name: str, ip: str | None = None, allowed: bool = False):
 @router.put("/update_team/{id}")
 def update_team(id: str, name: str | None = None, ip: str | None = None,
                 allowed: bool | None = None):
+    if not valider_id("team", id):
+        return HTMLResponse(status_code=404, content="Team introuvable")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -82,12 +38,14 @@ def update_team(id: str, name: str | None = None, ip: str | None = None,
         champs["ip"] = ip
     if allowed is not None:
         champs["allowed"] = allowed
-    return modifier_equipes(id, **champs)
+    modifier_equipes(id, **champs)
+    return {"id": id, "status": "updated"}
 
 
 @router.delete("/delete_teams")
 def delete_teams():
-    return supprimer_equipes()
+    supprimer_equipes()
+    return {"status": "deleted"}
 
 
 @router.get("/list_teams_allowed")
