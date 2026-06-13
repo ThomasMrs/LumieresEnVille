@@ -1,57 +1,18 @@
-import sqlite3
-from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from database import DB_PATH
 from gestion import valider_id, valider_etat, valider_type_semaphore, valider_coordonnees
+# Couche stockage : tout le SQL est defini dans stockage/semaphore.py
+from stockage.semaphore import (
+    ajouter_semaphore,
+    lire_semaphore,
+    supprimer_semaphores,
+    modifier_semaphore,
+)
 
 router = APIRouter(prefix="/api", tags=["Semaphore"])
 
-
-def ajouter_semaphore(name, duration, type, coord_x, coord_y):
-    id_semaphore = str(uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO semaphore (id, name, duration, type, coord_x, coord_y) VALUES (?, ?, ?, ?, ?, ?)",
-        (id_semaphore, name, duration, type, coord_x, coord_y),
-    )
-    conn.commit()
-    conn.close()
-    return {"id": id_semaphore, "status": "ok"}
-
-
-def lire_semaphore():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM semaphore")
-    resultat = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultat
-
-
-def supprimer_semaphores():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM semaphore")
-    conn.commit()
-    conn.close()
-
-
-def modifier_semaphore(id_semaphore, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_semaphore]
-    cursor.execute(f"UPDATE semaphore SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.get("/list_semaphore")

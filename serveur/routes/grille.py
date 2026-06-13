@@ -1,24 +1,29 @@
-import sqlite3
 from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from database import DB_PATH
-from routes.config import lire_config
+# Couche stockage : tout le SQL est defini dans stockage/*
+from stockage.config import lire_config, definir_grille
+from stockage.segment import lire_segment, remplacer_segments
+from stockage.semaphore import lire_semaphore
 
 router = APIRouter(prefix="/api", tags=["Grille"])
 
 
 def creer_grille(name):
+    """Genere les segments d'une grille rectangulaire a partir de la config
+    (nombre_x x nombre_y) puis les enregistre via la couche stockage.
+
+    Pour chaque noeud (x, y) on cree :
+      - un segment horizontal vers (x+1, y) si possible ;
+      - un segment vertical vers (x, y+1) si possible.
+    """
     config = lire_config()
     if not config:
         return None
     nombre_x = config["nombre_x"]
     nombre_y = config["nombre_y"]
     id_grille = str(uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE config SET grille_id = ?, grille_name = ? WHERE id = ?", (id_grille, name, config["id"]))
-    cursor.execute("DELETE FROM segment")
+
     segments = []
     for y in range(nombre_y):
         for x in range(nombre_x):
@@ -26,13 +31,16 @@ def creer_grille(name):
                 segments.append((str(uuid4()), x, y, x + 1, y))
             if y + 1 < nombre_y:
                 segments.append((str(uuid4()), x, y, x, y + 1))
-    cursor.executemany(
-        "INSERT INTO segment (id, coord_a_x, coord_a_y, coord_b_x, coord_b_y) VALUES (?, ?, ?, ?, ?)",
-        segments,
-    )
-    conn.commit()
-    conn.close()
-    return {"grille_id": id_grille, "name": name, "nombre_x": nombre_x, "nombre_y": nombre_y, "segments": len(segments)}
+
+    definir_grille(config["id"], id_grille, name)
+    remplacer_segments(segments)
+    return {
+        "grille_id": id_grille,
+        "name": name,
+        "nombre_x": nombre_x,
+        "nombre_y": nombre_y,
+        "segments": len(segments),
+    }
 
 
 def lire_grille():
@@ -41,14 +49,9 @@ def lire_grille():
         return None
     nombre_x = config["nombre_x"]
     nombre_y = config["nombre_y"]
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM segment ORDER BY coord_a_y, coord_a_x")
-    segments = [dict(row) for row in cursor.fetchall()]
-    cursor.execute("SELECT * FROM semaphore")
-    semaphores = [dict(row) for row in cursor.fetchall()]
-    conn.close()
+    segments = lire_segment()
+    semaphores = lire_semaphore()
+
     noeuds = []
     for y in range(nombre_y):
         for x in range(nombre_x):
@@ -67,7 +70,7 @@ def lire_grille():
     }
 
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.post("/create_grille")

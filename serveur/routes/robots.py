@@ -1,61 +1,19 @@
-import sqlite3
-from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from database import DB_PATH
 from gestion import valider_id, valider_etat
-from routes.missions import lire_missions
+# Couche stockage : tout le SQL est defini dans stockage/robot.py
+from stockage.robot import (
+    ajouter_robots,
+    lire_robots,
+    supprimer_robots,
+    modifier_robots,
+)
+from stockage.mission import lire_missions
 
 router = APIRouter(prefix="/api", tags=["Robot"])
 
-
-def ajouter_robots(**champs):
-    id_robots = str(uuid4())
-    champs["id"] = id_robots
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cols = ", ".join(champs.keys())
-    placeholders = ", ".join("?" * len(champs))
-    cursor.execute(
-        f"INSERT INTO robot ({cols}) VALUES ({placeholders})",
-        list(champs.values()),
-    )
-    conn.commit()
-    conn.close()
-    return id_robots
-
-
-def lire_robots():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM robot")
-    resultats = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultats
-
-
-def supprimer_robots():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM robot")
-    conn.commit()
-    conn.close()
-
-
-def modifier_robots(id_robots, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_robots]
-    cursor.execute(f"UPDATE robot SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.get("/list_robots")

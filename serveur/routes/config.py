@@ -1,48 +1,15 @@
-import sqlite3
-from uuid import uuid4
 from fastapi import APIRouter
-from database import DB_PATH
+# Couche stockage : tout le SQL est defini dans stockage/config.py
+from stockage.config import (
+    ajouter_config,
+    lire_config,
+    modifier_config,
+)
 
 router = APIRouter(prefix="/api", tags=["Config"])
 
-
-def ajouter_config(nombre_x, nombre_y, nombre_semaphore, nombre_robot):
-    id_config = str(uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM config")
-    cursor.execute(
-        "INSERT INTO config (id, nombre_x, nombre_y, nombre_semaphore, nombre_robot) VALUES (?, ?, ?, ?, ?)",
-        (id_config, nombre_x, nombre_y, nombre_semaphore, nombre_robot),
-    )
-    conn.commit()
-    conn.close()
-    return {"id": id_config, "status": "ok"}
-
-
-def lire_config():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM config LIMIT 1")
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else {}
-
-
-def modifier_config(id_config, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_config]
-    cursor.execute(f"UPDATE config SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.post("/add_config")

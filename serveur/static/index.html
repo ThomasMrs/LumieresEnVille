@@ -6,7 +6,9 @@
     </head>
 <body>
     <h1>Panneau de Contrôle - Lumières en Ville</h1>
-    
+
+    <!--MESSAGE-->
+
     <fieldset>
         <legend>1. Configuration</legend>
         <form action="/ihm/add_config" method="get">
@@ -23,7 +25,12 @@
         <form action="/ihm/add_semaphore" method="get">
             Nom: <input type="text" name="name" required>
             Durée: <input type="number" name="duration" value="15" required>
-            Type: <input type="text" name="type" value="HELICE" required><br><br>
+            Type:
+            <select name="type" required>
+                <option value="Ascii">Ascii</option>
+                <option value="Tracant">Tracant</option>
+                <option value="Helice" selected>Helice</option>
+            </select><br><br>
             Pos X: <input type="number" name="coord_x" required>
             Pos Y: <input type="number" name="coord_y" required><br><br>
             <button type="submit">Ajouter Sémaphore</button>

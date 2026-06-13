@@ -1,56 +1,18 @@
-import sqlite3
-from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from database import DB_PATH
 from gestion import valider_id
+# Couche stockage : tout le SQL est defini dans stockage/shape.py
+from stockage.shape import (
+    ajouter_shape,
+    lire_shape,
+    supprimer_shapes,
+    modifier_shape,
+)
 
 router = APIRouter(prefix="/api", tags=["Shape"])
 
-def ajouter_shape(name, image):
-    id_shape = str(uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO shape (id, name, image) VALUES (?, ?, ?)",
-        (id_shape, name, image),
-    )
-    conn.commit()
-    conn.close()
-    return {"id": id_shape, "status": "ok"}
-
-
-def lire_shape():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM shape")
-    resultats = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultats
-
-
-def supprimer_shapes():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM shape")
-    conn.commit()
-    conn.close()
-
-
-def modifier_shape(id_shape, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_shape]
-    cursor.execute(f"UPDATE shape SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.get("/list_shapes")

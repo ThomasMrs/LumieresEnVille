@@ -14,9 +14,11 @@ def page_html(message=""):
     try:
         html = IHM_PATH.read_text(encoding="utf-8")
         css = CSS_PATH.read_text(encoding="utf-8")
-        html = html.replace("", f"<style>{css}</style>")
+        # On injecte le CSS juste avant la fermeture de <head>.
+        html = html.replace("</head>", f"<style>{css}</style></head>")
+        # On remplace le marqueur <!--MESSAGE--> par le message eventuel.
         if message:
-            html = html.replace("", f'<div class="message"><b>Info :</b> {message}</div>')
+            html = html.replace("<!--MESSAGE-->", f'<div class="message"><b>Info :</b> {message}</div>')
         return HTMLResponse(content=html)
     except Exception as e:
         return HTMLResponse(f"Erreur de lecture des fichiers HTML/CSS : {e}")

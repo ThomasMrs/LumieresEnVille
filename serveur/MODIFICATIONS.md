@@ -20,7 +20,7 @@
 
 ## P1 — Indispensable (bloquant pour la note Web)
 
-### 1. Séparer la couche « stockage » de la couche « règles de gestion » ⬜
+### 1. Séparer la couche « stockage » de la couche « règles de gestion » ✅
 - **Réf. CdC :** §7.4.1 (architecture 3 tiers : IHM / règles de gestion / stockage) et §7.4.5 (« Séparer clairement les règles de gestion des fonctions de stockage »).
 - **Constat :** tout le SQL (`ajouter_*`, `lire_*`, `modifier_*`, `supprimer_*`) est mélangé dans les fichiers de `routes/`. `gestion.py` ne contient que la validation.
 - **Où :** `routes/*.py`, `gestion.py`.
@@ -69,7 +69,7 @@
 
 ## P2 — Important
 
-### 6. Écrire de vrais tests unitaires ⬜
+### 6. Écrire de vrais tests unitaires ✅
 - **Réf. CdC :** §7.4.5 (« Coder directement des tests unitaires… lorsque pertinent »), §8 (« Présence de tests… des principaux flux »).
 - **Constat :** `tests/test.py` n'est qu'un **script de peuplement** (aucune assertion, pas de framework).
 - **Où :** `tests/`.
@@ -92,7 +92,7 @@
   - **Liste des autres services Web** (synchronisation éventuelle) : ni table ni endpoint → créer une table `service_web` (id, name, url, …) + routes de consultation.
   - **Taille des routes** et **vitesse d'avancement sur les routes** : les `segment` n'ont ni longueur ni vitesse → ajouter `length` (et/ou `speed`) à la table `segment`, ou un paramètre global dans `config`.
 
-### 9. Endpoint « mission disponible pour un robot » ⬜
+### 9. Endpoint « mission disponible pour un robot » ✅
 - **Réf. CdC :** §8.1 (« Un robot disponible peut récupérer une mission »).
 - **Constat :** pas d'endpoint dédié ; le robot doit lire toute la liste et filtrer.
 - **Où :** `routes/missions.py`.
@@ -120,12 +120,12 @@
 
 ## Corrections techniques (bugs)
 
-### B1. Bug d'injection HTML/CSS dans `main.py` ⬜
+### B1. Bug d'injection HTML/CSS dans `main.py` ✅
 - **Constat :** `page_html()` fait `html.replace("", f"<style>{css}</style>")` et `html.replace("", message)`. Remplacer une **chaîne vide** insère le contenu entre **chaque** caractère → injection incorrecte.
 - **Où :** `main.py`, fonction `page_html()`.
 - **À faire :** utiliser un vrai marqueur dans `index.html` (ex. `</head>` pour le CSS, un placeholder `<!--MESSAGE-->` pour le message) et remplacer ce marqueur.
 
-### B2. Incohérence type de sémaphore IHM ⬜
+### B2. Incohérence type de sémaphore IHM ✅
 - **Constat :** `static/index.html` propose `type = "HELICE"` (majuscules) alors que la validation `valider_type_semaphore` n'accepte que `Ascii | Tracant | Helice` → l'ajout via l'IHM échoue (400).
 - **Où :** `static/index.html`.
 - **À faire :** aligner les valeurs (liste déroulante `Ascii / Tracant / Helice`).
@@ -136,20 +136,20 @@
 
 | #  | Priorité | Modification                                              | Réf. CdC          | Statut |
 |----|----------|----------------------------------------------------------|-------------------|--------|
-| 1  | P1       | Séparer stockage / règles de gestion                     | §7.4.1, §7.4.5    | ⬜     |
+| 1  | P1       | Séparer stockage / règles de gestion                     | §7.4.1, §7.4.5    | ✅     |
 | 2  | P1       | Autorisation des objets reconnus (contrôleurs/robots/sémaphores) | §3, §7.4.3-4 | ⬜     |
 | 3  | P1       | Champ « symbole affiché » sur le sémaphore               | §3                | ⬜     |
 | 4  | P1       | Endpoint déclenchement d'affichage                       | §3                | ⬜     |
 | 5  | P1       | README serveur (install/lancement/test) + MAJ README racine | §4, §10.1      | ⬜     |
-| 6  | P2       | Vrais tests unitaires                                    | §7.4.5, §8        | ⬜     |
+| 6  | P2       | Vrais tests unitaires                                    | §7.4.5, §8        | ✅     |
 | 7  | P2       | Nettoyer dépendances non autorisées                      | §7.4.2            | ⬜     |
 | 8  | P2       | Paramétrage : autres services Web + taille/vitesse routes| §7.4.4            | ⬜     |
-| 9  | P2       | Endpoint « mission disponible »                          | §8.1              | ⬜     |
+| 9  | P2       | Endpoint « mission disponible »                          | §8.1              | ✅     |
 | 10 | P2       | Horodatage / calculs centralisés                         | §3                | ⬜     |
 | 11 | P3       | IHM statistiques (moyenne / écart-type)                  | §7.4.7            | ⬜     |
 | 12 | P3       | Gestion des conflits de circulation (segments)           | §3, §7.3.3        | ⬜     |
-| B1 | Bug      | Injection HTML/CSS `page_html()`                         | —                 | ⬜     |
-| B2 | Bug      | Type sémaphore IHM (`HELICE` vs `Helice`)                | —                 | ⬜     |
+| B1 | Bug      | Injection HTML/CSS `page_html()`                         | —                 | ✅     |
+| B2 | Bug      | Type sémaphore IHM (`HELICE` vs `Helice`)                | —                 | ✅     |
 
 ---
 

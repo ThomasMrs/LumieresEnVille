@@ -1,58 +1,18 @@
-import sqlite3
-from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from database import DB_PATH
 from gestion import valider_id, valider_etat
+# Couche stockage : tout le SQL est defini dans stockage/mission.py
+from stockage.mission import (
+    ajouter_missions,
+    lire_missions,
+    supprimer_missions,
+    modifier_missions,
+)
 
 router = APIRouter(prefix="/api", tags=["Mission"])
 
-
-def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id):
-    id_missions = str(uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO mission (id, name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (id_missions, name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id),
-    )
-    conn.commit()
-    conn.close()
-    return id_missions
-
-
-def lire_missions():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM mission")
-    resultats = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultats
-
-
-def supprimer_missions():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM mission")
-    conn.commit()
-    conn.close()
-
-
-def modifier_missions(id_mission, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_mission]
-    cursor.execute(f"UPDATE mission SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.get("/list_missions")
@@ -63,6 +23,21 @@ def read_missions():
 @router.get("/get_missions")
 def get_missions(team: str):
     return [m for m in lire_missions() if m["team"] == team]
+
+
+@router.get("/missions/available")
+def get_available_missions(team: str | None = None):
+    """Renvoie les missions qu'un robot disponible peut prendre :
+    etat 'Awaiting' et aucun robot encore assigne.
+    On peut filtrer par equipe avec le parametre 'team'.
+    """
+    disponibles = [
+        m for m in lire_missions()
+        if m["state"] == "Awaiting" and not m["robot_id"]
+    ]
+    if team:
+        disponibles = [m for m in disponibles if m["team"] == team]
+    return disponibles
 
 
 @router.post("/add_mission")
@@ -88,7 +63,7 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
     if not valider_id("mission", id):
         return HTMLResponse(status_code=404, content="Mission introuvable")
     if state is not None and not valider_etat(state, "mission"):
-        return HTMLResponse(status_code=400, content="Etat invalide (Pending | In progress | Done)")
+        return HTMLResponse(status_code=400, content="Etat invalide (Awaiting | Pending_robot | Pending_semaphore | Done)")
     if semaphore_id and not valider_id("semaphore", semaphore_id):
         return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if shape_id and not valider_id("shape", shape_id):

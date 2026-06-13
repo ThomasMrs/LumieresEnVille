@@ -1,57 +1,18 @@
-import sqlite3
-from uuid import uuid4
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from database import DB_PATH
 from gestion import valider_id, valider_coordonnees
+# Couche stockage : tout le SQL est defini dans stockage/segment.py
+from stockage.segment import (
+    ajouter_segment,
+    lire_segment,
+    supprimer_segments,
+    modifier_segment,
+)
 
 router = APIRouter(prefix="/api", tags=["Segment"])
 
-
-def ajouter_segment(coord_a_x, coord_a_y, coord_b_x, coord_b_y):
-    id_segment = str(uuid4())
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO segment (id, coord_a_x, coord_a_y, coord_b_x, coord_b_y) VALUES (?, ?, ?, ?, ?)",
-        (id_segment, coord_a_x, coord_a_y, coord_b_x, coord_b_y),
-    )
-    conn.commit()
-    conn.close()
-    return {"id": id_segment, "status": "ok"}
-
-
-def lire_segment():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM segment")
-    resultat = [dict(ligne) for ligne in cursor.fetchall()]
-    conn.close()
-    return resultat
-
-
-def supprimer_segments():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM segment")
-    conn.commit()
-    conn.close()
-
-
-def modifier_segment(id_segment, **champs):
-    if not champs:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    sets = ", ".join(f"{k} = ?" for k in champs)
-    vals = list(champs.values()) + [id_segment]
-    cursor.execute(f"UPDATE segment SET {sets} WHERE id = ?", vals)
-    conn.commit()
-    conn.close()
-
 # =======================
-# Route
+# Routes
 # =======================
 
 @router.get("/list_segment")
