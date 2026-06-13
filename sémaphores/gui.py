@@ -12,13 +12,13 @@ class Interface:
         tk.Label(self.frame_local, text="🔧 Tests Manuels (Hors-Ligne)", bg="#1a1a1a", fg="gray", font=("Arial", 9)).pack(pady=2)
         
         self.btn_table = tk.Button(
-            self.frame_local, text="✒️ Ouvrir Table Traçante", 
+            self.frame_local, text="Ouvrir Table Traçante", 
             bg="#333333", fg="white", font=("Arial", 10, "bold")
         )
         self.btn_table.pack(side="left", expand=True, fill="x", padx=10, pady=5)
 
         self.btn_helice = tk.Button(
-            self.frame_local, text="🌀 Ouvrir Hélice LED", 
+            self.frame_local, text="uvrir Hélice LED", 
             bg="#333333", fg="white", font=("Arial", 10, "bold")
         )
         self.btn_helice.pack(side="right", expand=True, fill="x", padx=10, pady=5)

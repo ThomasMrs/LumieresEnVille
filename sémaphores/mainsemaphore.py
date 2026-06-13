@@ -21,7 +21,7 @@ def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
 
 def interpoler_points(points):
     """Transforme les sommets en lignes continues pour l'affichage POV"""
-    PHASE_SHIFT = 90  # <--- Change cette valeur pour pivoter ton image !
+    PHASE_SHIFT = 90  # 
     if len(points) < 2: return points
     
     points_denses = []
