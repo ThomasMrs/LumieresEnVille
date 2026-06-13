@@ -1,21 +1,26 @@
 import requests
 from datetime import datetime
 
-# URL de ton serveur
-BASE_URL = "http://192.168.1.18:8000"  # <--- Change cette adresse si besoin !
+BASE_URL = "http://192.168.1.14:8000"
 
 def get_missions():
+    # On récupère la liste des missions
     try:
-        response = requests.get(f"{BASE_URL}/api/list_missions")
-        return response.json() if response.status_code == 200 else []
+        response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return []
     except Exception as e:
-        print(f"Erreur get_missions : {e}")
+        print("Erreur de connexion au serveur API:", e)
         return []
 
 def get_shape(shape_id):
     try:
         response = requests.get(f"{BASE_URL}/api/shape/{shape_id}")
-        return response.json() if response.status_code == 200 else {}
+        if response.status_code == 200:
+            return response.json()
+        return {}
     except:
         return {}
 
@@ -23,6 +28,7 @@ def get_semaphore(semaphore_id):
     try:
         response = requests.get(f"{BASE_URL}/api/list_semaphore")
         sems = response.json()
+        # On cherche notre sémaphore dans la liste
         for s in sems:
             if s.get("id") == semaphore_id:
                 return s
@@ -32,36 +38,43 @@ def get_semaphore(semaphore_id):
 
 def put_mission_state(mission_id, state):
     url = f"{BASE_URL}/api/update_mission/{mission_id}"
+    maintenant = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     params = {
-        "state": state,
-        "end_date": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        "state": state, 
+        "end_date": maintenant
     }
     try:
-        response = requests.put(url, params=params)
-        return response.status_code == 200
+        rep = requests.put(url, params=params)
+        return rep.status_code == 200
     except:
         return False
 
 def put_semaphore_state(semaphore_id, state):
     url = f"{BASE_URL}/api/update_semaphore/{semaphore_id}"
-    params = {"state": state}
     try:
-        response = requests.put(url, params=params)
-        return response.status_code == 200
+        rep = requests.put(url, params={"state": state})
+        return rep.status_code == 200
     except:
         return False
 
 def decoder_chaine_image(chaine):
-    """Décode la chaîne format Pxxx.xxx.x en liste de points"""
+    """Transforme la chaine Pxxx.xxx.x en dictionnaire r, a, s"""
     points = []
-    if not chaine or chaine == "T": return points
-    
+    if not chaine or chaine == "T": 
+        return points
+        
     segments = chaine.split('P')
     for seg in segments:
-        if not seg: continue
+        if seg == "": 
+            continue
         try:
             parts = seg.split('.')
-            points.append({'r': float(parts[0]), 'a': int(parts[1]), 's': int(parts[2])})
-        except:
+            rayon = float(parts[0])
+            angle = int(parts[1])
+            stylo = int(parts[2])
+            points.append({'r': rayon, 'a': angle, 's': stylo})
+        except: 
+            print("Erreur de parsing sur le segment:", seg)
             continue
+            
     return points
