@@ -26,10 +26,21 @@ import javax.swing.Timer;
 
 public class ApercuGrilleRobots {
 
-    private static final String SERVEUR = "http://192.168.1.18:8000";
+    private static String SERVEUR = "http://192.168.1.18:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
 
     public static void main(String[] args) {
+        if (args != null && args.length > 0 && !args[0].isBlank()) {
+            SERVEUR = args[0];
+        }
+        lancer();
+    }
+
+    // Surcharge appelee par AppRobots pour partager la meme adresse serveur (configurable).
+    public static void lancer(String serveur) {
+        if (serveur != null && !serveur.isBlank()) {
+            SERVEUR = serveur;
+        }
         lancer();
     }
 

@@ -4,40 +4,23 @@ public class Grille {
 
     private Grille() {
     }
-//deplacement du robot vers une destination en utilisant un thread pour simuler le mouvement progressif et respecter la vitesse du robot.
+
+    // Deplace le robot pas a pas jusqu'a la destination, DANS le thread appelant
+    // (chaque robot a deja son propre thread - cf. AppRobots). On respecte la vitesse
+    // du robot et on s'arrete proprement si le thread est interrompu.
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
-        Exception[] erreur = new Exception[1];
-        Thread threadDeplacement = new Thread(() -> {
-            try {
-                deplacerDansThread(robot, destinationX, destinationY);
-            } catch (Exception e) {
-                erreur[0] = e;
-            }
-        }, "deplacement-" + robot.getNom());
-
-        threadDeplacement.start();
-        threadDeplacement.join();
-
-        if (erreur[0] != null) {
-            throw erreur[0];
-        }
-    }
-
-// La méthode deplacerDansThread effectue le déplacement du robot en vérifiant d'abord que la destination est valide,
-//  puis en mettant à jour la position du robot progressivement jusqu'à atteindre la destination. Elle utilise des pauses pour simuler la vitesse du robot.
-    private static void deplacerDansThread(Robot robot, double destinationX, double destinationY) throws Exception {
         int cibleX = (int) Math.round(destinationX);
         int cibleY = (int) Math.round(destinationY);
         int x = (int) Math.round(robot.getX());
         int y = (int) Math.round(robot.getY());
 
         verifierPositionDansGrille(cibleX, cibleY);
-        System.out.println("Deplacement robot -> depart=(" + x + ", " + y + ")"
-                + ", destination=(" + cibleX + ", " + cibleY + ")"
-                + ", vitesse=" + robot.getVitesse() + " case(s)/s"
-                + ", thread=" + Thread.currentThread().getName());
 
         while (x != cibleX || y != cibleY) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
+            }
+
             if (x < cibleX) {
                 x++;
             } else if (x > cibleX) {
@@ -49,8 +32,8 @@ public class Grille {
             }
 
             robot.setPosition(x, y);
-            System.out.println("Robot avance -> (" + x + ", " + y + ")");
-            System.out.println("PUT robot      : " + AppRobots.modifierRobot(robot));
+            System.out.println("[" + robot.getNom() + "] avance -> (" + x + ", " + y + ")");
+            AppRobots.modifierRobot(robot);
             attendreSelonVitesse(robot);
         }
     }
