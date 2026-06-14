@@ -10,8 +10,7 @@ public class Robot {
     private EtatRobot etat;
     private Mission mission;
 
-    // Ce constructeur cree un robot Java avec un nom et une position.
-    // L'id reste null au debut car il vient du serveur.
+
     public Robot(String nom, double x, double y) {
         this.id = null;
         this.nom = nom;

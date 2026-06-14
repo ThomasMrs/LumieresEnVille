@@ -16,26 +16,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AppRobots {
 
-    // Adresse par defaut, surchargeable (1er argument, variable d'env LEV_SERVEUR, ou saisie clavier).
     private static final String SERVEUR_DEFAUT = "http://192.168.1.18:8000";
     private static String SERVEUR = SERVEUR_DEFAUT;
-
     private static final int BASE_X = 0;
     private static final int BASE_Y = 0;
-
-    // Intervalle entre deux recherches de mission quand le robot est libre (ms).
     private static final long INTERVALLE_RECHERCHE_MS = 2000;
-
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // Verrou partage : un seul robot a la fois peut reclamer une mission,
-    // pour eviter que deux robots prennent la meme (section critique - cf. cours Thread).
+    // un seul robot a la fois peut prendre une mission,
+    // pour eviter que deux robots prennent la meme
     private static final Object VERROU_MISSIONS = new Object();
-
-    // Variable d'etat pour arreter proprement tous les threads robots.
     private static final AtomicBoolean EN_MARCHE = new AtomicBoolean(true);
 
     public static void main(String[] args) throws Exception {
@@ -58,21 +51,19 @@ public class AppRobots {
             return;
         }
 
-        // Un thread par robot : chaque robot cherche et execute ses missions en parallele.
+        // Un thread par robot
         List<Thread> threads = new ArrayList<>();
         for (Robot robot : robots) {
             Thread t = new Thread(new RobotWorker(robot), "robot-" + robot.getNom());
             threads.add(t);
             t.start();
         }
-        System.out.println(robots.size() + " robot(s) demarre(s), chacun dans son thread.");
+        System.out.println(robots.size() + " robot demarre, chacun dans son thread.");
         System.out.println("Appuie sur Entree pour arreter.");
 
-        // Attente d'un arret demande par l'utilisateur.
         try {
             CLAVIER.nextLine();
         } catch (Exception ignore) {
-            // pas d'entree interactive : on laisse simplement tourner
         }
 
         System.out.println("Arret demande, on attend la fin des deplacements en cours...");
@@ -86,7 +77,7 @@ public class AppRobots {
         System.out.println("Tous les robots sont arretes. Au revoir.");
     }
 
-    // === Logique d'un robot, executee dans son propre thread ===
+    //un robot par tyhread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
     private static final class RobotWorker implements Runnable {
         private final Robot robot;
 
@@ -96,7 +87,6 @@ public class AppRobots {
 
         @Override
         public void run() {
-            // On s'assure que le robot est bien Available cote serveur au demarrage.
             robot.setEtat(EtatRobot.AVAILABLE);
             try {
                 modifierRobot(robot);
@@ -108,13 +98,13 @@ public class AppRobots {
                 try {
                     Mission mission = reclamerProchaineMission(robot);
                     if (mission == null) {
-                        Thread.sleep(INTERVALLE_RECHERCHE_MS); // rien a faire : on patiente
+                        Thread.sleep(INTERVALLE_RECHERCHE_MS); 
                         continue;
                     }
                     executerMission(robot, mission);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    break; // arret demande
+                    break;
                 } catch (Exception e) {
                     log("erreur pendant la mission : " + e.getMessage());
                     remettreDisponible(robot);
@@ -128,7 +118,7 @@ public class AppRobots {
         }
     }
 
-    // Reclame, de facon atomique entre threads, la prochaine mission disponible.
+    // Reclame threads, la prochaine mission disponible.
     // Renvoie null si aucune mission n'est disponible.
     private static Mission reclamerProchaineMission(Robot robot) throws Exception {
         synchronized (VERROU_MISSIONS) {
@@ -156,13 +146,10 @@ public class AppRobots {
         double coordY = nombre(semaphoreJson, "coord_y");
 
         Grille.deplacer(robot, coordX, coordY);
-
-        // Arrive pres du semaphore : on passe le relais au semaphore (via le serveur).
         mission.signalerArriveeSemaphore();
         modifierMission(mission);
         System.out.println("[" + robot.getNom() + "] arrive au semaphore, mission transmise.");
 
-        // Le robot n'attend pas que le semaphore termine : il rentre directement a la base.
         Grille.deplacer(robot, BASE_X, BASE_Y);
         remettreDisponible(robot);
         System.out.println("[" + robot.getNom() + "] rentre a la base, de nouveau disponible.");
@@ -192,7 +179,7 @@ public class AppRobots {
         return robots;
     }
 
-    // Utilise l'endpoint dedie du serveur : missions en etat Awaiting et sans robot assigne.
+    // missions en etat Awaiting et sans robot assigne.
     private static List<Mission> lireMissionsDisponibles() throws Exception {
         List<Mission> missions = new ArrayList<>();
         for (String objet : objets(get("/api/missions/available"))) {
@@ -211,9 +198,9 @@ public class AppRobots {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
-                + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
-                + "&position_x=" + (int) Math.round(robot.getX())
-                + "&position_y=" + (int) Math.round(robot.getY());
+                + "&speed=" + (float) Math.round(robot.getVitesse())
+                + "&position_x=" + (float) Math.round(robot.getX())
+                + "&position_y=" + (float) Math.round(robot.getY());
         return put(url);
     }
 
@@ -255,7 +242,7 @@ public class AppRobots {
 
     private static String normaliserUrl(String url) {
         String u = url.trim();
-        if (!u.startsWith("http://") && !u.startsWith("https://")) {
+        if (!u.startsWith("http://")) {
             u = "http://" + u;
         }
         while (u.endsWith("/")) {
@@ -264,9 +251,8 @@ public class AppRobots {
         return u;
     }
 
-    // === Helpers JSON ===
 
-    // Decoupe un tableau JSON [ {...}, {...} ] en objets, en suivant la profondeur des accolades.
+    // Decoupe un tableau JSON 
     private static List<String> objets(String json) {
         List<String> liste = new ArrayList<>();
         int profondeur = 0;
@@ -283,18 +269,17 @@ public class AppRobots {
         }
         return liste;
     }
-
-    // Extrait la valeur d'un champ d'un objet JSON plat : "champ":"texte" ou "champ":nombre.
+// recup valeur d'un json
     private static String champ(String objet, String nom) {
         int i = objet.indexOf("\"" + nom + "\"");
         if (i < 0) return "";
         i = objet.indexOf(':', i) + 1;
         while (i < objet.length() && objet.charAt(i) == ' ') i++;
         if (i >= objet.length()) return "";
-        if (objet.charAt(i) == '"') {                       // valeur texte : entre guillemets
+        if (objet.charAt(i) == '"') {                      
             return objet.substring(i + 1, objet.indexOf('"', i + 1));
         }
-        int fin = i;                                        // valeur nombre/null : jusqu'a , ou }
+        int fin = i;                                       
         while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') fin++;
         String valeur = objet.substring(i, fin).trim();
         return valeur.equals("null") ? "" : valeur;
@@ -312,16 +297,13 @@ public class AppRobots {
             return EtatRobot.AVAILABLE;
         }
     }
-
-    // Le serveur attend "Available"/"Occupied"/"Disabled" (1re lettre majuscule, reste minuscule),
-    // alors que l'enum donne "AVAILABLE". On convertit avant l'envoi.
     private static String etatServeur(EtatRobot etat) {
         String n = etat.name();
         return n.charAt(0) + n.substring(1).toLowerCase();
     }
 
-    // === Helpers HTTP ===
 
+//helper
     static String get(String chemin) throws Exception {
         return requete("GET", chemin);
     }
@@ -352,7 +334,7 @@ public class AppRobots {
                 return "OK";
             }
             return reponse.body();
-        } catch (Exception e) {                              // serveur eteint, mauvaise IP
+        } catch (Exception e) {                              
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
     }

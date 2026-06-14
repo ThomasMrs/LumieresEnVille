@@ -5,9 +5,7 @@ public class Grille {
     private Grille() {
     }
 
-    // Deplace le robot pas a pas jusqu'a la destination, DANS le thread appelant
-    // (chaque robot a deja son propre thread - cf. AppRobots). On respecte la vitesse
-    // du robot et on s'arrete proprement si le thread est interrompu.
+    // Deplace le robot
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
         int cibleX = (int) Math.round(destinationX);
         int cibleY = (int) Math.round(destinationY);
