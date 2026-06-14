@@ -12,7 +12,7 @@ class HelicePOV:
         self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
-        self.ESPACEMENT_LED = 20
+        self.ESPACEMENT_LED = 12
         self.refresh_rate = 20  
         
         self.vitesse_rotation = 5.0

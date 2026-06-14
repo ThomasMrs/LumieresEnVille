@@ -4,7 +4,6 @@ from datetime import datetime
 BASE_URL = "http://192.168.1.14:8000"
 
 def get_missions():
-    # On récupère la liste des missions
     try:
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
         if response.status_code == 200:
@@ -28,7 +27,6 @@ def get_semaphore(semaphore_id):
     try:
         response = requests.get(f"{BASE_URL}/api/list_semaphore")
         sems = response.json()
-        # On cherche notre sémaphore dans la liste
         for s in sems:
             if s.get("id") == semaphore_id:
                 return s

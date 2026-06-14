@@ -18,11 +18,10 @@ class Interface:
         self.btn_table.pack(side="left", expand=True, fill="x", padx=10, pady=5)
 
         self.btn_helice = tk.Button(
-            self.frame_local, text="uvrir Hélice LED", 
+            self.frame_local, text="Ouvrir Hélice LED", 
             bg="#333333", fg="white", font=("Arial", 10, "bold")
         )
         self.btn_helice.pack(side="right", expand=True, fill="x", padx=10, pady=5)
-        # ----------------------------------------------
 
         self.canvas = tk.Canvas(self.root, width=500, height=350, bg="black", highlightthickness=0)
         self.canvas.pack(padx=20, pady=5)

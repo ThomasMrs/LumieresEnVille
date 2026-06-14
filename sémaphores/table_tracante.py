@@ -14,7 +14,7 @@ def simuler_table_tracante_csv(nom_fichier, root_parent):
     canvas = tk.Canvas(top, width=500, height=500, bg="white")
     canvas.pack(padx=10, pady=10)
 
-    cx, cy = 250, 250  # Centre de la table
+    cx, cy = 250, 250  
     x_prec, y_prec = None, None
 
     try:
@@ -27,15 +27,12 @@ def simuler_table_tracante_csv(nom_fichier, root_parent):
                 parties = ligne.split(";")
                 if len(parties) >= 3:
                     r = float(parties[0])
-                    # Conversion de l'angle du CSV en radians pour les fonctions mathématiques
                     a = math.radians(float(parties[1]))
                     stylo = int(parties[2])
 
-                    # Formule de passage Polaire -> Cartésien
                     x = cx + r * math.cos(a)
                     y = cy + r * math.sin(a)
 
-                    # Si le stylo est abaissé (1), on trace la ligne depuis le point précédent
                     if stylo == 1 and x_prec is not None:
                         canvas.create_line(x_prec, y_prec, x, y, fill="black", width=2)
 
