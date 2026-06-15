@@ -78,8 +78,7 @@ def lancer_dessin_physique():
     if "P" in image_data and ";" in image_data:
         ui.afficher_forme("★")
         points_bruts = decoder_chaine_image(image_data)
-        # L'helice (POV) a besoin de points tres denses pour allumer les LED a chaque angle ;
-        # la table tracante, elle, relie deja les sommets par des droites -> on lui passe les points bruts.
+        
         if type_sem == "helice":
             cible_affichage = ecrire_csv_temporaire(interpoler_points(points_bruts))
         else:
