@@ -75,20 +75,23 @@ def lancer_dessin_physique():
     image_data = shape.get("image", "").strip()
     type_sem = sem.get("type", "").lower()
     
-    if "P" in image_data and "." in image_data:
-        ui.afficher_forme("★") 
+    if "P" in image_data and ";" in image_data:
+        ui.afficher_forme("★")
         points_bruts = decoder_chaine_image(image_data)
-        points_finaux = interpoler_points(points_bruts)
-        cible_affichage = ecrire_csv_temporaire(points_finaux)
+        # L'helice (POV) a besoin de points tres denses pour allumer les LED a chaque angle ;
+        # la table tracante, elle, relie deja les sommets par des droites -> on lui passe les points bruts.
+        if type_sem == "helice":
+            cible_affichage = ecrire_csv_temporaire(interpoler_points(points_bruts))
+        else:
+            cible_affichage = ecrire_csv_temporaire(points_bruts)
     else:
         cible_affichage = image_data
         ui.afficher_forme(cible_affichage)
-        
+
     if type_sem == "helice":
         lancer_helice_ui(ui.root, cible_affichage)
-    else:
-        if cible_affichage.endswith(".csv"):
-            simuler_table_tracante_csv(cible_affichage, ui.root)
+    elif cible_affichage.endswith(".csv"):
+        simuler_table_tracante_csv(cible_affichage, ui.root)
     
     put_mission_state(mission_en_cours.get("id"), "Done")
     put_semaphore_state(mission_en_cours.get("semaphore_id"), "Available")

@@ -56,23 +56,26 @@ def put_semaphore_state(semaphore_id, state):
         return False
 
 def decoder_chaine_image(chaine):
-    """Transforme la chaine Pxxx.xxx.x en dictionnaire r, a, s"""
+    """Transforme le CSV du serveur (une ligne 'label;rayon;angle;stylo' par point)
+    en liste de dictionnaires {r, a, s}."""
     points = []
-    if not chaine or chaine == "T": 
+    if not chaine:
         return points
-        
-    segments = chaine.split('P')
-    for seg in segments:
-        if seg == "": 
+
+    for ligne in chaine.replace("\r", "").split("\n"):
+        ligne = ligne.strip()
+        # on saute les lignes vides et l'eventuel entete (rayon;angle;stylo, name...)
+        if not ligne or ligne.lower().startswith(("rayon", "name", "label")):
+            continue
+        colonnes = ligne.split(";")
+        if len(colonnes) < 4:
             continue
         try:
-            parts = seg.split('.')
-            rayon = float(parts[0])
-            angle = int(parts[1])
-            stylo = int(parts[2])
+            rayon = float(colonnes[1])
+            angle = float(colonnes[2])
+            stylo = int(colonnes[3])
             points.append({'r': rayon, 'a': angle, 's': stylo})
-        except: 
-            print("Erreur de parsing sur le segment:", seg)
-            continue
-            
+        except ValueError:
+            print("Erreur de parsing sur la ligne:", ligne)
+
     return points
