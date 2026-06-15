@@ -3,13 +3,13 @@ import math
 import os
 
 class HelicePOV:
-    def __init__(self, root):
+    def __init__(self, root, fichier_initial=None):
         self.root = root
         self.root.title("Simulation Hélice POV")
         self.root.configure(bg="#222")
         
-        self.W = 300
-        self.H = 300
+        self.W = 400
+        self.H = 400
         self.CX = self.W / 2
         self.CY = self.H / 2
         self.refresh_rate = 20  
@@ -24,6 +24,13 @@ class HelicePOV:
         
         self._creer_interface()
         self._initialiser_matrice_rotation()
+        
+        if fichier_initial and os.path.exists(fichier_initial):
+            self.charger_depuis_csv_local(fichier_initial)
+            self.lettre_actuelle = os.path.basename(fichier_initial).upper()
+            self.entry_lettre.delete(0, tk.END)
+            self.entry_lettre.insert(0, fichier_initial)
+            
         self.animate()
 
     def _creer_matrice_lettre_A(self):
@@ -61,18 +68,25 @@ class HelicePOV:
     def charger_depuis_csv_local(self, nom_fichier):
         matrice = [[None for _ in range(10)] for _ in range(360)]
         points = []
-        with open(nom_fichier, "r") as f:
-            for ligne in f:
-                if ";" not in ligne or "rayon" in ligne: 
-                    continue
-                parts = ligne.strip().split(";")
-                points.append((float(parts[0]), int(float(parts[1])), int(parts[2])))
+        try:
+            with open(nom_fichier, "r") as f:
+                for ligne in f:
+                    if ";" not in ligne or "rayon" in ligne: 
+                        continue
+                    parts = ligne.strip().split(";")
+                    points.append((float(parts[0]), int(float(parts[1])), int(parts[2])))
+        except Exception:
+            return
 
         r_max = max([p[0] for p in points]) if points else 1.0
+        if r_max == 0:
+            r_max = 1.0
         
         for r, a, s in points:
             if s == 1:
                 led_idx = int((r / r_max) * 9)
+                if led_idx > 9: led_idx = 9
+                if led_idx < 0: led_idx = 0
                 matrice[a % 360][led_idx] = (0, 255, 255)
         
         self.matrices_polaires[os.path.basename(nom_fichier).upper()] = matrice
@@ -118,6 +132,9 @@ class HelicePOV:
                 angle_physique = (self.angle_moteur + b * 90) % 360
                 angle_rad = math.radians(angle_physique - 90) 
                 
+                # NOUVEAU : On calcule la position précédente pour tracer le mouvement
+                angle_rad_prev = math.radians((angle_physique - 1) - 90)
+
                 if dernier_pas:
                     x_b = self.CX + (self.W / 2.5) * math.cos(angle_rad)
                     y_b = self.CY + (self.H / 2.5) * math.sin(angle_rad)
@@ -126,12 +143,16 @@ class HelicePOV:
                 for i in range(10):
                     idx = int((angle_physique + self.CORRECTION_PHASE) % 360)
                     r_phys = (i + 1) * ((taille_min / 2 - 20) / 10.5) 
+                    
                     x = self.CX + r_phys * math.cos(angle_rad)
                     y = self.CY + r_phys * math.sin(angle_rad)
+                    
+                    prev_x = self.CX + r_phys * math.cos(angle_rad_prev)
+                    prev_y = self.CY + r_phys * math.sin(angle_rad_prev)
 
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
                         c = "#00ffff"
-                        tid = self.canvas.create_oval(x-2, y-2, x+2, y+2, fill=c, outline="")
+                        tid = self.canvas.create_line(prev_x, prev_y, x, y, fill=c, width=4, capstyle=tk.ROUND)
                         self.pixels_remanents.append({'id': tid, 'vie': 255, 'r': 0, 'g': 255, 'b': 255})
                         
                         if dernier_pas:
@@ -146,10 +167,7 @@ class HelicePOV:
 
 def lancer_helice_ui(fenetre_parente, donnees=None):
     top = tk.Toplevel(fenetre_parente)
-    app = HelicePOV(top)
-    if donnees and os.path.exists(donnees):
-        app.charger_depuis_csv_local(donnees)
-        app.lettre_actuelle = os.path.basename(donnees).upper()
+    app = HelicePOV(top, fichier_initial=donnees)
     top.wait_window(top)
 
 if __name__ == "__main__":
