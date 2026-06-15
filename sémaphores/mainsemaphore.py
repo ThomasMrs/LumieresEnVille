@@ -75,10 +75,13 @@ def lancer_dessin_physique():
     image_data = shape.get("image", "").strip()
     type_sem = sem.get("type", "").lower()
     
-    if "P" in image_data and "." in image_data:
-        ui.afficher_forme("★") 
+    
+    if ";" in image_data or ("P" in image_data and "." in image_data):
+        ui.afficher_forme("")  
+        
         points_bruts = decoder_chaine_image(image_data)
         points_finaux = interpoler_points(points_bruts)
+        
         cible_affichage = ecrire_csv_temporaire(points_finaux)
     else:
         cible_affichage = image_data
