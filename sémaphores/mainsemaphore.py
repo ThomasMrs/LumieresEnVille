@@ -13,7 +13,6 @@ mission_en_cours = None
 DOSSIER_ACTUEL = os.path.dirname(os.path.abspath(__file__))
 
 def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
-    """Génère le fichier CSV local à partir des points de l'API"""
     chemin = os.path.join(DOSSIER_ACTUEL, nom_fichier)
     with open(chemin, 'w') as f:
         f.write("rayon;angle;stylo\n")
@@ -21,11 +20,34 @@ def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
             f.write(f"{p['r']};{p['a']};{p['s']}\n")
     return chemin
 
+def centrer_points_polaires(points):
+    if not points: 
+        return points
+
+    coords = []
+    for p in points:
+        x = p['r'] * math.cos(math.radians(p['a']))
+        y = p['r'] * math.sin(math.radians(p['a']))
+        coords.append({'x': x, 'y': y, 's': p['s']})
+
+    xs = [p['x'] for p in coords]
+    ys = [p['y'] for p in coords]
+    centre_x = (min(xs) + max(xs)) / 2.0
+    centre_y = (min(ys) + max(ys)) / 2.0
+
+    points_centres = []
+    for p in coords:
+        nx = p['x'] - centre_x
+        ny = p['y'] - centre_y
+        
+        nouveau_rayon = math.hypot(nx, ny)
+        nouvel_angle = math.degrees(math.atan2(ny, nx)) % 360
+        
+        points_centres.append({'r': nouveau_rayon, 'a': int(nouvel_angle), 's': p['s']})
+
+    return points_centres
+
 def interpoler_points(points):
-    """
-    Crée des points intermédiaires entre les sommets 
-    pour avoir une ligne continue sur l'hélice.
-    """
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
@@ -61,7 +83,6 @@ def interpoler_points(points):
     return points_denses
 
 def lancer_dessin_physique():
-    """Gère la séquence de dessin en lisant la liste JSON des points dans la shape"""
     global etat, mission_en_cours
     
     if mission_en_cours is None: 
@@ -78,9 +99,7 @@ def lancer_dessin_physique():
     shape = get_shape(shape_id)
     
     if shape:
-        
         donnees = shape.get("points") or shape.get("data") or shape.get("image")
-        
         points_bruts = []
         cible_affichage = None
         
@@ -91,25 +110,23 @@ def lancer_dessin_physique():
                     a = int(float(pt.get("a", pt.get("angle", 0))))
                     s = int(pt.get("s", pt.get("stylo", 1)))
                     points_bruts.append({"r": r, "a": a, "s": s})
-                except Exception as e:
-                    print("Erreur de lecture sur un point :", pt)
+                except Exception:
+                    pass
             
-            points_finaux = interpoler_points(points_bruts)
+            points_centres = centrer_points_polaires(points_bruts)
+            points_finaux = interpoler_points(points_centres)
             cible_affichage = ecrire_csv_temporaire(points_finaux)
             
-        # CAS 2 : Si c'est juste une lettre ASCII (ex: "A")
         elif isinstance(donnees, str) and len(donnees.strip()) < 5:
             cible_affichage = donnees.strip()
             ui.afficher_forme(cible_affichage)
             
-        # CAS 3 : Fallback si c'est encore l'ancien format texte
         elif isinstance(donnees, str):
             points_bruts = decoder_chaine_image(donnees)
-            points_finaux = interpoler_points(points_bruts)
+            points_centres = centrer_points_polaires(points_bruts)
+            points_finaux = interpoler_points(points_centres)
             cible_affichage = ecrire_csv_temporaire(points_finaux)
-        # -----------------------------------
             
-        # Lancement du simulateur
         if cible_affichage:
             if type_sem == "helice":
                 lancer_helice_ui(ui.root, cible_affichage)
@@ -118,7 +135,6 @@ def lancer_dessin_physique():
                     simuler_table_tracante_csv(cible_affichage, ui.root)
                     
     else:
-        print(f"Erreur : Impossible de récupérer la Shape {shape_id}")
         ui.mettre_a_jour_statut("ERREUR - Shape introuvable")
     
     put_mission_state(m_id, "Done")
@@ -126,8 +142,8 @@ def lancer_dessin_physique():
     
     etat = "RECHERCHE_MISSION"
     mission_en_cours = None
+
 def boucle_automatisation():
-    """Boucle principale qui interroge l'API régulièrement"""
     global etat, mission_en_cours
     
     if etat == "RECHERCHE_MISSION":
