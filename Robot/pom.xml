@@ -17,8 +17,18 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
+        <javafx.version>21.0.5</javafx.version>
         <exec.mainClass>fr.lumieresenville.robots.AppRobots</exec.mainClass>
     </properties>
+
+    <dependencies>
+        <!-- JavaFX pour l'apercu graphique de la grille (controls tire base + graphics) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -27,12 +37,22 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
             </plugin>
+            <!-- Lancement de l'appli console (ouvre la fenetre JavaFX via Platform.startup) -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.0</version>
                 <configuration>
                     <mainClass>${exec.mainClass}</mainClass>
+                </configuration>
+            </plugin>
+            <!-- Permet aussi `mvn javafx:run` (apercu seul) -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>fr.lumieresenville.robots.ApercuGrilleRobots</mainClass>
                 </configuration>
             </plugin>
         </plugins>
