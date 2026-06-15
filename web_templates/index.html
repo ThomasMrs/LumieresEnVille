@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IHM</title>
+</head>
+<body>
+    <section class="form-robot">
+        <form method="post">
+            <h1>Robot</h1>
+            <label>Nom&nbsp;:
+                <input name="submitted-robot-name" autocomplete="name" />
+            </label>
+            <label>Vitesse&nbsp;:
+                <input name="submitted-vitesse" />
+            </label>
+            <label>Position X&nbsp;:
+                <input name="submitted-posx" />
+            </label>
+            <label>Position Y&nbsp;:
+                <input name="submitted-posy" />
+            </label>
+            <button type="submit">Ajouter le robot</button>
+        </form>
+    </section>
+
+    <section class="form-semaphore">
+        <form method="post">
+            <h1>Sémaphore</h1>
+            <label>Nom&nbsp;:
+                <input name="submitted-semaphore-name" autocomplete="name" />
+            </label>
+            <label>Durée&nbsp;:
+                <input name="submitted-duree" />
+            </label>
+            
+            <label for="pet-select">Type&nbsp;:</label>
+            <select name="pets" id="pet-select">
+                <option value="dog">Ascii</option>
+                <option value="cat">Tracant</option>
+                <option value="hamster">Helice</option>
+            </select>
+            
+            <label>Coordonnées X&nbsp;:
+                <input name="submitted-coordx" />
+            </label>
+            <label>Coordonnées Y&nbsp;:
+                <input name="submitted-coordy" />
+            </label>
+            <button type="submit">Ajouter le sémaphore</button>
+        </form>
+    </section>
+
+    <section class="form-semaphore">
+        <form method="post">
+            <h1>Forme</h1>
+            <label>Nom&nbsp;:
+                <input name="submitted-image-name" autocomplete="name" />
+            </label>
+            <label>Image&nbsp;:
+                <input name="submitted-image" />
+            </label>
+            <button type="submit">Ajouter la forme</button>
+        </form>
+    </section>
+
+    <section class="form-semaphore">
+        <form method="post">
+            <h1>Grille</h1>
+            <label>Grille&nbsp;:
+                <input name="submitted-grille-name" autocomplete="name" />
+            </label>
+            <label>Nombre sémaphore&nbsp;:
+                <input name="submitted-nombre-semaphore" />
+            </label>
+            <label>Nombre robot&nbsp;:
+                <input name="submitted-nombre-robot" />
+            </label>
+            <label>Nombre X&nbsp;:
+                <input name="submitted-nombre-x" />
+            </label>
+            <label>Nombre Y&nbsp;:
+                <input name="submitted-nombre-y" />
+            </label>
+            <button type="submit">Ajouter la grille</button>
+        </form>
+    </section>
+</body>
+</html>
