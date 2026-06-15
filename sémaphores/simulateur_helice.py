@@ -75,24 +75,36 @@ class HelicePOV:
             matrice[a] = [None] * 10
             
         try:
+            points_lus = []
+            rayon_max = 1.0 
+            
             with open(nom_fichier, "r") as f:
                 for ligne in f:
                     if ";" not in ligne or ligne.startswith("rayon"): 
                         continue
                         
-                    r, angle, stylo = ligne.strip().split(";")
+                    r_str, angle_str, stylo_str = ligne.strip().split(";")
+                    r = float(r_str)
+                    a = int(float(angle_str)) % 360
+                    s = int(stylo_str)
                     
-                    if stylo == "1":
-                        led_idx = int((float(r) / 200.0) * 9)
-                        if led_idx > 9:
-                            led_idx = 9
-                            
-                        angle_int = int(float(angle)) % 360
-                        matrice[angle_int][led_idx] = (0, 255, 255) # Couleur cyan
+                    if s == 1:
+                        points_lus.append((r, a))
+                        if r > rayon_max:
+                            rayon_max = r  
+
+            for r, a in points_lus:
+                led_idx = int((r / rayon_max) * 9)
+                if led_idx > 9:
+                    led_idx = 9
+                    
+                for decalage in range(-3, 4):
+                    a_cible = (a + decalage) % 360
+                    matrice[a_cible][led_idx] = (0, 255, 255) # Cyan
                         
             nom_cle = os.path.splitext(os.path.basename(nom_fichier))[0].upper()
             self.matrices_polaires[nom_cle] = [matrice[a] for a in range(360)]
-            print("CSV chargé :", nom_fichier)
+            print(f"CSV chargé avec succès ! (Échelle auto basée sur R_max = {rayon_max})")
             
         except Exception as e:
             print("Erreur lors de la lecture du fichier CSV :", e)
