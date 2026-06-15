@@ -8,6 +8,7 @@ from routes.robots import ajouter_robots, lire_robots
 from routes.teams import ajouter_equipe
 from routes.missions import ajouter_missions, lire_missions
 from routes.shapes import ajouter_shape, lire_shape
+from stockage.shape import importer_shape_csv
 from routes.config import ajouter_config, lire_config
 from routes.grille import creer_grille
 
@@ -62,6 +63,11 @@ print("3 teams insérées")
 ajouter_shape("Etoile", "*")
 ajouter_shape("Lettre A", "A")
 ajouter_shape("Barre a roue", "T")
+
+# Import depuis CSV
+chemin_csv = str(Path(__file__).parent.parent / "templates" / "triangle-test.csv")
+resultat_csv = importer_shape_csv(chemin_csv)
+print(f"Shape CSV importée : {resultat_csv}")
 
 shapes = lire_shape()
 print(f"{len(shapes)} shapes insérées")
