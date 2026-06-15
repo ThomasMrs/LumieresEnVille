@@ -168,13 +168,17 @@ class HelicePOV:
                     
         self.root.after(self.refresh_rate, self.animate)
 
-def lancer_helice_ui(fenetre_parente, nom_fichier_csv=None):
+def lancer_helice_ui(fenetre_parente, donnees=None):
     """Fonction appelée par mainsemaphore.py pour ouvrir l'hélice"""
     top = tk.Toplevel(fenetre_parente)
     app = HelicePOV(top)
-    if nom_fichier_csv and os.path.exists(nom_fichier_csv):
-        app.charger_depuis_csv_local(nom_fichier_csv)
-        app.lettre_actuelle = os.path.splitext(os.path.basename(nom_fichier_csv))[0].upper()
+    
+    if donnees:
+        if donnees.endswith(".csv") and os.path.exists(donnees):
+            app.charger_depuis_csv_local(donnees)
+            app.lettre_actuelle = os.path.splitext(os.path.basename(donnees))[0].upper()
+        else:
+            app.lettre_actuelle = donnees.upper()
 
 if __name__ == "__main__":
     root = tk.Tk()
