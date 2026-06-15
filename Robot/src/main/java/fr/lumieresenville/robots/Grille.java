@@ -49,9 +49,12 @@ public class Grille {
             System.out.println("Grille non verifiee : dimensions inconnues.");
             return;
         }
-        if (x < 0 || y < 0 || x >= largeur || y >= hauteur) {
+        // Grille centree sur x = 0 : x va de xmin a xmax ; y de 0 a hauteur-1
+        int xmin = -(largeur / 2);
+        int xmax = xmin + largeur - 1;
+        if (x < xmin || x > xmax || y < 0 || y >= hauteur) {
             System.out.println("Attention : destination hors grille (" + x + ", " + y
-                    + ") pour une grille " + largeur + "x" + hauteur + ".");
+                    + ") pour une grille x[" + xmin + ".." + xmax + "] y[0.." + (hauteur - 1) + "].");
         }
     }
 

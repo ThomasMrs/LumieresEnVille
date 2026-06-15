@@ -129,23 +129,23 @@ public class ApercuGrilleRobots {
         int colonnes = Math.max(1, etat.largeur);
         int lignes = Math.max(1, etat.hauteur);
 
+        // Grille centree sur x = 0 : colonnes de xmin a xmax (ex. nombre_x=3 -> -1, 0, 1)
+        int xmin = -(colonnes / 2);
+        int xmax = xmin + colonnes - 1;
+
         double marge = 60;
+        double demiColonnes = Math.max(1, Math.max(Math.abs(xmin), xmax));
         double taille = Math.max(40, Math.min(
-                (largeur - 2 * marge) / colonnes,
-                (hauteur - 2 * marge) / lignes));
-        double origineX = (largeur - (colonnes - 1) * taille) / 2;   // colonne x = 0
-        double origineY = hauteur - marge;                            // base en bas, axe y vers le haut
+                (largeur / 2 - marge) / demiColonnes,
+                (hauteur - 2 * marge) / Math.max(1, lignes - 1)));
+        double origineX = largeur / 2;        // x = 0 au centre de la fenetre
+        double origineY = hauteur - marge;    // base en bas, axe y vers le haut
 
         List<Node> elements = new ArrayList<>();
 
-        // Mailles + noeuds seulement a partir de y = 1 (comme le schema officiel)
-        dessinerSegments(elements, origineX, origineY, taille, colonnes, lignes);
-        dessinerNoeuds(elements, origineX, origineY, taille, colonnes, lignes);
-
-        // La base (0;0) est detachee sous la grille, reliee a (0;1) par un seul segment
-        if (lignes > 1) {
-            elements.add(segment(origineX, origineY, origineX, origineY - taille));
-        }
+        // Toute la grille est dessinee (y compris y = 0) : le robot est toujours sur une ligne.
+        dessinerSegments(elements, origineX, origineY, taille, xmin, xmax, lignes);
+        dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
         elements.add(marqueur("base", "BASE", origineX, origineY, taille));
 
         for (SemaphoreVue s : etat.semaphores) {
@@ -168,7 +168,7 @@ public class ApercuGrilleRobots {
             if (r.x() == 0 && r.y() == 0) {
                 double pas = Math.max(30, taille * 0.6);
                 cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
-                cy = origineY + taille * 0.55;
+                cy = origineY + Math.min(36, taille * 0.5);
                 indexBase++;
             } else {
                 cx = origineX + r.x() * taille;
@@ -180,12 +180,12 @@ public class ApercuGrilleRobots {
     }
 
     private static void dessinerSegments(List<Node> sortie, double ox, double oy, double taille,
-                                         int colonnes, int lignes) {
-        for (int y = 1; y < lignes; y++) {   // a partir de y = 1 : y = 0 est reserve a la base
-            for (int x = 0; x < colonnes; x++) {
+                                         int xmin, int xmax, int lignes) {
+        for (int y = 0; y < lignes; y++) {
+            for (int x = xmin; x <= xmax; x++) {
                 double px = ox + x * taille;
                 double py = oy - y * taille;
-                if (x + 1 < colonnes) {
+                if (x + 1 <= xmax) {
                     sortie.add(segment(px, py, ox + (x + 1) * taille, py));
                 }
                 if (y + 1 < lignes) {
@@ -202,9 +202,9 @@ public class ApercuGrilleRobots {
     }
 
     private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
-                                       int colonnes, int lignes) {
-        for (int y = 1; y < lignes; y++) {   // y = 0 n'affiche que la base
-            for (int x = 0; x < colonnes; x++) {
+                                       int xmin, int xmax, int lignes) {
+        for (int y = 0; y < lignes; y++) {
+            for (int x = xmin; x <= xmax; x++) {
                 double px = ox + x * taille;
                 double py = oy - y * taille;
 
