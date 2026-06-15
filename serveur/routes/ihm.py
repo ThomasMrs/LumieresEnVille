@@ -16,25 +16,8 @@ def generer_page_html(message: str = "Bienvenue sur l'IHM !") -> str:
     <head>
         <meta charset="UTF-8">
         <title>Mon IHM sans Jinja ni JS</title>
-        <style>
-            body {{ font-family: sans-serif; padding: 20px; background: #eee; }}
-            .container {{ background: white; padding: 20px; border-radius: 8px; max-width: 400px; }}
-            .message {{ color: #d9534f; font-weight: bold; }}
-            input, button {{ margin-top: 10px; padding: 5px; }}
-        </style>
     </head>
     <body>
-        <div class="container">
-            <h1>Mon Application</h1>
-            
-            <p class="message">{message}</p>
-
-            <form action="/soumettre" method="post">
-                <label>Entrez votre nom :</label><br>
-                <input type="text" name="nom_utilisateur" required><br>
-                <button type="submit">Envoyer</button>
-            </form>
-        </div>
     </body>
     </html>
     """
