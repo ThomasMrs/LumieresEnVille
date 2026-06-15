@@ -72,16 +72,23 @@ def lancer_dessin_physique():
     shape = get_shape(mission_en_cours.get("shape_id"))
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     
-    points_bruts = decoder_chaine_image(shape.get("image", ""))
-    points_finaux = interpoler_points(points_bruts)
-    
-    chemin = ecrire_csv_temporaire(points_finaux)
-    
+    image_data = shape.get("image", "").strip()
     type_sem = sem.get("type", "").lower()
-    if type_sem == "helice":
-        lancer_helice_ui(ui.root, chemin)
+    
+    if "P" in image_data and "." in image_data:
+        ui.afficher_forme("★") 
+        points_bruts = decoder_chaine_image(image_data)
+        points_finaux = interpoler_points(points_bruts)
+        cible_affichage = ecrire_csv_temporaire(points_finaux)
     else:
-        simuler_table_tracante_csv(chemin, ui.root)
+        cible_affichage = image_data
+        ui.afficher_forme(cible_affichage)
+        
+    if type_sem == "helice":
+        lancer_helice_ui(ui.root, cible_affichage)
+    else:
+        if cible_affichage.endswith(".csv"):
+            simuler_table_tracante_csv(cible_affichage, ui.root)
     
     put_mission_state(mission_en_cours.get("id"), "Done")
     put_semaphore_state(mission_en_cours.get("semaphore_id"), "Available")
