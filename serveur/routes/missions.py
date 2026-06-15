@@ -23,22 +23,17 @@ def read_missions():
 def get_missions(team: str):
     return [m for m in lire_missions() if m["team"] == team]
 
-
 @router.get("/list_missions_by_team")
-def list_missions_by_team():
-    """Renvoie uniquement les missions creees par le controleur de notre team.
-
-    Un controleur insere le nom de sa team dans le champ 'team' de la mission
-    lorsqu'il l'envoie : on filtre donc sur le nom de notre equipe.
-    """
-    return [m for m in lire_missions() if m["team"] == "Les K-Talents"]
+def list_missions_by_team(team: str):
+    """Renvoie les missions creees par le controleur de cette team"""
+    return [m for m in lire_missions() if m["team"] == team]
 
 
 @router.get("/missions/available")
 def get_available_missions(team: str | None = None):
     """Renvoie les missions qu'un robot disponible peut prendre :
-    etat 'Awaiting' et aucun robot encore assigne.
-    On peut filtrer par equipe avec le parametre 'team'.
+    etat 'Awaiting' et aucun robot encore assigne
+    On peut filtrer par equipe avec le parametre 'team'
     """
     disponibles = [
         m for m in lire_missions()
