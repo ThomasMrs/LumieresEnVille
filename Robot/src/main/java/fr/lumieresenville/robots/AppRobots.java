@@ -77,7 +77,7 @@ public class AppRobots {
         System.out.println("Tous les robots sont arretes. Au revoir.");
     }
 
-    //un robot par tyhread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
+    //un robot par thread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
     private static final class RobotWorker implements Runnable {
         private final Robot robot;
 
@@ -127,7 +127,6 @@ public class AppRobots {
                 return null;
             }
             Mission mission = disponibles.get(0);
-            // Le robot s'approprie la mission : robot_id + etat Pending_robot.
             mission.prendreEnChargeParRobot(robot.getId(), maintenant());
             robot.setEtat(EtatRobot.OCCUPIED);
             robot.setMission(mission);
@@ -139,7 +138,7 @@ public class AppRobots {
         }
     }
 
-    // Deroule une mission : aller au semaphore, signaler l'arrivee, rentrer a la base.
+    //aller au semaphore, signaler l'arrivee, rentrer a la base.
     private static void executerMission(Robot robot, Mission mission) throws Exception {
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
         double coordX = nombre(semaphoreJson, "coord_x");
