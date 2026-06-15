@@ -8,7 +8,7 @@ from stockage.segment import (
     modifier_segment,
 )
 
-router = APIRouter(prefix="/api", tags=["Segment"])
+router = APIRouter(tags=["Segment"])
 
 # =======================
 # Routes
