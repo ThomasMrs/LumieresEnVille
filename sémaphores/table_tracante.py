@@ -7,8 +7,8 @@ class SimulateurTable:
         self.top.title("Simulateur Table Traçante")
         self.top.configure(bg="#333")
         
-        self.W = 600
-        self.H = 600
+        self.W = 300
+        self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
         

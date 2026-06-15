@@ -23,7 +23,7 @@ class Interface:
         )
         self.btn_helice.pack(side="right", expand=True, fill="x", padx=10, pady=5)
 
-        self.canvas = tk.Canvas(self.root, width=500, height=350, bg="black", highlightthickness=0)
+        self.canvas = tk.Canvas(self.root, width=300, height=300, bg="black", highlightthickness=0)
         self.canvas.pack(padx=20, pady=5)
         
         self.txt_statut = self.canvas.create_text(250, 30, text="Initialisation...", fill="white", font=("Arial", 12))
