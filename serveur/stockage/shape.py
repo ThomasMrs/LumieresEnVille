@@ -1,3 +1,4 @@
+from pathlib import Path
 from uuid import uuid4
 from stockage.db import get_connection
 
@@ -37,3 +38,19 @@ def modifier_shape(id_shape, **champs):
     conn.execute(f"UPDATE shape SET {sets} WHERE id = ?", valeurs)
     conn.commit()
     conn.close()
+
+
+def importer_shape_csv(chemin_csv):
+    """Lit un CSV de forme et l'insere dans la table shape.
+    Ligne 1 = nom de la forme.
+    Lignes suivantes = points au format : label;x;y;actif"""
+    fichier = Path(chemin_csv)
+    if not fichier.exists():
+        return None
+    contenu = fichier.read_text(encoding="utf-8").strip()
+    lignes = contenu.splitlines()
+    if not lignes:
+        return None
+    name = lignes[0].strip()
+    image = "\n".join(lignes[1:])
+    return ajouter_shape(name, image)

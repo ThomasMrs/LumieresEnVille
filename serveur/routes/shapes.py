@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 from gestion import valider_id
@@ -6,6 +7,7 @@ from stockage.shape import (
     lire_shape,
     supprimer_shapes,
     modifier_shape,
+    importer_shape_csv,
 )
 
 router = APIRouter(prefix="/api", tags=["Shape"])
@@ -45,6 +47,14 @@ def update_shape(id: str, name: str | None = None, image: str | None = None):
     modifier_shape(id, **champs)
     return {"id": id, "status": "updated"}
 
+
+@router.post("/import_shape_csv")
+def import_shape_csv(filename: str):
+    chemin = Path(__file__).parent.parent / "templates" / filename
+    resultat = importer_shape_csv(str(chemin))
+    if resultat is None:
+        return HTMLResponse(status_code=404, content="404 - Fichier CSV introuvable")
+    return resultat
 
 @router.delete("/delete_shapes")
 def delete_shapes():
