@@ -9,7 +9,7 @@ class Interface:
         self.frame_local = tk.Frame(self.root, bg="#1a1a1a", bd=2, relief="groove")
         self.frame_local.pack(fill="x", padx=20, pady=10)
         
-        tk.Label(self.frame_local, text="🔧 Tests Manuels (Hors-Ligne)", bg="#1a1a1a", fg="gray", font=("Arial", 9)).pack(pady=2)
+        tk.Label(self.frame_local, text="Tests Manuels (Hors-Ligne)", bg="#1a1a1a", fg="gray", font=("Arial", 9)).pack(pady=2)
         
         self.btn_table = tk.Button(
             self.frame_local, text="Ouvrir Table Traçante", 
