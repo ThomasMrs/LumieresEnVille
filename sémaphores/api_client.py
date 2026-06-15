@@ -56,23 +56,46 @@ def put_semaphore_state(semaphore_id, state):
         return False
 
 def decoder_chaine_image(chaine):
-    """Transforme la chaine Pxxx.xxx.x en dictionnaire r, a, s"""
+    """Transforme le CSV du serveur (une ligne 'label;rayon;angle;stylo' par point)
+    en liste de dictionnaires {r, a, s}."""
     points = []
-    if not chaine or chaine == "T": 
+    if not chaine:
         return points
-        
-    segments = chaine.split('P')
-    for seg in segments:
-        if seg == "": 
+
+    for ligne in chaine.replace("\r", "").split("\n"):
+        ligne = ligne.strip()
+        # on saute les lignes vides et l'eventuel entete (rayon;angle;stylo, name...)
+        if not ligne or ligne.lower().startswith(("rayon", "name", "label")):
+            continue
+        colonnes = ligne.split(";")
+        if len(colonnes) < 4:
             continue
         try:
-            parts = seg.split('.')
-            rayon = float(parts[0])
-            angle = int(parts[1])
-            stylo = int(parts[2])
+            rayon = float(colonnes[1])
+            angle = float(colonnes[2])
+            stylo = int(colonnes[3])
             points.append({'r': rayon, 'a': angle, 's': stylo})
-        except: 
-            print("Erreur de parsing sur le segment:", seg)
-            continue
-            
+        except ValueError:
+            print("Erreur de parsing sur la ligne:", ligne)
+
     return points
+
+def get_shape_csv(shape_id):
+    """Télécharge le fichier CSV directement depuis la route API des Shapes"""
+    url = f"{BASE_URL}/api/shape/{shape_id}/csv"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            texte_csv = response.text
+            
+            if texte_csv.startswith('"') and texte_csv.endswith('"'):
+                import json
+                texte_csv = json.loads(texte_csv)
+                
+            return texte_csv
+        else:
+            print(f"Erreur API (Code {response.status_code}) lors de la récupération du CSV (Shape {shape_id}).")
+            return None
+    except Exception as e:
+        print(f"Erreur de connexion pour le téléchargement du CSV : {e}")
+        return None
