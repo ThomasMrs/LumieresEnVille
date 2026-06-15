@@ -6,6 +6,16 @@ from routes import semaphores, robots, teams, missions, shapes, health, config, 
 
 app = FastAPI()
 
+BASE_DIR = Path(__file__).parent
+CSS_PATH = BASE_DIR / "style.css"
+
+
+# -- Route qui sert le fichier de style de l'IHM
+@app.get("/style.css")
+def envoyer_css():
+    return HTMLResponse(content=CSS_PATH.read_text(encoding="utf-8"), media_type="text/css")
+
+
 # -- Inclusion de tes API
 app.include_router(semaphores.router)
 app.include_router(robots.router)

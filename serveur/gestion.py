@@ -41,4 +41,7 @@ def valider_coordonnees(coord_x, coord_y):
     config = lire_config()
     if not config:
         return False
-    return 0 <= coord_x < config["nombre_x"] and 0 <= coord_y < config["nombre_y"]
+    nombre_x = config["nombre_x"]
+    # Grille centree sur x = 0 : x va de x_min a x_min + nombre_x - 1.
+    x_min = -(nombre_x // 2)
+    return x_min <= coord_x < x_min + nombre_x and 0 <= coord_y < config["nombre_y"]

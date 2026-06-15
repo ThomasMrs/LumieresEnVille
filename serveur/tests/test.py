@@ -28,9 +28,10 @@ print(f"Grille créée : {resultat['segments']} segments")
 # Semaphores (3 types)
 # =======================
 
-ajouter_semaphore("Ascii", 30, "Ascii", 1, 1)
-ajouter_semaphore("Helice", 45, "Helice", 3, 2)
-ajouter_semaphore("Tracant", 20, "Tracant", 4, 4)
+# Grille 5x5 centree : x va de -2 a 2, y de 0 a 4
+ajouter_semaphore("Ascii", 30, "Ascii", -2, 1)
+ajouter_semaphore("Helice", 45, "Helice", 0, 2)
+ajouter_semaphore("Tracant", 20, "Tracant", 2, 4)
 
 semaphores = lire_semaphore()
 print(f"{len(semaphores)} semaphores insérés")
@@ -41,7 +42,7 @@ print(f"{len(semaphores)} semaphores insérés")
 
 ajouter_robots(name="Robot-01", speed=1.5, position_x=0, position_y=0)
 ajouter_robots(name="Robot-02", speed=2.0, position_x=2, position_y=3)
-ajouter_robots(name="Robot-03", speed=0.8, position_x=4, position_y=1)
+ajouter_robots(name="Robot-03", speed=0.8, position_x=-1, position_y=1)
 
 robots = lire_robots()
 print(f"{len(robots)} robots insérés")
@@ -64,10 +65,11 @@ ajouter_shape("Etoile", "*")
 ajouter_shape("Lettre A", "A")
 ajouter_shape("Barre a roue", "T")
 
-# Import depuis CSV
-chemin_csv = str(Path(__file__).parent.parent / "templates" / "triangle-test.csv")
-resultat_csv = importer_shape_csv(chemin_csv)
-print(f"Shape CSV importée : {resultat_csv}")
+# Import de tous les CSV presents dans templates/
+dossier_templates = Path(__file__).parent.parent / "templates"
+for chemin_csv in sorted(dossier_templates.glob("*.csv")):
+    resultat_csv = importer_shape_csv(str(chemin_csv))
+    print(f"Shape CSV importée ({chemin_csv.name}) : {resultat_csv}")
 
 shapes = lire_shape()
 print(f"{len(shapes)} shapes insérées")

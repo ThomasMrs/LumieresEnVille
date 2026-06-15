@@ -7,81 +7,81 @@
 </head>
 <body>
     <section class="form-robot">
-        <form method="post">
+        <form method="get" action="/api/add_robot">
             <h1>Robot</h1>
             <label>Nom&nbsp;:
-                <input name="submitted-robot-name" autocomplete="name" />
+                <input name="name" autocomplete="name" />
             </label>
             <label>Vitesse&nbsp;:
-                <input name="submitted-vitesse" />
+                <input name="speed" />
             </label>
             <label>Position X&nbsp;:
-                <input name="submitted-posx" />
+                <input name="position_x" />
             </label>
             <label>Position Y&nbsp;:
-                <input name="submitted-posy" />
+                <input name="position_y" />
             </label>
             <button type="submit">Ajouter le robot</button>
         </form>
     </section>
 
     <section class="form-semaphore">
-        <form method="post">
+        <form method="get" action="/api/add_semaphore">
             <h1>Sémaphore</h1>
             <label>Nom&nbsp;:
-                <input name="submitted-semaphore-name" autocomplete="name" />
+                <input name="name" autocomplete="name" />
             </label>
             <label>Durée&nbsp;:
-                <input name="submitted-duree" />
+                <input name="duration" />
             </label>
             
-            <label for="pet-select">Type&nbsp;:</label>
-            <select name="pets" id="pet-select">
-                <option value="dog">Ascii</option>
-                <option value="cat">Tracant</option>
-                <option value="hamster">Helice</option>
+            <label for="type-select">Type&nbsp;:</label>
+            <select name="type" id="type-select">
+                <option value="Ascii">Ascii</option>
+                <option value="Tracant">Tracant</option>
+                <option value="Helice">Helice</option>
             </select>
             
             <label>Coordonnées X&nbsp;:
-                <input name="submitted-coordx" />
+                <input name="coord_x" />
             </label>
             <label>Coordonnées Y&nbsp;:
-                <input name="submitted-coordy" />
+                <input name="coord_y" />
             </label>
             <button type="submit">Ajouter le sémaphore</button>
         </form>
     </section>
 
     <section class="form-semaphore">
-        <form method="post">
+        <form method="get" action="/api/add_shape">
             <h1>Forme</h1>
             <label>Nom&nbsp;:
-                <input name="submitted-image-name" autocomplete="name" />
+                <input name="name" autocomplete="name" />
             </label>
             <label>Image&nbsp;:
-                <input name="submitted-image" />
+                <input name="image" />
             </label>
             <button type="submit">Ajouter la forme</button>
         </form>
     </section>
 
     <section class="form-semaphore">
-        <form method="post">
+        <form method="get" action="/api/add_config">
             <h1>Grille</h1>
             <label>Grille&nbsp;:
-                <input name="submitted-grille-name" autocomplete="name" />
+                <input name="name" autocomplete="name" />
             </label>
             <label>Nombre sémaphore&nbsp;:
-                <input name="submitted-nombre-semaphore" />
+                <input name="nombre_semaphore" />
             </label>
             <label>Nombre robot&nbsp;:
-                <input name="submitted-nombre-robot" />
+                <input name="nombre_robot" />
             </label>
             <label>Nombre X&nbsp;:
-                <input name="submitted-nombre-x" />
+                <input name="nombre_x" />
             </label>
             <label>Nombre Y&nbsp;:
-                <input name="submitted-nombre-y" />
+                <input name="nombre_y" />
             </label>
             <button type="submit">Ajouter la grille</button>
         </form>

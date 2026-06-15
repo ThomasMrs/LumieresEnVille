@@ -5,8 +5,15 @@ from fastapi.responses import HTMLResponse
 from stockage.config import lire_config, definir_grille
 from stockage.segment import lire_segment, remplacer_segments
 from stockage.semaphore import lire_semaphore
+from routes import segment
 
-router = APIRouter(prefix="/api", tags=["Grille"])
+router = APIRouter(prefix="/api")
+
+# Les segments font partie de la grille : on rattache leur router ici
+# (le prefixe "/api" du router grille s'applique => /api/list_segment, etc.)
+# Le tag "Grille" est mis sur chaque route grille individuellement pour ne pas
+# polluer les routes segment (qui gardent uniquement le tag "Segment").
+router.include_router(segment.router)
 
 
 def creer_grille(name):
@@ -24,13 +31,21 @@ def creer_grille(name):
     nombre_y = config["nombre_y"]
     id_grille = str(uuid4())
 
+    # Grille centree horizontalement sur la base (x = 0).
+    # x va de x_min a x_min + nombre_x - 1 (ex: nombre_x=5 -> -2,-1,0,1,2).
+    x_min = -(nombre_x // 2)
+    x_max = x_min + nombre_x  # borne exclusive
+
+    # Maillage a partir de y = 1 ; la base (0,0) est reliee a (0,1) par un seul segment.
     segments = []
-    for y in range(nombre_y):
-        for x in range(nombre_x):
-            if x + 1 < nombre_x:
+    for y in range(1, nombre_y):
+        for x in range(x_min, x_max):
+            if x + 1 < x_max:
                 segments.append((str(uuid4()), x, y, x + 1, y))
             if y + 1 < nombre_y:
                 segments.append((str(uuid4()), x, y, x, y + 1))
+    if nombre_y > 1:
+        segments.append((str(uuid4()), 0, 0, 0, 1))
 
     definir_grille(config["id"], id_grille, name)
     remplacer_segments(segments)
@@ -52,9 +67,14 @@ def lire_grille():
     segments = lire_segment()
     semaphores = lire_semaphore()
 
-    noeuds = []
-    for y in range(nombre_y):
-        for x in range(nombre_x):
+    # Memes bornes que creer_grille : grille centree sur x = 0.
+    x_min = -(nombre_x // 2)
+    x_max = x_min + nombre_x  # borne exclusive
+
+    # La base (0,0) est detachee ; le maillage commence a y = 1.
+    noeuds = [{"x": 0, "y": 0, "semaphore": None}]
+    for y in range(1, nombre_y):
+        for x in range(x_min, x_max):
             noeud = {"x": x, "y": y, "semaphore": None}
             for s in semaphores:
                 if s["coord_x"] == x and s["coord_y"] == y:
@@ -73,7 +93,7 @@ def lire_grille():
 # Routes
 # =======================
 
-@router.post("/create_grille")
+@router.post("/create_grille", tags=["Grille"])
 def create_grille(name: str):
     resultat = creer_grille(name)
     if resultat is None:
@@ -81,7 +101,7 @@ def create_grille(name: str):
     return resultat
 
 
-@router.get("/get_grille")
+@router.get("/get_grille", tags=["Grille"])
 def get_grille():
     grille = lire_grille()
     if grille is None:
