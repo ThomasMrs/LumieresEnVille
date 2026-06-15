@@ -133,28 +133,55 @@ public class ApercuGrilleRobots {
         double taille = Math.max(40, Math.min(
                 (largeur - 2 * marge) / colonnes,
                 (hauteur - 2 * marge) / lignes));
-        double origineX = (largeur - (colonnes - 1) * taille) / 2;   // noeud (0;0)
+        double origineX = (largeur - (colonnes - 1) * taille) / 2;   // colonne x = 0
         double origineY = hauteur - marge;                            // base en bas, axe y vers le haut
 
         List<Node> elements = new ArrayList<>();
+
+        // Mailles + noeuds seulement a partir de y = 1 (comme le schema officiel)
         dessinerSegments(elements, origineX, origineY, taille, colonnes, lignes);
         dessinerNoeuds(elements, origineX, origineY, taille, colonnes, lignes);
+
+        // La base (0;0) est detachee sous la grille, reliee a (0;1) par un seul segment
+        if (lignes > 1) {
+            elements.add(segment(origineX, origineY, origineX, origineY - taille));
+        }
         elements.add(marqueur("base", "BASE", origineX, origineY, taille));
+
         for (SemaphoreVue s : etat.semaphores) {
             elements.add(marqueur("semaphore", s.nom().isBlank() ? "S" : s.nom(),
                     origineX + s.x() * taille, origineY - s.y() * taille, taille));
         }
+
+        // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles (comme l'image)
+        int totalBase = 0;
+        for (RobotVue r : etat.robots) {
+            if (r.x() == 0 && r.y() == 0) {
+                totalBase++;
+            }
+        }
+        int indexBase = 0;
         for (RobotVue r : etat.robots) {
             String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
-            elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(),
-                    origineX + r.x() * taille, origineY - r.y() * taille, taille));
+            double cx;
+            double cy;
+            if (r.x() == 0 && r.y() == 0) {
+                double pas = Math.max(30, taille * 0.6);
+                cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
+                cy = origineY + taille * 0.55;
+                indexBase++;
+            } else {
+                cx = origineX + r.x() * taille;
+                cy = origineY - r.y() * taille;
+            }
+            elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(), cx, cy, taille));
         }
         zoneGrille.getChildren().setAll(elements);
     }
 
     private static void dessinerSegments(List<Node> sortie, double ox, double oy, double taille,
                                          int colonnes, int lignes) {
-        for (int y = 0; y < lignes; y++) {
+        for (int y = 1; y < lignes; y++) {   // a partir de y = 1 : y = 0 est reserve a la base
             for (int x = 0; x < colonnes; x++) {
                 double px = ox + x * taille;
                 double py = oy - y * taille;
@@ -176,7 +203,7 @@ public class ApercuGrilleRobots {
 
     private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
                                        int colonnes, int lignes) {
-        for (int y = 0; y < lignes; y++) {
+        for (int y = 1; y < lignes; y++) {   // y = 0 n'affiche que la base
             for (int x = 0; x < colonnes; x++) {
                 double px = ox + x * taille;
                 double py = oy - y * taille;
