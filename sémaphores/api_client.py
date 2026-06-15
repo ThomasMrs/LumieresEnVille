@@ -54,15 +54,27 @@ def put_semaphore_state(semaphore_id, state):
 def decoder_chaine_image(chaine):
     points = []
     if not chaine: return points
-    for ligne in chaine.replace("\r", "").split("\n"):
+    
+    chaine_propre = chaine.replace(" ", "\n").replace("\r", "")
+    
+    for ligne in chaine_propre.split("\n"):
         ligne = ligne.strip()
-        if not ligne or ligne.lower().startswith(("rayon", "name", "label")): continue
+        if not ligne or ligne.lower().startswith(("rayon", "name", "label")): 
+            continue
+            
         colonnes = ligne.split(";")
-        if len(colonnes) < 4: continue
+        if len(colonnes) < 4: 
+            continue
+            
         try:
-            points.append({'r': float(colonnes[1]), 'a': float(colonnes[2]), 's': int(colonnes[3])})
+            points.append({
+                'r': float(colonnes[1]), 
+                'a': float(colonnes[2]), 
+                's': int(colonnes[3])
+            })
         except ValueError:
             continue
+            
     return points
 
 def get_shape_csv(shape_id):
