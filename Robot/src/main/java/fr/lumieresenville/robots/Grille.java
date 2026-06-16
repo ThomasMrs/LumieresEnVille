@@ -48,14 +48,15 @@ public class Grille {
     }
 
     private static void verifierPositionDansGrille(int x, int y) throws Exception {
-        String grilleJson = AppRobots.get("/api/get_grille");
-        if (grilleJson.startsWith("ERREUR") || grilleJson.startsWith("erreur HTTP")) {
-            System.out.println("Grille non verifiee : " + grilleJson);
+        // Dimensions de la grille : on les lit dans la config (plus de get_grille).
+        String configJson = AppRobots.get("/api/get_config");
+        if (configJson.startsWith("ERREUR") || configJson.startsWith("erreur HTTP")) {
+            System.out.println("Grille non verifiee : " + configJson);
             return;
         }
 
-        int largeur = (int) AppRobots.nombre(grilleJson, "nombre_x");
-        int hauteur = (int) AppRobots.nombre(grilleJson, "nombre_y");
+        int largeur = (int) AppRobots.nombre(configJson, "nombre_x");
+        int hauteur = (int) AppRobots.nombre(configJson, "nombre_y");
         if (largeur <= 0 || hauteur <= 0) {
             System.out.println("Grille non verifiee : dimensions inconnues.");
             return;

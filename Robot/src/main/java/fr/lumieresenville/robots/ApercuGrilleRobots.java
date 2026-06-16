@@ -7,7 +7,9 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javafx.animation.KeyFrame;
@@ -126,31 +128,35 @@ public class ApercuGrilleRobots {
         }
 
         EtatGrille etat = dernierEtat;
-        int colonnes = Math.max(1, etat.largeur);
-        int lignes = Math.max(1, etat.hauteur);
 
-        // x centre sur 0 (xmin..xmax) ; y de 0 (base, en bas) a lignes-1 (maillage)
-        int xmin = -(colonnes / 2);
-        int xmax = xmin + colonnes - 1;
+        // Bornes reelles a partir des vrais segments (x centre sur 0, y de 0 en bas).
+        int maxAbsX = 1;
+        int maxY = 1;
+        for (SegmentVue s : etat.segments) {
+            maxAbsX = Math.max(maxAbsX, Math.max(Math.abs(s.ax()), Math.abs(s.bx())));
+            maxY = Math.max(maxY, Math.max(s.ay(), s.by()));
+        }
+        if (etat.segments.isEmpty()) {   // pas encore de grille : on se base sur la config
+            maxAbsX = Math.max(1, etat.largeur / 2);
+            maxY = Math.max(1, etat.hauteur - 1);
+        }
 
         double marge = 60;
-        double demiX = Math.max(1, Math.max(Math.abs(xmin), xmax));
         double taille = Math.max(40, Math.min(
-                (largeur / 2 - marge) / demiX,
-                (hauteur - 2 * marge) / Math.max(1, lignes - 1)));
+                (largeur / 2 - marge) / maxAbsX,
+                (hauteur - 2 * marge) / maxY));
         double origineX = largeur / 2;        // x = 0 au centre
-        double origineY = hauteur - marge;    // base en bas, axe y vers le haut
+        double origineY = hauteur - marge;    // y = 0 en bas, axe y vers le haut
 
         List<Node> elements = new ArrayList<>();
 
-        // Maillage + noeuds a partir de y = 1
-        dessinerSegments(elements, origineX, origineY, taille, xmin, xmax, lignes);
-        dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
-
-        // La base (0;0) est detachee en bas, reliee a (0;1) par un seul segment
-        if (lignes > 1) {
-            elements.add(segment(origineX, origineY, origineX, origineY - taille));
+        // On dessine les VRAIES routes (segments) renvoyees par le serveur.
+        for (SegmentVue s : etat.segments) {
+            elements.add(segment(
+                    origineX + s.ax() * taille, origineY - s.ay() * taille,
+                    origineX + s.bx() * taille, origineY - s.by() * taille));
         }
+        dessinerNoeuds(elements, etat.segments, origineX, origineY, taille);
         elements.add(marqueur("base", "BASE", origineX, origineY, taille));
 
         for (SemaphoreVue s : etat.semaphores) {
@@ -184,46 +190,38 @@ public class ApercuGrilleRobots {
         zoneGrille.getChildren().setAll(elements);
     }
 
-    private static void dessinerSegments(List<Node> sortie, double ox, double oy, double taille,
-                                         int xmin, int xmax, int lignes) {
-        for (int y = 1; y < lignes; y++) {   // pas de routes en y = 0 (seulement la base)
-            for (int x = xmin; x <= xmax; x++) {
-                double px = ox + x * taille;
-                double py = oy - y * taille;
-                if (x + 1 <= xmax) {
-                    sortie.add(segment(px, py, ox + (x + 1) * taille, py));
-                }
-                if (y + 1 < lignes) {
-                    sortie.add(segment(px, py, px, oy - (y + 1) * taille));
-                }
-            }
-        }
-    }
-
     private static Line segment(double x1, double y1, double x2, double y2) {
         Line ligne = new Line(x1, y1, x2, y2);
         ligne.getStyleClass().add("segment");
         return ligne;
     }
 
-    private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
-                                       int xmin, int xmax, int lignes) {
-        for (int y = 1; y < lignes; y++) {
-            for (int x = xmin; x <= xmax; x++) {
-                double px = ox + x * taille;
-                double py = oy - y * taille;
-
-                Circle point = new Circle(px, py, 3);
-                point.getStyleClass().add("noeud");
-                sortie.add(point);
-
-                Label coord = new Label("(" + x + ";" + y + ")");
-                coord.getStyleClass().add("coord");
-                coord.setLayoutX(px + 6);
-                coord.setLayoutY(py - 22);
-                sortie.add(coord);
-            }
+    // Un point + une etiquette (x;y) a chaque extremite distincte des segments.
+    private static void dessinerNoeuds(List<Node> sortie, List<SegmentVue> segments,
+                                       double ox, double oy, double taille) {
+        Set<String> vus = new HashSet<>();
+        for (SegmentVue s : segments) {
+            ajouterNoeud(sortie, vus, s.ax(), s.ay(), ox, oy, taille);
+            ajouterNoeud(sortie, vus, s.bx(), s.by(), ox, oy, taille);
         }
+    }
+
+    private static void ajouterNoeud(List<Node> sortie, Set<String> vus, int x, int y,
+                                     double ox, double oy, double taille) {
+        if (!vus.add(x + ";" + y) || (x == 0 && y == 0)) {
+            return;   // deja dessine, ou c'est la base (qui a son propre marqueur)
+        }
+        double px = ox + x * taille;
+        double py = oy - y * taille;
+        Circle point = new Circle(px, py, 3);
+        point.getStyleClass().add("noeud");
+        sortie.add(point);
+
+        Label coord = new Label("(" + x + ";" + y + ")");
+        coord.getStyleClass().add("coord");
+        coord.setLayoutX(px + 6);
+        coord.setLayoutY(py - 22);
+        sortie.add(coord);
     }
 
     // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.
@@ -247,18 +245,30 @@ public class ApercuGrilleRobots {
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();
 
-        String grilleJson = get("/api/get_grille");
-        if (grilleJson.startsWith("ERREUR") || grilleJson.startsWith("erreur HTTP")) {
-            etat.message = grilleJson;
+        // Dimensions de la grille : on les lit dans la config (plus de get_grille).
+        String configJson = get("/api/get_config");
+        if (configJson.startsWith("ERREUR") || configJson.startsWith("erreur HTTP")) {
+            etat.message = configJson;
             return etat;
         }
-        int largeur = (int) nombre(grilleJson, "nombre_x");
-        int hauteur = (int) nombre(grilleJson, "nombre_y");
+        int largeur = (int) nombre(configJson, "nombre_x");
+        int hauteur = (int) nombre(configJson, "nombre_y");
         if (largeur > 0) {
             etat.largeur = largeur;
         }
         if (hauteur > 0) {
             etat.hauteur = hauteur;
+        }
+
+        String segmentsJson = get("/api/list_segment");
+        if (!segmentsJson.startsWith("ERREUR") && !segmentsJson.startsWith("erreur HTTP")) {
+            for (String objet : objets(segmentsJson)) {
+                etat.segments.add(new SegmentVue(
+                        (int) nombre(objet, "coord_a_x"),
+                        (int) nombre(objet, "coord_a_y"),
+                        (int) nombre(objet, "coord_b_x"),
+                        (int) nombre(objet, "coord_b_y")));
+            }
         }
 
         String semaphoresJson = get("/api/list_semaphore");
@@ -285,7 +295,8 @@ public class ApercuGrilleRobots {
         }
 
         etat.message = "Serveur " + SERVEUR + "   |   grille " + etat.largeur + " x " + etat.hauteur
-                + "   |   " + etat.semaphores.size() + " semaphore(s)   |   "
+                + "   |   " + etat.segments.size() + " segment(s)   |   "
+                + etat.semaphores.size() + " semaphore(s)   |   "
                 + etat.robots.size() + " robot(s)   |   " + LocalTime.now().withNano(0);
         return etat;
     }
@@ -360,8 +371,12 @@ public class ApercuGrilleRobots {
         int largeur = 10;
         int hauteur = 10;
         String message = "Chargement...";
+        List<SegmentVue> segments = new ArrayList<>();
         List<SemaphoreVue> semaphores = new ArrayList<>();
         List<RobotVue> robots = new ArrayList<>();
+    }
+
+    private record SegmentVue(int ax, int ay, int bx, int by) {
     }
 
     private record SemaphoreVue(String nom, int x, int y, String etat) {
