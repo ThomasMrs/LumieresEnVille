@@ -53,8 +53,8 @@ public class Grille {
             throw new Exception("configuration introuvable : " + configJson);
         }
 
-        int largeur = (int) AppRobots.nombre(configJson, "nombre_x");
-        int hauteur = (int) AppRobots.nombre(configJson, "nombre_y");
+        int largeur = lireDimension(configJson, "nombre_x", "nbr_x");
+        int hauteur = lireDimension(configJson, "nombre_y", "nbr_y");
         if (largeur <= 0 || hauteur <= 0) {
             throw new Exception("configuration invalide : dimensions inconnues");
         }
@@ -204,6 +204,14 @@ public class Grille {
     private static double nombre(String objet, String nom) {
         String valeur = champ(objet, nom);
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
+    }
+
+    private static int lireDimension(String json, String champPrincipal, String champCompatibilite) {
+        int valeur = (int) nombre(json, champPrincipal);
+        if (valeur <= 0) {
+            valeur = (int) nombre(json, champCompatibilite);
+        }
+        return valeur;
     }
 
     private record EtatGrille(int largeur, int hauteur, List<Segment> segments) {

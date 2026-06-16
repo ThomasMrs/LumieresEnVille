@@ -243,8 +243,8 @@ public class ApercuGrilleRobots {
             etat.message = configJson;
             return etat;
         }
-        int largeur = (int) nombre(configJson, "nombre_x");
-        int hauteur = (int) nombre(configJson, "nombre_y");
+        int largeur = lireDimension(configJson, "nombre_x", "nbr_x");
+        int hauteur = lireDimension(configJson, "nombre_y", "nbr_y");
         if (largeur > 0) {
             etat.largeur = largeur;
         }
@@ -357,6 +357,14 @@ public class ApercuGrilleRobots {
     private static double nombre(String objet, String nom) {
         String valeur = champ(objet, nom);
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
+    }
+
+    private static int lireDimension(String json, String champPrincipal, String champCompatibilite) {
+        int valeur = (int) nombre(json, champPrincipal);
+        if (valeur <= 0) {
+            valeur = (int) nombre(json, champCompatibilite);
+        }
+        return valeur;
     }
 
     private static final class EtatGrille {

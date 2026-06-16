@@ -182,14 +182,29 @@ public class AppRobots {
     // missions en etat Awaiting et sans robot assigne.
     private static List<Mission> lireMissionsDisponibles() throws Exception {
         List<Mission> missions = new ArrayList<>();
-        for (String objet : objets(get("/api/missions/available"))) {
-            missions.add(new Mission(
+        String json = get("/api/list_missions");
+        if (json.startsWith("ERREUR") || json.startsWith("erreur HTTP")) {
+            System.out.println("Lecture missions impossible : " + json);
+            return missions;
+        }
+        for (String objet : objets(json)) {
+            Mission mission = new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
                     champ(objet, "robot_id"), champ(objet, "state"),
                     champ(objet, "start_date"), champ(objet, "end_date"),
-                    champ(objet, "team"), champ(objet, "time")));
+                    champ(objet, "team"), champ(objet, "time"));
+            if (missionDisponiblePourRobot(mission)) {
+                missions.add(mission);
+            }
         }
         return missions;
+    }
+
+    private static boolean missionDisponiblePourRobot(Mission mission) {
+        return !mission.getId().isBlank()
+                && !mission.getSemaphoreId().isBlank()
+                && mission.getEtat().equalsIgnoreCase("Awaiting")
+                && mission.getRobotId().isBlank();
     }
 
     // === MAJ serveur ===
