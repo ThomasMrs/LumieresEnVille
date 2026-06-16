@@ -15,7 +15,6 @@ class SimulateurTable:
         self.canvas = tk.Canvas(self.top, width=self.W, height=self.H, bg="white", highlightthickness=0)
         self.canvas.pack(padx=20, pady=20)
         
-        # Dessine le repère d'axes cartésiens
         self._dessiner_axes()
         
         self.points = self.charger_points(fichier_csv)
@@ -27,13 +26,10 @@ class SimulateurTable:
         self.top.after(500, self.animer)
 
     def _dessiner_axes(self):
-        # Axe X (horizontal)
         self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#cccccc", dash=(4, 4))
         self.canvas.create_text(self.W - 10, self.CY - 10, text="X", fill="#999999", font=("Arial", 8, "bold"))
-        # Axe Y (vertical)
         self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#cccccc", dash=(4, 4))
         self.canvas.create_text(self.CX + 10, 10, text="Y", fill="#999999", font=("Arial", 8, "bold"))
-        # Centre 0
         self.canvas.create_text(self.CX - 10, self.CY + 10, text="0", fill="#999999", font=("Arial", 8))
 
     def charger_points(self, fichier_csv):
