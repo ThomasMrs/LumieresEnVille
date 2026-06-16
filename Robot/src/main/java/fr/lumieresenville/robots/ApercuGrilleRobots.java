@@ -1,5 +1,4 @@
 package fr.lumieresenville.robots;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -129,7 +128,7 @@ public class ApercuGrilleRobots {
         int colonnes = Math.max(1, etat.largeur);
         int lignes = Math.max(1, etat.hauteur);
 
-        // Grille centree sur x = 0 : colonnes de xmin a xmax (ex. nombre_x=5 -> -2..2)
+        // Grille centree sur x = 0 : colonnes de xmin a xmax
         int xmin = -(colonnes / 2);
         int xmax = xmin + colonnes - 1;
 
@@ -143,7 +142,7 @@ public class ApercuGrilleRobots {
 
         List<Node> elements = new ArrayList<>();
 
-        // Maillage + noeuds a partir des segments exposes par l'API
+        // segment api
         dessinerSegments(elements, origineX, origineY, taille, etat.segments);
         dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
 
