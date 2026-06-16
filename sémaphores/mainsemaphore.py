@@ -2,7 +2,7 @@ import threading
 import os
 import math
 import time
-import tkinter as tk  
+import tkinter as tk
 from api_client import *
 from gui import Interface
 from table_tracante import simuler_table_tracante_csv
@@ -97,12 +97,6 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
     
-    # Récupération des couleurs RGB depuis l'API
-    r = int(mission_en_cours.get("color_r") or 0)
-    g = int(mission_en_cours.get("color_g") or 255)
-    b = int(mission_en_cours.get("color_b") or 255)
-    couleur_mission = (r, g, b)
-    
     duree_str = mission_en_cours.get("time")
     try:
         duree_sec = int(duree_str)
@@ -141,16 +135,16 @@ def lancer_dessin_physique():
             
         if cible_affichage:
             if type_sem == "helice":
-                lancer_helice_ui(ui.root, cible_affichage, couleur_mission, duree_sec)
+                lancer_helice_ui(ui.root, cible_affichage, duree_sec)
             else:
                 if cible_affichage.endswith(".csv"):
-                    simuler_table_tracante_csv(cible_affichage, ui.root, couleur_mission, duree_sec)
+                    simuler_table_tracante_csv(cible_affichage, ui.root, duree_sec)
                 else:
-                    ui.afficher_forme(cible_affichage, couleur_mission)
+                    ui.afficher_forme(cible_affichage)
                     var_attente = tk.IntVar()
                     ui.root.after(duree_sec * 1000, lambda: var_attente.set(1))
                     ui.root.wait_variable(var_attente)
-                    ui.afficher_forme("") # Efface après la durée écoulée
+                    ui.afficher_forme("") 
                     
     else:
         ui.mettre_a_jour_statut("ERREUR - Shape introuvable")

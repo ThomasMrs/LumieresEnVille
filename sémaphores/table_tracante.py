@@ -2,7 +2,7 @@ import tkinter as tk
 import math
 
 class SimulateurTable:
-    def __init__(self, root, fichier_csv, couleur=(0, 0, 0)):
+    def __init__(self, root, fichier_csv):
         self.top = tk.Toplevel(root)
         self.top.title("Simulateur Table Traçante")
         self.top.configure(bg="#333")
@@ -12,11 +12,10 @@ class SimulateurTable:
         self.CX = self.W / 2
         self.CY = self.H / 2
         
-        self.couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
-        
         self.canvas = tk.Canvas(self.top, width=self.W, height=self.H, bg="white", highlightthickness=0)
         self.canvas.pack(padx=20, pady=20)
         
+        # Dessine le repère d'axes cartésiens
         self._dessiner_axes()
         
         self.points = self.charger_points(fichier_csv)
@@ -80,7 +79,7 @@ class SimulateurTable:
             self.canvas.itemconfig(self.stylo_visuel, fill="red")
             if self.derniere_pos:
                 px, py = self.derniere_pos
-                self.canvas.create_line(px, py, x, y, fill=self.couleur_hex, width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
+                self.canvas.create_line(px, py, x, y, fill="black", width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
         else:
             self.canvas.itemconfig(self.stylo_visuel, fill="lightblue")
             
@@ -88,8 +87,8 @@ class SimulateurTable:
         self.index_actuel += 1
         self.top.after(10, self.animer)
 
-def simuler_table_tracante_csv(fichier_csv, root_parent, couleur=(0, 0, 0), duree_sec=10):
-    app = SimulateurTable(root_parent, fichier_csv, couleur)
+def simuler_table_tracante_csv(fichier_csv, root_parent, duree_sec=10):
+    app = SimulateurTable(root_parent, fichier_csv)
     
     app.top.after(duree_sec * 1000, app.top.destroy)
     
