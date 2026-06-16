@@ -2,6 +2,7 @@ import threading
 import os
 import math
 import time
+import tkinter as tk  
 from api_client import *
 from gui import Interface
 from table_tracante import simuler_table_tracante_csv
@@ -96,6 +97,18 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
     
+    # Récupération des couleurs RGB depuis l'API
+    r = int(mission_en_cours.get("color_r") or 0)
+    g = int(mission_en_cours.get("color_g") or 255)
+    b = int(mission_en_cours.get("color_b") or 255)
+    couleur_mission = (r, g, b)
+    
+    duree_str = mission_en_cours.get("time")
+    try:
+        duree_sec = int(duree_str)
+    except Exception:
+        duree_sec = 10  
+    
     shape = get_shape(shape_id)
     
     if shape:
@@ -106,10 +119,10 @@ def lancer_dessin_physique():
         if isinstance(donnees, list):
             for pt in donnees:
                 try:
-                    r = float(pt.get("r", pt.get("rayon", 0)))
-                    a = int(float(pt.get("a", pt.get("angle", 0))))
-                    s = int(pt.get("s", pt.get("stylo", 1)))
-                    points_bruts.append({"r": r, "a": a, "s": s})
+                    r_pt = float(pt.get("r", pt.get("rayon", 0)))
+                    a_pt = int(float(pt.get("a", pt.get("angle", 0))))
+                    s_pt = int(pt.get("s", pt.get("stylo", 1)))
+                    points_bruts.append({"r": r_pt, "a": a_pt, "s": s_pt})
                 except Exception:
                     pass
             
@@ -119,7 +132,6 @@ def lancer_dessin_physique():
             
         elif isinstance(donnees, str) and len(donnees.strip()) < 5:
             cible_affichage = donnees.strip()
-            ui.afficher_forme(cible_affichage)
             
         elif isinstance(donnees, str):
             points_bruts = decoder_chaine_image(donnees)
@@ -129,10 +141,16 @@ def lancer_dessin_physique():
             
         if cible_affichage:
             if type_sem == "helice":
-                lancer_helice_ui(ui.root, cible_affichage)
+                lancer_helice_ui(ui.root, cible_affichage, couleur_mission, duree_sec)
             else:
                 if cible_affichage.endswith(".csv"):
-                    simuler_table_tracante_csv(cible_affichage, ui.root)
+                    simuler_table_tracante_csv(cible_affichage, ui.root, couleur_mission, duree_sec)
+                else:
+                    ui.afficher_forme(cible_affichage, couleur_mission)
+                    var_attente = tk.IntVar()
+                    ui.root.after(duree_sec * 1000, lambda: var_attente.set(1))
+                    ui.root.wait_variable(var_attente)
+                    ui.afficher_forme("") # Efface après la durée écoulée
                     
     else:
         ui.mettre_a_jour_statut("ERREUR - Shape introuvable")
@@ -146,12 +164,18 @@ def lancer_dessin_physique():
 def boucle_automatisation():
     global etat, mission_en_cours
     
+    try:
+        if not ui.root.winfo_exists():
+            return
+    except Exception:
+        return
+    
     if etat == "RECHERCHE_MISSION":
         toutes_les_missions = get_missions()
         
         missions_valides = []
         for m in toutes_les_missions:
-            if m.get("state") in ["Pending", "Pending_semaphore"]:
+            if isinstance(m, dict) and m.get("state") in ["Pending", "Pending_semaphore"]:
                 missions_valides.append(m)
                 
         if len(missions_valides) > 0:
@@ -161,7 +185,8 @@ def boucle_automatisation():
             put_semaphore_state(mission_en_cours.get("semaphore_id"), "Occupied")
             lancer_dessin_physique()
             
-    ui.root.after(3000, boucle_automatisation)
+    if ui.root.winfo_exists():
+        ui.root.after(3000, boucle_automatisation)
 
 if __name__ == "__main__":
     boucle_automatisation()
