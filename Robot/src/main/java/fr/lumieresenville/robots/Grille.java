@@ -11,7 +11,7 @@ import java.util.Set;
 
 public class Grille {
 
-    private static final int PAS_ANIMATION_PAR_CASE = 10;
+    private static final int PAS_ANIMATION_PAR_CASE = 20;
 
     private Grille() {
     }

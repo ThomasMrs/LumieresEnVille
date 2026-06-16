@@ -88,7 +88,7 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.2), e -> rafraichir()));
+        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.1), e -> rafraichir()));
         rythme.setCycleCount(Timeline.INDEFINITE);
         rythme.play();
         rafraichir();
