@@ -11,6 +11,8 @@ import java.util.Set;
 
 public class Grille {
 
+    private static final int PAS_ANIMATION_PAR_CASE = 10;
+
     private Grille() {
     }
 
@@ -36,35 +38,49 @@ public class Grille {
 
         for (int i = 1; i < chemin.size(); i++) {
             Point point = chemin.get(i);
-            avancerVers(robot, point.x(), point.y());
+            glisserVers(robot, point.x(), point.y());
         }
     }
 
     private static void deplacerVolant(Robot robot, Point depart, Point arrivee) throws Exception {
-        int x = depart.x();
-        int y = depart.y();
-        int pas = Math.max(Math.abs(arrivee.x() - x), Math.abs(arrivee.y() - y));
+        double distance = Math.hypot(arrivee.x() - depart.x(), arrivee.y() - depart.y());
+        int pas = Math.max(1, (int) Math.ceil(distance * PAS_ANIMATION_PAR_CASE));
         System.out.println("[" + robot.getNom() + "] deplacement volant -> depart=" + depart
                 + ", destination=" + arrivee
                 + ", vitesse=" + robot.getVitesse() + " case(s)/s"
                 + ", pas=" + pas);
-
-        while (x != arrivee.x() || y != arrivee.y()) {
-            x += Integer.compare(arrivee.x(), x);
-            y += Integer.compare(arrivee.y(), y);
-            avancerVers(robot, x, y);
-        }
+        glisserVers(robot, arrivee.x(), arrivee.y());
     }
 
-    // Un pas elementaire : met a jour la position, l'envoie au serveur, puis respecte la vitesse.
-    private static void avancerVers(Robot robot, int x, int y) throws Exception {
-        if (Thread.currentThread().isInterrupted()) {
-            throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
+    // Glisse entre deux points en envoyant plusieurs positions intermediaires au serveur.
+    private static void glisserVers(Robot robot, double cibleX, double cibleY) throws Exception {
+        double departX = robot.getX();
+        double departY = robot.getY();
+        double deltaX = cibleX - departX;
+        double deltaY = cibleY - departY;
+        double distance = Math.hypot(deltaX, deltaY);
+        if (distance == 0) {
+            return;
         }
-        robot.setPosition(x, y);
-        System.out.println("[" + robot.getNom() + "] avance -> (" + x + ", " + y + ")");
-        AppRobots.modifierRobot(robot);
-        attendreSelonVitesse(robot);
+
+        int pas = Math.max(1, (int) Math.ceil(distance * PAS_ANIMATION_PAR_CASE));
+        long delaiMs = delaiParPas(robot, distance, pas);
+        System.out.println("[" + robot.getNom() + "] glisse -> (" + coord(departX) + ";" + coord(departY)
+                + ") vers (" + coord(cibleX) + ";" + coord(cibleY) + ") en " + pas + " position(s)");
+
+        for (int i = 1; i <= pas; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
+            }
+
+            double ratio = i / (double) pas;
+            robot.setPosition(departX + deltaX * ratio, departY + deltaY * ratio);
+            AppRobots.modifierRobot(robot);
+
+            if (i < pas) {
+                Thread.sleep(delaiMs);
+            }
+        }
     }
 
     private static EtatGrille lireEtatGrille(boolean chargerSegments) throws Exception {
@@ -170,13 +186,17 @@ public class Grille {
         return chemin;
     }
 
-    private static void attendreSelonVitesse(Robot robot) throws InterruptedException {
+    private static long delaiParPas(Robot robot, double distance, int pas) {
         double vitesse = robot.getVitesse();
         if (vitesse <= 0) {
             vitesse = 1.0;
         }
-        long delaiMs = Math.max(100, Math.round(1000.0 / vitesse));
-        Thread.sleep(delaiMs);
+        long delaiTotalMs = Math.max(1, Math.round(distance * 1000.0 / vitesse));
+        return Math.max(1, Math.round(delaiTotalMs / (double) pas));
+    }
+
+    private static String coord(double valeur) {
+        return String.format(java.util.Locale.US, "%.2f", valeur);
     }
 
     private static List<String> objets(String json) {

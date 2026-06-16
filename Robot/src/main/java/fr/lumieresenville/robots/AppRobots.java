@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -231,8 +232,8 @@ public class AppRobots {
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
                 + "&speed=" + (float) Math.round(robot.getVitesse())
-                + "&position_x=" + (float) Math.round(robot.getX())
-                + "&position_y=" + (float) Math.round(robot.getY());
+                + "&position_x=" + nombreUrl(robot.getX())
+                + "&position_y=" + nombreUrl(robot.getY());
         return put(url);
     }
 
@@ -377,5 +378,9 @@ public class AppRobots {
 
     private static String enc(String texte) {
         return URLEncoder.encode(texte == null ? "" : texte, StandardCharsets.UTF_8);
+    }
+
+    private static String nombreUrl(double valeur) {
+        return String.format(Locale.US, "%.3f", valeur);
     }
 }

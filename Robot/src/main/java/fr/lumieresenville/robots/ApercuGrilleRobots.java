@@ -88,7 +88,7 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.5), e -> rafraichir()));
+        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.2), e -> rafraichir()));
         rythme.setCycleCount(Timeline.INDEFINITE);
         rythme.play();
         rafraichir();
@@ -157,7 +157,7 @@ public class ApercuGrilleRobots {
         // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles
         int totalBase = 0;
         for (RobotVue r : etat.robots) {
-            if (r.x() == 0 && r.y() == 0) {
+            if (estALaBase(r)) {
                 totalBase++;
             }
         }
@@ -169,7 +169,7 @@ public class ApercuGrilleRobots {
             }
             double cx;
             double cy;
-            if (r.x() == 0 && r.y() == 0) {
+            if (estALaBase(r)) {
                 double pas = Math.max(30, taille * 0.6);
                 cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
                 cy = origineY + Math.min(36, taille * 0.5);
@@ -291,8 +291,8 @@ public class ApercuGrilleRobots {
             for (String objet : objets(robotsJson)) {
                 etat.robots.add(new RobotVue(
                         champ(objet, "name"),
-                        (int) Math.round(nombre(objet, "position_x")),
-                        (int) Math.round(nombre(objet, "position_y")),
+                        nombre(objet, "position_x"),
+                        nombre(objet, "position_y"),
                         champ(objet, "state"),
                         nombre(objet, "speed"),
                         champ(objet, "type")));
@@ -380,6 +380,10 @@ public class ApercuGrilleRobots {
         return valeur;
     }
 
+    private static boolean estALaBase(RobotVue robot) {
+        return Math.abs(robot.x()) < 0.001 && Math.abs(robot.y()) < 0.001;
+    }
+
     private static final class EtatGrille {
         int largeur = 10;
         int hauteur = 10;
@@ -395,7 +399,7 @@ public class ApercuGrilleRobots {
     private record SemaphoreVue(String nom, int x, int y, String etat) {
     }
 
-    private record RobotVue(String nom, int x, int y, String etat, double vitesse, String type) {
+    private record RobotVue(String nom, double x, double y, String etat, double vitesse, String type) {
         boolean estVolant() {
             return type != null && type.equalsIgnoreCase("volant");
         }
