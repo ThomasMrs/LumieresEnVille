@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AppRobots {
 
-    private static final String SERVEUR_DEFAUT = "http://192.168.1.18:8000";
+    private static final String SERVEUR_DEFAUT = "http://192.168.1.96:8000";
     private static String SERVEUR = SERVEUR_DEFAUT;
     private static final int BASE_X = 0;
     private static final int BASE_Y = 0;
