@@ -48,6 +48,8 @@ public class AppRobots {
             return;
         }
 
+        initialiserRobotsALaBase(robots);
+
         ApercuGrilleRobots.lancer(SERVEUR);
         System.out.println("Apercu graphique de la grille (JavaFX) lance.");
 
@@ -76,6 +78,20 @@ public class AppRobots {
         }
         System.out.println("Tous les robots sont arretes. Au revoir.");
         ApercuGrilleRobots.fermer();
+    }
+
+    private static void initialiserRobotsALaBase(List<Robot> robots) {
+        for (Robot robot : robots) {
+            robot.setPosition(BASE_X, BASE_Y);
+            robot.setEtat(EtatRobot.AVAILABLE);
+            robot.setMission(null);
+            try {
+                modifierRobot(robot);
+                System.out.println("[" + robot.getNom() + "] initialise a la base (" + BASE_X + ";" + BASE_Y + ").");
+            } catch (Exception e) {
+                System.out.println("[" + robot.getNom() + "] initialisation base impossible : " + e.getMessage());
+            }
+        }
     }
 
     //un robot par thread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
