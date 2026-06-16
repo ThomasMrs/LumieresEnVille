@@ -175,10 +175,18 @@ class HelicePOV:
                             
         self.root.after(self.refresh_rate, self.animate)
 
-def lancer_helice_ui(fenetre_parente, donnees=None, couleur=(0, 255, 255)):
+def lancer_helice_ui(fenetre_parente, donnees=None, couleur=(0, 255, 255), duree_sec=10):
     top = tk.Toplevel(fenetre_parente)
     app = HelicePOV(top, fichier_initial=donnees, couleur=couleur)
+    
+    top.after(duree_sec * 1000, top.destroy)
+    
     top.wait_window(top)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HelicePOV(root)
+    root.mainloop()
 
 if __name__ == "__main__":
     root = tk.Tk()
