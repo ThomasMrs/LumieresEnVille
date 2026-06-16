@@ -78,3 +78,12 @@
 .robot-occupe {
     -fx-background-color: #fb923c;
 }
+.robot-volant {
+    -fx-border-color: #7c3aed;
+    -fx-border-width: 3;
+}
+.aile {
+    -fx-stroke: #7c3aed;
+    -fx-stroke-width: 3;
+    -fx-stroke-line-cap: round;
+}

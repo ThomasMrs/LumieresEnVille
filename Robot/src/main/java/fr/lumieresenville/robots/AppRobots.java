@@ -189,6 +189,7 @@ public class AppRobots {
             Robot robot = new Robot(champ(objet, "name"), nombre(objet, "position_x"), nombre(objet, "position_y"));
             robot.setId(champ(objet, "id"));
             robot.setVitesse(nombre(objet, "speed"));
+            robot.setType(champ(objet, "type"));
             robot.setEtat(etatRobot(champ(objet, "state")));
             robots.add(robot);
         }

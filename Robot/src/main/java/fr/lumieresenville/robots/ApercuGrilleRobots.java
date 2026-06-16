@@ -164,6 +164,9 @@ public class ApercuGrilleRobots {
         int indexBase = 0;
         for (RobotVue r : etat.robots) {
             String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
+            if (r.estVolant()) {
+                classe += " robot-volant";
+            }
             double cx;
             double cy;
             if (r.x() == 0 && r.y() == 0) {
@@ -226,6 +229,15 @@ public class ApercuGrilleRobots {
         }
         Label libelle = new Label(texte);
         libelle.getStyleClass().add("marqueur-texte");
+        if (classes.contains("robot-volant")) {
+            Line aileGauche = new Line(0, cote * 0.35, -cote * 0.55, 0);
+            aileGauche.getStyleClass().add("aile");
+            aileGauche.setTranslateX(-cote * 0.35);
+            Line aileDroite = new Line(0, cote * 0.35, cote * 0.55, 0);
+            aileDroite.getStyleClass().add("aile");
+            aileDroite.setTranslateX(cote * 0.35);
+            pastille.getChildren().addAll(aileGauche, aileDroite);
+        }
         pastille.getChildren().add(libelle);
         pastille.setPrefSize(cote, cote);
         pastille.setLayoutX(cx - cote / 2);
@@ -282,7 +294,8 @@ public class ApercuGrilleRobots {
                         (int) Math.round(nombre(objet, "position_x")),
                         (int) Math.round(nombre(objet, "position_y")),
                         champ(objet, "state"),
-                        nombre(objet, "speed")));
+                        nombre(objet, "speed"),
+                        champ(objet, "type")));
             }
         }
 
@@ -382,6 +395,9 @@ public class ApercuGrilleRobots {
     private record SemaphoreVue(String nom, int x, int y, String etat) {
     }
 
-    private record RobotVue(String nom, int x, int y, String etat, double vitesse) {
+    private record RobotVue(String nom, int x, int y, String etat, double vitesse, String type) {
+        boolean estVolant() {
+            return type != null && type.equalsIgnoreCase("volant");
+        }
     }
 }

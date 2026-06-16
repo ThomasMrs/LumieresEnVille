@@ -16,12 +16,16 @@ public class Grille {
 
     // Deplace le robot
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
-        EtatGrille etatGrille = lireEtatGrille();
+        EtatGrille etatGrille = lireEtatGrille(!robot.estVolant());
         Point depart = new Point((int) Math.round(robot.getX()), (int) Math.round(robot.getY()));
         Point arrivee = new Point((int) Math.round(destinationX), (int) Math.round(destinationY));
 
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
+        if (robot.estVolant()) {
+            deplacerVolant(robot, depart, arrivee);
+            return;
+        }
 
         List<Point> chemin = calculerChemin(depart, arrivee, etatGrille.segments());
         System.out.println("[" + robot.getNom() + "] deplacement -> depart=" + depart
@@ -36,6 +40,22 @@ public class Grille {
         }
     }
 
+    private static void deplacerVolant(Robot robot, Point depart, Point arrivee) throws Exception {
+        int x = depart.x();
+        int y = depart.y();
+        int pas = Math.max(Math.abs(arrivee.x() - x), Math.abs(arrivee.y() - y));
+        System.out.println("[" + robot.getNom() + "] deplacement volant -> depart=" + depart
+                + ", destination=" + arrivee
+                + ", vitesse=" + robot.getVitesse() + " case(s)/s"
+                + ", pas=" + pas);
+
+        while (x != arrivee.x() || y != arrivee.y()) {
+            x += Integer.compare(arrivee.x(), x);
+            y += Integer.compare(arrivee.y(), y);
+            avancerVers(robot, x, y);
+        }
+    }
+
     // Un pas elementaire : met a jour la position, l'envoie au serveur, puis respecte la vitesse.
     private static void avancerVers(Robot robot, int x, int y) throws Exception {
         if (Thread.currentThread().isInterrupted()) {
@@ -47,7 +67,7 @@ public class Grille {
         attendreSelonVitesse(robot);
     }
 
-    private static EtatGrille lireEtatGrille() throws Exception {
+    private static EtatGrille lireEtatGrille(boolean chargerSegments) throws Exception {
         String configJson = AppRobots.get("/api/get_config");
         if (configJson.startsWith("ERREUR") || configJson.startsWith("erreur HTTP") || configJson.equals("OK")) {
             throw new Exception("configuration introuvable : " + configJson);
@@ -59,21 +79,23 @@ public class Grille {
             throw new Exception("configuration invalide : dimensions inconnues");
         }
 
-        String segmentsJson = AppRobots.get("/api/list_segment");
-        if (segmentsJson.startsWith("ERREUR") || segmentsJson.startsWith("erreur HTTP")) {
-            throw new Exception("segments introuvables : " + segmentsJson);
-        }
-
         List<Segment> segments = new ArrayList<>();
-        for (String objet : objets(segmentsJson)) {
-            segments.add(new Segment(
-                    (int) nombre(objet, "coord_a_x"),
-                    (int) nombre(objet, "coord_a_y"),
-                    (int) nombre(objet, "coord_b_x"),
-                    (int) nombre(objet, "coord_b_y")));
-        }
-        if (segments.isEmpty()) {
-            throw new Exception("aucun segment disponible pour deplacer le robot");
+        if (chargerSegments) {
+            String segmentsJson = AppRobots.get("/api/list_segment");
+            if (segmentsJson.startsWith("ERREUR") || segmentsJson.startsWith("erreur HTTP")) {
+                throw new Exception("segments introuvables : " + segmentsJson);
+            }
+
+            for (String objet : objets(segmentsJson)) {
+                segments.add(new Segment(
+                        (int) nombre(objet, "coord_a_x"),
+                        (int) nombre(objet, "coord_a_y"),
+                        (int) nombre(objet, "coord_b_x"),
+                        (int) nombre(objet, "coord_b_y")));
+            }
+            if (segments.isEmpty()) {
+                throw new Exception("aucun segment disponible pour deplacer le robot");
+            }
         }
 
         return new EtatGrille(largeur, hauteur, segments);
