@@ -58,7 +58,7 @@ class SimulateurTable:
         for r, a, s in points_bruts:
             r_ech = (r / r_max) * echelle
             x = self.CX + r_ech * math.cos(math.radians(a))
-            y = self.CY + r_ech * math.sin(math.radians(a))
+            y = self.CY - r_ech * math.sin(math.radians(a))
             coords.append((x, y, s))
             
         return coords
@@ -85,7 +85,5 @@ class SimulateurTable:
 
 def simuler_table_tracante_csv(fichier_csv, root_parent, duree_sec=10):
     app = SimulateurTable(root_parent, fichier_csv)
-    
     app.top.after(duree_sec * 1000, app.top.destroy)
-    
     app.top.wait_window(app.top)
