@@ -40,16 +40,9 @@ def valider_coordonnees(coord_x, coord_y):
         return False
     nombre_x = config["nombre_x"]
     nombre_y = config["nombre_y"]
-<<<<<<< HEAD
     # Grille centree horizontalement sur x = 0 (colonnes negatives possibles).
     x_min = -(nombre_x // 2)
     # La base est en (0, 0). La vraie grille est au-dessus : y de 1 a nombre_y.
     if coord_x == 0 and coord_y == 0:
         return True
     return x_min <= coord_x < x_min + nombre_x and 1 <= coord_y <= nombre_y
-=======
-    # x centre sur 0 (coordonnees negatives OK), y de 0 a nombre_y-1.
-    x_min = -(nombre_x // 2)
-    return (x_min <= coord_x < x_min + nombre_x
-            and 0 <= coord_y < nombre_y)
->>>>>>> 8ce57532e3e64fb43e352db3c302803865ab32e4
