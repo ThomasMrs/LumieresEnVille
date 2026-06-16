@@ -2,14 +2,17 @@ from uuid import uuid4
 from stockage.db import get_connection
 
 
-def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id):
+def ajouter_missions(name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id,
+                     color_r=0, color_g=0, color_b=0):
     id_missions = str(uuid4())
     conn = get_connection()
     conn.execute(
         "INSERT INTO mission "
-        "(id, name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (id_missions, name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id),
+        "(id, name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id, "
+        "color_r, color_g, color_b) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (id_missions, name, semaphore_id, robot_id, state, start_date, end_date, team, time, shape_id,
+         color_r, color_g, color_b),
     )
     conn.commit()
     conn.close()
