@@ -8,8 +8,8 @@ class HelicePOV:
         self.root.title("Simulation Hélice POV")
         self.root.configure(bg="#222")
         
-        self.W = 400
-        self.H = 400
+        self.W = 300
+        self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
         self.refresh_rate = 20  
