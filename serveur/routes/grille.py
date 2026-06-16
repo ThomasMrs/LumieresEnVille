@@ -31,21 +31,20 @@ def creer_grille(name):
     nombre_y = config["nombre_y"]
     id_grille = str(uuid4())
 
-    # Grille centree horizontalement sur la base (x = 0).
-    # x va de x_min a x_min + nombre_x - 1 (ex: nombre_x=5 -> -2,-1,0,1,2).
+    # Grille centree horizontalement sur x = 0 (ex: nombre_x=5 -> -2,-1,0,1,2).
     x_min = -(nombre_x // 2)
     x_max = x_min + nombre_x  # borne exclusive
 
-    # Maillage a partir de y = 1 ; la base (0,0) est reliee a (0,1) par un seul segment.
     segments = []
-    for y in range(1, nombre_y):
+    # Base en (0, 0) reliee par un segment vertical au bas de la grille (0, 1).
+    segments.append((str(uuid4()), 0, 0, 0, 1))
+    # Vraie grille : y va de 1 a nombre_y (au-dessus de la base).
+    for y in range(1, nombre_y + 1):
         for x in range(x_min, x_max):
             if x + 1 < x_max:
                 segments.append((str(uuid4()), x, y, x + 1, y))
-            if y + 1 < nombre_y:
+            if y + 1 <= nombre_y:
                 segments.append((str(uuid4()), x, y, x, y + 1))
-    if nombre_y > 1:
-        segments.append((str(uuid4()), 0, 0, 0, 1))
 
     definir_grille(config["id"], id_grille, name)
     remplacer_segments(segments)
@@ -67,13 +66,14 @@ def lire_grille():
     segments = lire_segment()
     semaphores = lire_semaphore()
 
-    # Memes bornes que creer_grille : grille centree sur x = 0.
+    # Memes bornes que creer_grille : grille centree sur (0, 0).
     x_min = -(nombre_x // 2)
     x_max = x_min + nombre_x  # borne exclusive
+    y_min = -(nombre_y // 2)
+    y_max = y_min + nombre_y  # borne exclusive
 
-    # La base (0,0) est detachee ; le maillage commence a y = 1.
-    noeuds = [{"x": 0, "y": 0, "semaphore": None}]
-    for y in range(1, nombre_y):
+    noeuds = []
+    for y in range(nombre_y):
         for x in range(x_min, x_max):
             noeud = {"x": x, "y": y, "semaphore": None}
             for s in semaphores:
