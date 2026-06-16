@@ -1,5 +1,4 @@
 package fr.lumieresenville.robots;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -88,7 +87,7 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.5), e -> rafraichir()));
+        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.1), e -> rafraichir()));
         rythme.setCycleCount(Timeline.INDEFINITE);
         rythme.play();
         rafraichir();
@@ -129,7 +128,7 @@ public class ApercuGrilleRobots {
         int colonnes = Math.max(1, etat.largeur);
         int lignes = Math.max(1, etat.hauteur);
 
-        // Grille centree sur x = 0 : colonnes de xmin a xmax (ex. nombre_x=5 -> -2..2)
+        // Grille centree sur x = 0 : colonnes de xmin a xmax
         int xmin = -(colonnes / 2);
         int xmax = xmin + colonnes - 1;
 
@@ -143,7 +142,7 @@ public class ApercuGrilleRobots {
 
         List<Node> elements = new ArrayList<>();
 
-        // Maillage + noeuds a partir des segments exposes par l'API
+        // SEGEMENT
         dessinerSegments(elements, origineX, origineY, taille, etat.segments);
         dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
 
@@ -157,16 +156,19 @@ public class ApercuGrilleRobots {
         // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles
         int totalBase = 0;
         for (RobotVue r : etat.robots) {
-            if (r.x() == 0 && r.y() == 0) {
+            if (estALaBase(r)) {
                 totalBase++;
             }
         }
         int indexBase = 0;
         for (RobotVue r : etat.robots) {
             String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
+            if (r.estVolant()) {
+                classe += " robot-volant";
+            }
             double cx;
             double cy;
-            if (r.x() == 0 && r.y() == 0) {
+            if (estALaBase(r)) {
                 double pas = Math.max(30, taille * 0.6);
                 cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
                 cy = origineY + Math.min(36, taille * 0.5);
@@ -226,6 +228,15 @@ public class ApercuGrilleRobots {
         }
         Label libelle = new Label(texte);
         libelle.getStyleClass().add("marqueur-texte");
+        if (classes.contains("robot-volant")) {
+            Line aileGauche = new Line(0, cote * 0.35, -cote * 0.55, 0);
+            aileGauche.getStyleClass().add("aile");
+            aileGauche.setTranslateX(-cote * 0.35);
+            Line aileDroite = new Line(0, cote * 0.35, cote * 0.55, 0);
+            aileDroite.getStyleClass().add("aile");
+            aileDroite.setTranslateX(cote * 0.35);
+            pastille.getChildren().addAll(aileGauche, aileDroite);
+        }
         pastille.getChildren().add(libelle);
         pastille.setPrefSize(cote, cote);
         pastille.setLayoutX(cx - cote / 2);
@@ -243,8 +254,8 @@ public class ApercuGrilleRobots {
             etat.message = configJson;
             return etat;
         }
-        int largeur = lireDimension(configJson, "nombre_x", "nbr_x");
-        int hauteur = lireDimension(configJson, "nombre_y", "nbr_y");
+        int largeur = (int) nombre(configJson, "nombre_x");
+        int hauteur = (int) nombre(configJson, "nombre_y");
         if (largeur > 0) {
             etat.largeur = largeur;
         }
@@ -279,10 +290,11 @@ public class ApercuGrilleRobots {
             for (String objet : objets(robotsJson)) {
                 etat.robots.add(new RobotVue(
                         champ(objet, "name"),
-                        (int) Math.round(nombre(objet, "position_x")),
-                        (int) Math.round(nombre(objet, "position_y")),
+                        nombre(objet, "position_x"),
+                        nombre(objet, "position_y"),
                         champ(objet, "state"),
-                        nombre(objet, "speed")));
+                        nombre(objet, "speed"),
+                        champ(objet, "type")));
             }
         }
 
@@ -359,12 +371,8 @@ public class ApercuGrilleRobots {
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
 
-    private static int lireDimension(String json, String champPrincipal, String champCompatibilite) {
-        int valeur = (int) nombre(json, champPrincipal);
-        if (valeur <= 0) {
-            valeur = (int) nombre(json, champCompatibilite);
-        }
-        return valeur;
+    private static boolean estALaBase(RobotVue robot) {
+        return Math.abs(robot.x()) < 0.001 && Math.abs(robot.y()) < 0.001;
     }
 
     private static final class EtatGrille {
@@ -382,6 +390,9 @@ public class ApercuGrilleRobots {
     private record SemaphoreVue(String nom, int x, int y, String etat) {
     }
 
-    private record RobotVue(String nom, int x, int y, String etat, double vitesse) {
+    private record RobotVue(String nom, double x, double y, String etat, double vitesse, String type) {
+        boolean estVolant() {
+            return type != null && type.equalsIgnoreCase("volant");
+        }
     }
 }

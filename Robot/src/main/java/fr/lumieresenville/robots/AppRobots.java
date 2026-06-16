@@ -229,9 +229,9 @@ public class AppRobots {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
-                + "&speed=" + (float) Math.round(robot.getVitesse())
-                + "&position_x=" + (float) Math.round(robot.getX())
-                + "&position_y=" + (float) Math.round(robot.getY());
+                + "&speed=" + (int) Math.round(robot.getVitesse())
+                + "&position_x=" + (int) Math.round(robot.getX())
+                + "&position_y=" + (int) Math.round(robot.getY());
         return put(url);
     }
 
