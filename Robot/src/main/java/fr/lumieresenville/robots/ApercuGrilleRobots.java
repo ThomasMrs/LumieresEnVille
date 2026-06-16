@@ -6,9 +6,14 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -34,6 +39,10 @@ public class ApercuGrilleRobots {
     private static Pane zoneGrille;
     private static Label entete;
     private static EtatGrille dernierEtat = new EtatGrille();
+
+    // Position AFFICHEE (grille) de chaque robot, interpolee vers la position serveur -> rendu fluide.
+    private static final Map<String, double[]> POS_AFFICHEE = new HashMap<>();
+    private static volatile boolean grilleChangee = true;
 
     public static void main(String[] args) {
         lancer(args.length > 0 ? args[0] : SERVEUR);
@@ -68,8 +77,8 @@ public class ApercuGrilleRobots {
 
         zoneGrille = new Pane();
         zoneGrille.getStyleClass().add("grille");
-        zoneGrille.widthProperty().addListener((o, a, b) -> redessiner());
-        zoneGrille.heightProperty().addListener((o, a, b) -> redessiner());
+        zoneGrille.widthProperty().addListener((o, a, b) -> grilleChangee = true);
+        zoneGrille.heightProperty().addListener((o, a, b) -> grilleChangee = true);
 
         BorderPane racine = new BorderPane();
         racine.getStyleClass().add("racine");
@@ -87,10 +96,23 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.1), e -> rafraichir()));
-        rythme.setCycleCount(Timeline.INDEFINITE);
-        rythme.play();
+        // Reseau : on recupere l'etat du serveur toutes les 0,25 s.
+        Timeline reseau = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.25), e -> rafraichir()));
+        reseau.setCycleCount(Timeline.INDEFINITE);
+        reseau.play();
         rafraichir();
+
+        // Rendu fluide (~60 fps) : la position affichee des robots glisse vers leur position serveur.
+        new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                boolean bouge = interpolerPositions();
+                if (bouge || grilleChangee) {
+                    grilleChangee = false;
+                    redessiner();
+                }
+            }
+        }.start();
     }
 
     // Va chercher les donnees serveur dans un thread de fond, puis met a jour l'UI sur le thread FX.
@@ -104,7 +126,7 @@ public class ApercuGrilleRobots {
                 Platform.runLater(() -> {
                     dernierEtat = etat;
                     entete.setText(etat.message);
-                    redessiner();
+                    grilleChangee = true;
                 });
             } finally {
                 CHARGEMENT.set(false);
@@ -112,6 +134,30 @@ public class ApercuGrilleRobots {
         }, "apercu-grille-refresh");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    // Rapproche la position affichee de chaque robot de sa position serveur (glissement fluide).
+    // Renvoie true tant qu'au moins un robot n'est pas arrive a sa position cible.
+    private static boolean interpolerPositions() {
+        EtatGrille etat = dernierEtat;
+        boolean bouge = false;
+        Set<String> presents = new HashSet<>();
+        for (RobotVue r : etat.robots) {
+            presents.add(r.nom());
+            double[] pos = POS_AFFICHEE.computeIfAbsent(r.nom(), k -> new double[]{r.x(), r.y()});
+            double dx = r.x() - pos[0];
+            double dy = r.y() - pos[1];
+            if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+                pos[0] += dx * 0.2;   // 20 % du chemin restant par image -> arrive en ~0,2 s
+                pos[1] += dy * 0.2;
+                bouge = true;
+            } else {
+                pos[0] = r.x();
+                pos[1] = r.y();
+            }
+        }
+        POS_AFFICHEE.keySet().retainAll(presents);   // oublie les robots disparus
+        return bouge;
     }
 
     private static void redessiner() {
@@ -153,30 +199,23 @@ public class ApercuGrilleRobots {
                     origineX + s.x() * taille, origineY - s.y() * taille, taille));
         }
 
-        // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles
-        int totalBase = 0;
-        for (RobotVue r : etat.robots) {
-            if (estALaBase(r)) {
-                totalBase++;
-            }
-        }
-        int indexBase = 0;
-        for (RobotVue r : etat.robots) {
+        // Robots : dessines a leur position AFFICHEE (interpolee, donc fluide).
+        // Pres de la base (gy ~ 0) on les decale dessous et on les espace ; l'effet
+        // s'attenue a mesure qu'ils montent (gy -> 1).
+        int nbRobots = etat.robots.size();
+        for (int i = 0; i < nbRobots; i++) {
+            RobotVue r = etat.robots.get(i);
             String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
             if (r.estVolant()) {
                 classe += " robot-volant";
             }
-            double cx;
-            double cy;
-            if (estALaBase(r)) {
-                double pas = Math.max(30, taille * 0.6);
-                cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
-                cy = origineY + Math.min(36, taille * 0.5);
-                indexBase++;
-            } else {
-                cx = origineX + r.x() * taille;
-                cy = origineY - r.y() * taille;
-            }
+            double[] pos = POS_AFFICHEE.getOrDefault(r.nom(), new double[]{r.x(), r.y()});
+            double gx = pos[0];
+            double gy = pos[1];
+            double facteurBase = Math.max(0, Math.min(1, 1 - gy));
+            double pas = Math.max(26, taille * 0.55);
+            double cx = origineX + gx * taille + facteurBase * (i - (nbRobots - 1) / 2.0) * pas;
+            double cy = origineY - gy * taille + facteurBase * Math.min(34, taille * 0.5);
             elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(), cx, cy, taille));
         }
         zoneGrille.getChildren().setAll(elements);
@@ -377,10 +416,6 @@ public class ApercuGrilleRobots {
             valeur = (int) nombre(json, champCompatibilite);
         }
         return valeur;
-    }
-
-    private static boolean estALaBase(RobotVue robot) {
-        return Math.abs(robot.x()) < 0.001 && Math.abs(robot.y()) < 0.001;
     }
 
     private static final class EtatGrille {

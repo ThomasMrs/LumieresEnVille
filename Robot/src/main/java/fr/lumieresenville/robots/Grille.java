@@ -11,7 +11,7 @@ import java.util.Set;
 
 public class Grille {
 
-    private static final int PAS_ANIMATION_PAR_CASE = 20;
+    private static final long DELAI_PAS_MS = 250;   // une position envoyee toutes les 0,25 s
 
     private Grille() {
     }
@@ -43,44 +43,20 @@ public class Grille {
     }
 
     private static void deplacerVolant(Robot robot, Point depart, Point arrivee) throws Exception {
-        double distance = Math.hypot(arrivee.x() - depart.x(), arrivee.y() - depart.y());
-        int pas = Math.max(1, (int) Math.ceil(distance * PAS_ANIMATION_PAR_CASE));
         System.out.println("[" + robot.getNom() + "] deplacement volant -> depart=" + depart
-                + ", destination=" + arrivee
-                + ", vitesse=" + robot.getVitesse() + " case(s)/s"
-                + ", pas=" + pas);
+                + ", destination=" + arrivee + ", vitesse=" + robot.getVitesse() + " case(s)/s");
         glisserVers(robot, arrivee.x(), arrivee.y());
     }
 
-    // Glisse entre deux points en envoyant plusieurs positions intermediaires au serveur.
+    // Avance vers une case : envoie UNE position entiere au serveur, une mise a jour toutes les 0,25 s.
+    // Le rendu fluide est gere par l'apercu (ApercuGrilleRobots) qui interpole entre les cases.
     private static void glisserVers(Robot robot, double cibleX, double cibleY) throws Exception {
-        double departX = robot.getX();
-        double departY = robot.getY();
-        double deltaX = cibleX - departX;
-        double deltaY = cibleY - departY;
-        double distance = Math.hypot(deltaX, deltaY);
-        if (distance == 0) {
-            return;
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
         }
-
-        int pas = Math.max(1, (int) Math.ceil(distance * PAS_ANIMATION_PAR_CASE));
-        long delaiMs = delaiParPas(robot, distance, pas);
-        System.out.println("[" + robot.getNom() + "] glisse -> (" + coord(departX) + ";" + coord(departY)
-                + ") vers (" + coord(cibleX) + ";" + coord(cibleY) + ") en " + pas + " position(s)");
-
-        for (int i = 1; i <= pas; i++) {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
-            }
-
-            double ratio = i / (double) pas;
-            robot.setPosition(departX + deltaX * ratio, departY + deltaY * ratio);
-            AppRobots.modifierRobot(robot);
-
-            if (i < pas) {
-                Thread.sleep(delaiMs);
-            }
-        }
+        robot.setPosition(cibleX, cibleY);
+        AppRobots.modifierRobot(robot);
+        Thread.sleep(DELAI_PAS_MS);
     }
 
     private static EtatGrille lireEtatGrille(boolean chargerSegments) throws Exception {
@@ -186,18 +162,6 @@ public class Grille {
         return chemin;
     }
 
-    private static long delaiParPas(Robot robot, double distance, int pas) {
-        double vitesse = robot.getVitesse();
-        if (vitesse <= 0) {
-            vitesse = 1.0;
-        }
-        long delaiTotalMs = Math.max(1, Math.round(distance * 1000.0 / vitesse));
-        return Math.max(1, Math.round(delaiTotalMs / (double) pas));
-    }
-
-    private static String coord(double valeur) {
-        return String.format(java.util.Locale.US, "%.2f", valeur);
-    }
 
     private static List<String> objets(String json) {
         List<String> liste = new ArrayList<>();
