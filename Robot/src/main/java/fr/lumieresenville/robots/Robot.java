@@ -7,6 +7,7 @@ public class Robot {
     private double vitesse;
     private double x;
     private double y;
+    private String type;
     private EtatRobot etat;
     private Mission mission;
 
@@ -17,6 +18,7 @@ public class Robot {
         this.vitesse = 1.0;
         this.x = x;
         this.y = y;
+        this.type = "";
         this.etat = EtatRobot.AVAILABLE;
         this.mission = null;
     }
@@ -27,6 +29,7 @@ public class Robot {
     public double getVitesse() { return vitesse; }
     public double getX()       { return x; }
     public double getY()       { return y; }
+    public String getType()    { return type; }
     public EtatRobot getEtat() { return etat; }
     public Mission getMission() { return mission; }
 
@@ -34,8 +37,13 @@ public class Robot {
     public void setId(String id)             { this.id = id; }
     public void setVitesse(double vitesse)   { this.vitesse = vitesse; }
     public void setPosition(double x, double y) { this.x = x; this.y = y; }
+    public void setType(String type)         { this.type = type == null ? "" : type; }
     public void setEtat(EtatRobot etat)      { this.etat = etat; }
     public void setMission(Mission mission)  { this.mission = mission; }
+
+    public boolean estVolant() {
+        return type.equalsIgnoreCase("volant");
+    }
 
 
     @Override
@@ -46,6 +54,7 @@ public class Robot {
 
         String texteId = (id == null) ? "id inconnu" : id;
 
-        return nom + "  " + texteId + "  (" + (int) x + ", " + (int) y + ")  [" + etat + "]  " + texteMission;
+        String texteType = type.isBlank() ? "type inconnu" : type;
+        return nom + "  " + texteId + "  " + texteType + "  (" + (int) x + ", " + (int) y + ")  [" + etat + "]  " + texteMission;
     }
 }

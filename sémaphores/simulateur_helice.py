@@ -3,13 +3,13 @@ import math
 import os
 
 class HelicePOV:
-    def __init__(self, root, fichier_initial=None):
+    def __init__(self, root, fichier_initial=None, couleur=(0, 255, 255)):
         self.root = root
         self.root.title("Simulation Hélice POV")
         self.root.configure(bg="#222")
         
-        self.W = 400
-        self.H = 400
+        self.W = 300
+        self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
         self.refresh_rate = 20  
@@ -18,6 +18,9 @@ class HelicePOV:
         self.angle_moteur = 0.0
         self.pixels_remanents = []
         self.lettre_actuelle = "A"
+        
+        self.couleur_rgb = couleur
+        self.couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
         
         self.matrices_polaires = {"A": self._creer_matrice_lettre_A()}
         self.CORRECTION_PHASE = 90
@@ -87,7 +90,7 @@ class HelicePOV:
                 led_idx = int((r / r_max) * 9)
                 if led_idx > 9: led_idx = 9
                 if led_idx < 0: led_idx = 0
-                matrice[a % 360][led_idx] = (0, 255, 255)
+                matrice[a % 360][led_idx] = self.couleur_rgb
         
         self.matrices_polaires[os.path.basename(nom_fichier).upper()] = matrice
 
@@ -132,7 +135,6 @@ class HelicePOV:
                 angle_physique = (self.angle_moteur + b * 90) % 360
                 angle_rad = math.radians(angle_physique - 90) 
                 
-                # NOUVEAU : On calcule la position précédente pour tracer le mouvement
                 angle_rad_prev = math.radians((angle_physique - 1) - 90)
 
                 if dernier_pas:
@@ -151,9 +153,15 @@ class HelicePOV:
                     prev_y = self.CY + r_phys * math.sin(angle_rad_prev)
 
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
-                        c = "#00ffff"
+                        c = self.couleur_hex
                         tid = self.canvas.create_line(prev_x, prev_y, x, y, fill=c, width=4, capstyle=tk.ROUND)
-                        self.pixels_remanents.append({'id': tid, 'vie': 255, 'r': 0, 'g': 255, 'b': 255})
+                        
+                        self.pixels_remanents.append({
+                            'id': tid, 'vie': 255, 
+                            'r': self.couleur_rgb[0], 
+                            'g': self.couleur_rgb[1], 
+                            'b': self.couleur_rgb[2]
+                        })
                         
                         if dernier_pas:
                             self.canvas.itemconfig(self.leds_gui[b][i], fill=c)
@@ -165,10 +173,18 @@ class HelicePOV:
                             
         self.root.after(self.refresh_rate, self.animate)
 
-def lancer_helice_ui(fenetre_parente, donnees=None):
+def lancer_helice_ui(fenetre_parente, donnees=None, couleur=(0, 255, 255), duree_sec=10):
     top = tk.Toplevel(fenetre_parente)
-    app = HelicePOV(top, fichier_initial=donnees)
+    app = HelicePOV(top, fichier_initial=donnees, couleur=couleur)
+    
+    top.after(duree_sec * 1000, top.destroy)
+    
     top.wait_window(top)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HelicePOV(root)
+    root.mainloop()
 
 if __name__ == "__main__":
     root = tk.Tk()

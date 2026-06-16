@@ -15,6 +15,8 @@ class SimulateurTable:
         self.canvas = tk.Canvas(self.top, width=self.W, height=self.H, bg="white", highlightthickness=0)
         self.canvas.pack(padx=20, pady=20)
         
+        self._dessiner_axes()
+        
         self.points = self.charger_points(fichier_csv)
         self.index_actuel = 0
         
@@ -22,6 +24,13 @@ class SimulateurTable:
         self.derniere_pos = None
         
         self.top.after(500, self.animer)
+
+    def _dessiner_axes(self):
+        self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#cccccc", dash=(4, 4))
+        self.canvas.create_text(self.W - 10, self.CY - 10, text="X", fill="#999999", font=("Arial", 8, "bold"))
+        self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#cccccc", dash=(4, 4))
+        self.canvas.create_text(self.CX + 10, 10, text="Y", fill="#999999", font=("Arial", 8, "bold"))
+        self.canvas.create_text(self.CX - 10, self.CY + 10, text="0", fill="#999999", font=("Arial", 8))
 
     def charger_points(self, fichier_csv):
         points_bruts = []
@@ -49,7 +58,7 @@ class SimulateurTable:
         for r, a, s in points_bruts:
             r_ech = (r / r_max) * echelle
             x = self.CX + r_ech * math.cos(math.radians(a))
-            y = self.CY + r_ech * math.sin(math.radians(a))
+            y = self.CY - r_ech * math.sin(math.radians(a))
             coords.append((x, y, s))
             
         return coords
@@ -60,7 +69,6 @@ class SimulateurTable:
             return
             
         x, y, s = self.points[self.index_actuel]
-        
         self.canvas.coords(self.stylo_visuel, x-5, y-5, x+5, y+5)
         
         if s == 1:
@@ -73,8 +81,9 @@ class SimulateurTable:
             
         self.derniere_pos = (x, y)
         self.index_actuel += 1
-        
         self.top.after(10, self.animer)
 
-def simuler_table_tracante_csv(fichier_csv, root_parent):
-    SimulateurTable(root_parent, fichier_csv)
+def simuler_table_tracante_csv(fichier_csv, root_parent, duree_sec=10):
+    app = SimulateurTable(root_parent, fichier_csv)
+    app.top.after(duree_sec * 1000, app.top.destroy)
+    app.top.wait_window(app.top)

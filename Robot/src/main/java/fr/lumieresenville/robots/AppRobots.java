@@ -16,11 +16,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AppRobots {
 
-    private static final String SERVEUR_DEFAUT = "http://192.168.1.18:8000";
+    private static final String SERVEUR_DEFAUT = "http://192.168.1.96:8000";
     private static String SERVEUR = SERVEUR_DEFAUT;
     private static final int BASE_X = 0;
     private static final int BASE_Y = 0;
-    private static final long INTERVALLE_RECHERCHE_MS = 2000;
+    private static final long INTERVALLE_RECHERCHE_MS = 5000;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
@@ -47,6 +47,8 @@ public class AppRobots {
             System.out.println("Cree des robots depuis l'IHM du serveur, puis relance.");
             return;
         }
+
+        initialiserRobotsALaBase(robots);
 
         ApercuGrilleRobots.lancer(SERVEUR);
         System.out.println("Apercu graphique de la grille (JavaFX) lance.");
@@ -76,6 +78,20 @@ public class AppRobots {
         }
         System.out.println("Tous les robots sont arretes. Au revoir.");
         ApercuGrilleRobots.fermer();
+    }
+
+    private static void initialiserRobotsALaBase(List<Robot> robots) {
+        for (Robot robot : robots) {
+            robot.setPosition(BASE_X, BASE_Y);
+            robot.setEtat(EtatRobot.AVAILABLE);
+            robot.setMission(null);
+            try {
+                modifierRobot(robot);
+                System.out.println("[" + robot.getNom() + "] initialise a la base (" + BASE_X + ";" + BASE_Y + ").");
+            } catch (Exception e) {
+                System.out.println("[" + robot.getNom() + "] initialisation base impossible : " + e.getMessage());
+            }
+        }
     }
 
     //un robot par thread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
@@ -173,6 +189,7 @@ public class AppRobots {
             Robot robot = new Robot(champ(objet, "name"), nombre(objet, "position_x"), nombre(objet, "position_y"));
             robot.setId(champ(objet, "id"));
             robot.setVitesse(nombre(objet, "speed"));
+            robot.setType(champ(objet, "type"));
             robot.setEtat(etatRobot(champ(objet, "state")));
             robots.add(robot);
         }
@@ -182,14 +199,29 @@ public class AppRobots {
     // missions en etat Awaiting et sans robot assigne.
     private static List<Mission> lireMissionsDisponibles() throws Exception {
         List<Mission> missions = new ArrayList<>();
-        for (String objet : objets(get("/api/missions/available"))) {
-            missions.add(new Mission(
+        String json = get("/api/list_missions");
+        if (json.startsWith("ERREUR") || json.startsWith("erreur HTTP")) {
+            System.out.println("Lecture missions impossible : " + json);
+            return missions;
+        }
+        for (String objet : objets(json)) {
+            Mission mission = new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
                     champ(objet, "robot_id"), champ(objet, "state"),
                     champ(objet, "start_date"), champ(objet, "end_date"),
-                    champ(objet, "team"), champ(objet, "time")));
+                    champ(objet, "team"), champ(objet, "time"));
+            if (missionDisponiblePourRobot(mission)) {
+                missions.add(mission);
+            }
         }
         return missions;
+    }
+
+    private static boolean missionDisponiblePourRobot(Mission mission) {
+        return !mission.getId().isBlank()
+                && !mission.getSemaphoreId().isBlank()
+                && mission.getEtat().equalsIgnoreCase("Awaiting")
+                && mission.getRobotId().isBlank();
     }
 
     // === MAJ serveur ===
@@ -198,9 +230,9 @@ public class AppRobots {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
-                + "&speed=" + (float) Math.round(robot.getVitesse())
-                + "&position_x=" + (float) Math.round(robot.getX())
-                + "&position_y=" + (float) Math.round(robot.getY());
+                + "&speed=" + (int) Math.round(robot.getVitesse())
+                + "&position_x=" + (int) Math.round(robot.getX())
+                + "&position_y=" + (int) Math.round(robot.getY());
         return put(url);
     }
 

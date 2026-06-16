@@ -51,15 +51,20 @@ class Interface:
             text_bouton = f"{m.get('name')} (ID: {m.get('id')})"
             tk.Button(self.frame_choix, text=text_bouton, command=lambda mc=m: callback(mc)).pack(fill="x", pady=2)
 
-    def afficher_forme(self, symbole_ascii):
+    def afficher_forme(self, symbole_ascii, couleur=(0, 255, 255)):
+        if not self.canvas.winfo_exists():
+            return
+            
         self.canvas.delete("dessin")
         if not symbole_ascii:
             symbole_ascii = "?"
             
+        couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
+            
         self.canvas.create_text(
             250, 220, 
             text=symbole_ascii, 
-            fill="cyan", 
+            fill=couleur_hex,  
             font=("Courier", 130, "bold"), 
             tags="dessin"
         )

@@ -1,5 +1,4 @@
 package fr.lumieresenville.robots;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -7,9 +6,14 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -28,13 +32,17 @@ import javafx.stage.Stage;
 // Tout le style est deporte dans src/main/resources/grille.css.
 public class ApercuGrilleRobots {
 
-    private static String SERVEUR = "http://192.168.1.18:8000";
+    private static String SERVEUR = "http://192.168.1.96:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final AtomicBoolean CHARGEMENT = new AtomicBoolean(false);
 
     private static Pane zoneGrille;
     private static Label entete;
     private static EtatGrille dernierEtat = new EtatGrille();
+
+    // Position AFFICHEE (grille) de chaque robot, interpolee vers la position serveur -> rendu fluide.
+    private static final Map<String, double[]> POS_AFFICHEE = new HashMap<>();
+    private static volatile boolean grilleChangee = true;
 
     public static void main(String[] args) {
         lancer(args.length > 0 ? args[0] : SERVEUR);
@@ -69,8 +77,8 @@ public class ApercuGrilleRobots {
 
         zoneGrille = new Pane();
         zoneGrille.getStyleClass().add("grille");
-        zoneGrille.widthProperty().addListener((o, a, b) -> redessiner());
-        zoneGrille.heightProperty().addListener((o, a, b) -> redessiner());
+        zoneGrille.widthProperty().addListener((o, a, b) -> grilleChangee = true);
+        zoneGrille.heightProperty().addListener((o, a, b) -> grilleChangee = true);
 
         BorderPane racine = new BorderPane();
         racine.getStyleClass().add("racine");
@@ -88,10 +96,23 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.5), e -> rafraichir()));
-        rythme.setCycleCount(Timeline.INDEFINITE);
-        rythme.play();
+        // Reseau : on recupere l'etat du serveur toutes les 0,25 s.
+        Timeline reseau = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.25), e -> rafraichir()));
+        reseau.setCycleCount(Timeline.INDEFINITE);
+        reseau.play();
         rafraichir();
+
+        // Rendu fluide (~60 fps) : la position affichee des robots glisse vers leur position serveur.
+        new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                boolean bouge = interpolerPositions();
+                if (bouge || grilleChangee) {
+                    grilleChangee = false;
+                    redessiner();
+                }
+            }
+        }.start();
     }
 
     // Va chercher les donnees serveur dans un thread de fond, puis met a jour l'UI sur le thread FX.
@@ -105,7 +126,7 @@ public class ApercuGrilleRobots {
                 Platform.runLater(() -> {
                     dernierEtat = etat;
                     entete.setText(etat.message);
-                    redessiner();
+                    grilleChangee = true;
                 });
             } finally {
                 CHARGEMENT.set(false);
@@ -113,6 +134,30 @@ public class ApercuGrilleRobots {
         }, "apercu-grille-refresh");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    // Rapproche la position affichee de chaque robot de sa position serveur (glissement fluide).
+    // Renvoie true tant qu'au moins un robot n'est pas arrive a sa position cible.
+    private static boolean interpolerPositions() {
+        EtatGrille etat = dernierEtat;
+        boolean bouge = false;
+        Set<String> presents = new HashSet<>();
+        for (RobotVue r : etat.robots) {
+            presents.add(r.nom());
+            double[] pos = POS_AFFICHEE.computeIfAbsent(r.nom(), k -> new double[]{r.x(), r.y()});
+            double dx = r.x() - pos[0];
+            double dy = r.y() - pos[1];
+            if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
+                pos[0] += dx * 0.2;   // 20 % du chemin restant par image -> arrive en ~0,2 s
+                pos[1] += dy * 0.2;
+                bouge = true;
+            } else {
+                pos[0] = r.x();
+                pos[1] = r.y();
+            }
+        }
+        POS_AFFICHEE.keySet().retainAll(presents);   // oublie les robots disparus
+        return bouge;
     }
 
     private static void redessiner() {
@@ -129,7 +174,7 @@ public class ApercuGrilleRobots {
         int colonnes = Math.max(1, etat.largeur);
         int lignes = Math.max(1, etat.hauteur);
 
-        // Grille centree sur x = 0 : colonnes de xmin a xmax (ex. nombre_x=5 -> -2..2)
+        // Grille centree sur x = 0 : colonnes de xmin a xmax
         int xmin = -(colonnes / 2);
         int xmax = xmin + colonnes - 1;
 
@@ -137,20 +182,16 @@ public class ApercuGrilleRobots {
         double demiColonnes = Math.max(1, Math.max(Math.abs(xmin), xmax));
         double taille = Math.max(40, Math.min(
                 (largeur / 2 - marge) / demiColonnes,
-                (hauteur - 2 * marge) / Math.max(1, lignes - 1)));
+                (hauteur - 2 * marge) / Math.max(1, lignes)));
         double origineX = largeur / 2;        // x = 0 au centre de la fenetre
         double origineY = hauteur - marge;    // base en bas, axe y vers le haut
 
         List<Node> elements = new ArrayList<>();
 
-        // Maillage + noeuds a partir de y = 1
-        dessinerSegments(elements, origineX, origineY, taille, xmin, xmax, lignes);
+        // segment api
+        dessinerSegments(elements, origineX, origineY, taille, etat.segments);
         dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
 
-        // La base (0;0) est detachee en bas, reliee a (0;1) par un seul segment
-        if (lignes > 1) {
-            elements.add(segment(origineX, origineY, origineX, origineY - taille));
-        }
         elements.add(marqueur("base", "BASE", origineX, origineY, taille));
 
         for (SemaphoreVue s : etat.semaphores) {
@@ -158,45 +199,36 @@ public class ApercuGrilleRobots {
                     origineX + s.x() * taille, origineY - s.y() * taille, taille));
         }
 
-        // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles
-        int totalBase = 0;
-        for (RobotVue r : etat.robots) {
-            if (r.x() == 0 && r.y() == 0) {
-                totalBase++;
-            }
-        }
-        int indexBase = 0;
-        for (RobotVue r : etat.robots) {
+        // Robots : dessines a leur position AFFICHEE (interpolee, donc fluide).
+        // Pres de la base (gy ~ 0) on les decale dessous et on les espace ; l'effet
+        // s'attenue a mesure qu'ils montent (gy -> 1).
+        int nbRobots = etat.robots.size();
+        for (int i = 0; i < nbRobots; i++) {
+            RobotVue r = etat.robots.get(i);
             String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
-            double cx;
-            double cy;
-            if (r.x() == 0 && r.y() == 0) {
-                double pas = Math.max(30, taille * 0.6);
-                cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
-                cy = origineY + Math.min(36, taille * 0.5);
-                indexBase++;
-            } else {
-                cx = origineX + r.x() * taille;
-                cy = origineY - r.y() * taille;
+            if (r.estVolant()) {
+                classe += " robot-volant";
             }
+            double[] pos = POS_AFFICHEE.getOrDefault(r.nom(), new double[]{r.x(), r.y()});
+            double gx = pos[0];
+            double gy = pos[1];
+            double facteurBase = Math.max(0, Math.min(1, 1 - gy));
+            double pas = Math.max(26, taille * 0.55);
+            double cx = origineX + gx * taille + facteurBase * (i - (nbRobots - 1) / 2.0) * pas;
+            double cy = origineY - gy * taille + facteurBase * Math.min(34, taille * 0.5);
             elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(), cx, cy, taille));
         }
         zoneGrille.getChildren().setAll(elements);
     }
 
     private static void dessinerSegments(List<Node> sortie, double ox, double oy, double taille,
-                                         int xmin, int xmax, int lignes) {
-        for (int y = 1; y < lignes; y++) {   // pas de routes en y = 0 (seulement la base)
-            for (int x = xmin; x <= xmax; x++) {
-                double px = ox + x * taille;
-                double py = oy - y * taille;
-                if (x + 1 <= xmax) {
-                    sortie.add(segment(px, py, ox + (x + 1) * taille, py));
-                }
-                if (y + 1 < lignes) {
-                    sortie.add(segment(px, py, px, oy - (y + 1) * taille));
-                }
-            }
+                                         List<SegmentVue> segments) {
+        for (SegmentVue s : segments) {
+            sortie.add(segment(
+                    ox + s.ax() * taille,
+                    oy - s.ay() * taille,
+                    ox + s.bx() * taille,
+                    oy - s.by() * taille));
         }
     }
 
@@ -208,7 +240,7 @@ public class ApercuGrilleRobots {
 
     private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
                                        int xmin, int xmax, int lignes) {
-        for (int y = 1; y < lignes; y++) {
+        for (int y = 1; y <= lignes; y++) {
             for (int x = xmin; x <= xmax; x++) {
                 double px = ox + x * taille;
                 double py = oy - y * taille;
@@ -235,6 +267,15 @@ public class ApercuGrilleRobots {
         }
         Label libelle = new Label(texte);
         libelle.getStyleClass().add("marqueur-texte");
+        if (classes.contains("robot-volant")) {
+            Line aileGauche = new Line(0, cote * 0.35, -cote * 0.55, 0);
+            aileGauche.getStyleClass().add("aile");
+            aileGauche.setTranslateX(-cote * 0.35);
+            Line aileDroite = new Line(0, cote * 0.35, cote * 0.55, 0);
+            aileDroite.getStyleClass().add("aile");
+            aileDroite.setTranslateX(cote * 0.35);
+            pastille.getChildren().addAll(aileGauche, aileDroite);
+        }
         pastille.getChildren().add(libelle);
         pastille.setPrefSize(cote, cote);
         pastille.setLayoutX(cx - cote / 2);
@@ -247,18 +288,29 @@ public class ApercuGrilleRobots {
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();
 
-        String grilleJson = get("/api/get_grille");
-        if (grilleJson.startsWith("ERREUR") || grilleJson.startsWith("erreur HTTP")) {
-            etat.message = grilleJson;
+        String configJson = get("/api/get_config");
+        if (configJson.startsWith("ERREUR") || configJson.startsWith("erreur HTTP")) {
+            etat.message = configJson;
             return etat;
         }
-        int largeur = (int) nombre(grilleJson, "nombre_x");
-        int hauteur = (int) nombre(grilleJson, "nombre_y");
+        int largeur = lireDimension(configJson, "nombre_x", "nbr_x");
+        int hauteur = lireDimension(configJson, "nombre_y", "nbr_y");
         if (largeur > 0) {
             etat.largeur = largeur;
         }
         if (hauteur > 0) {
             etat.hauteur = hauteur;
+        }
+
+        String segmentsJson = get("/api/list_segment");
+        if (!segmentsJson.startsWith("ERREUR") && !segmentsJson.startsWith("erreur HTTP")) {
+            for (String objet : objets(segmentsJson)) {
+                etat.segments.add(new SegmentVue(
+                        (int) nombre(objet, "coord_a_x"),
+                        (int) nombre(objet, "coord_a_y"),
+                        (int) nombre(objet, "coord_b_x"),
+                        (int) nombre(objet, "coord_b_y")));
+            }
         }
 
         String semaphoresJson = get("/api/list_semaphore");
@@ -277,14 +329,16 @@ public class ApercuGrilleRobots {
             for (String objet : objets(robotsJson)) {
                 etat.robots.add(new RobotVue(
                         champ(objet, "name"),
-                        (int) Math.round(nombre(objet, "position_x")),
-                        (int) Math.round(nombre(objet, "position_y")),
+                        nombre(objet, "position_x"),
+                        nombre(objet, "position_y"),
                         champ(objet, "state"),
-                        nombre(objet, "speed")));
+                        nombre(objet, "speed"),
+                        champ(objet, "type")));
             }
         }
 
-        etat.message = "Serveur " + SERVEUR + "   |   grille " + etat.largeur + " x " + etat.hauteur
+        etat.message = "Serveur " + SERVEUR + "   |   config " + etat.largeur + " x " + etat.hauteur
+                + "   |   " + etat.segments.size() + " segment(s)"
                 + "   |   " + etat.semaphores.size() + " semaphore(s)   |   "
                 + etat.robots.size() + " robot(s)   |   " + LocalTime.now().withNano(0);
         return etat;
@@ -356,17 +410,32 @@ public class ApercuGrilleRobots {
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
 
+    private static int lireDimension(String json, String champPrincipal, String champCompatibilite) {
+        int valeur = (int) nombre(json, champPrincipal);
+        if (valeur <= 0) {
+            valeur = (int) nombre(json, champCompatibilite);
+        }
+        return valeur;
+    }
+
     private static final class EtatGrille {
         int largeur = 10;
         int hauteur = 10;
         String message = "Chargement...";
+        List<SegmentVue> segments = new ArrayList<>();
         List<SemaphoreVue> semaphores = new ArrayList<>();
         List<RobotVue> robots = new ArrayList<>();
+    }
+
+    private record SegmentVue(int ax, int ay, int bx, int by) {
     }
 
     private record SemaphoreVue(String nom, int x, int y, String etat) {
     }
 
-    private record RobotVue(String nom, int x, int y, String etat, double vitesse) {
+    private record RobotVue(String nom, double x, double y, String etat, double vitesse, String type) {
+        boolean estVolant() {
+            return type != null && type.equalsIgnoreCase("volant");
+        }
     }
 }
