@@ -95,6 +95,11 @@ def lancer_dessin_physique():
     shape_id = mission_en_cours.get("shape_id")
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
+
+    r = int(mission_en_cours.get("color_r") or 0)
+    g = int(mission_en_cours.get("color_g") or 255)
+    b = int(mission_en_cours.get("color_b") or 255)
+    couleur_mission = (r, g, b)
     
     shape = get_shape(shape_id)
     
@@ -106,10 +111,10 @@ def lancer_dessin_physique():
         if isinstance(donnees, list):
             for pt in donnees:
                 try:
-                    r = float(pt.get("r", pt.get("rayon", 0)))
-                    a = int(float(pt.get("a", pt.get("angle", 0))))
-                    s = int(pt.get("s", pt.get("stylo", 1)))
-                    points_bruts.append({"r": r, "a": a, "s": s})
+                    r_pt = float(pt.get("r", pt.get("rayon", 0)))
+                    a_pt = int(float(pt.get("a", pt.get("angle", 0))))
+                    s_pt = int(pt.get("s", pt.get("stylo", 1)))
+                    points_bruts.append({"r": r_pt, "a": a_pt, "s": s_pt})
                 except Exception:
                     pass
             
@@ -129,7 +134,7 @@ def lancer_dessin_physique():
             
         if cible_affichage:
             if type_sem == "helice":
-                lancer_helice_ui(ui.root, cible_affichage)
+                lancer_helice_ui(ui.root, cible_affichage, couleur_mission)
             else:
                 if cible_affichage.endswith(".csv"):
                     simuler_table_tracante_csv(cible_affichage, ui.root)
