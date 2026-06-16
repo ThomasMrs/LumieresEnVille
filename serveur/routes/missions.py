@@ -47,14 +47,16 @@ def get_available_missions(team: str | None = None):
 @router.post("/add_mission")
 def add_mission(semaphore_id: str, shape_id: str, team: str,
                 name: str | None = None, robot_id: str | None = None,
-                start_date: str = "", end_date: str = "", time: str = ""):
+                start_date: str = "", end_date: str = "", time: str = "",
+                color_r: int = 0, color_g: int = 0, color_b: int = 0):
     if not valider_id("semaphore", semaphore_id):
         return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if not valider_id("shape", shape_id):
         return HTMLResponse(status_code=404, content="Shape introuvable")
     if robot_id and not valider_id("robot", robot_id):
         return HTMLResponse(status_code=404, content="Robot introuvable")
-    id_mission = ajouter_missions(name, semaphore_id, robot_id, "Awaiting", start_date, end_date, team, time, shape_id)
+    id_mission = ajouter_missions(name, semaphore_id, robot_id, "Awaiting", start_date, end_date,
+                                  team, time, shape_id, color_r, color_g, color_b)
     return {"id": id_mission, "status": "ok"}
 
 
@@ -63,7 +65,8 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
                    robot_id: str | None = None, shape_id: str | None = None,
                    state: str | None = None, start_date: str | None = None,
                    end_date: str | None = None, team: str | None = None,
-                   time: str | None = None):
+                   time: str | None = None, color_r: int | None = None,
+                   color_g: int | None = None, color_b: int | None = None):
     if not valider_id("mission", id):
         return HTMLResponse(status_code=404, content="Mission introuvable")
     if state is not None and not valider_etat(state, "mission"):
@@ -93,6 +96,12 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
         champs["shape_id"] = shape_id
     if time is not None:
         champs["time"] = time
+    if color_r is not None:
+        champs["color_r"] = color_r
+    if color_g is not None:
+        champs["color_g"] = color_g
+    if color_b is not None:
+        champs["color_b"] = color_b
     modifier_missions(id, **champs)
     return {"id": id, "status": "updated"}
 
