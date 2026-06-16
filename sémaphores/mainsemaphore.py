@@ -2,7 +2,8 @@ import threading
 import os
 import math
 import time
-import tkinter as tk
+import tkinter as tk  
+from datetime import datetime 
 from api_client import *
 from gui import Interface
 from table_tracante import simuler_table_tracante_csv
@@ -81,7 +82,6 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
 
-    # --- Couleurs ---
     r = int(mission_en_cours.get("color_r") or 0)
     g = int(mission_en_cours.get("color_g") or 255)
     b = int(mission_en_cours.get("color_b") or 255)
@@ -162,10 +162,29 @@ def boucle_automatisation():
                 
         if len(missions_valides) > 0:
             mission_en_cours = missions_valides[0]
-            etat = "IMPRESSION"
+            etat = "ATTENTE_DEPART"
             
+    elif etat == "ATTENTE_DEPART":
+        date_depart_str = mission_en_cours.get("start_date")
+        demarrer_maintenant = False
+        
+        if not date_depart_str: 
+            demarrer_maintenant = True
+        else:
+            try:
+                date_depart = datetime.fromisoformat(date_depart_str.replace("Z", ""))
+                if datetime.now() >= date_depart:
+                    demarrer_maintenant = True
+            except Exception:
+                demarrer_maintenant = True
+
+        if demarrer_maintenant:
+            etat = "IMPRESSION"
             put_semaphore_state(mission_en_cours.get("semaphore_id"), "Occupied")
             lancer_dessin_physique()
+        else:
+            heure_propre = date_depart_str.replace("T", " à ")
+            ui.mettre_a_jour_statut(f"Planifié pour le {heure_propre}")
             
     if ui.root.winfo_exists():
         ui.root.after(3000, boucle_automatisation)
