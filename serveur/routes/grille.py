@@ -66,23 +66,20 @@ def lire_grille():
     segments = lire_segment()
     semaphores = lire_semaphore()
 
-    # Memes bornes que creer_grille : grille centree horizontalement sur x = 0.
+    # Memes bornes que creer_grille : grille centree sur (0, 0).
     x_min = -(nombre_x // 2)
     x_max = x_min + nombre_x  # borne exclusive
-
-    def construire_noeud(x, y):
-        noeud = {"x": x, "y": y, "semaphore": None}
-        for s in semaphores:
-            if s["coord_x"] == x and s["coord_y"] == y:
-                noeud["semaphore"] = s
-        return noeud
+    y_min = -(nombre_y // 2)
+    y_max = y_min + nombre_y  # borne exclusive
 
     noeuds = []
-    # Base en (0, 0), puis la vraie grille au-dessus (y de 1 a nombre_y).
-    noeuds.append(construire_noeud(0, 0))
-    for y in range(1, nombre_y + 1):
+    for y in range(nombre_y):
         for x in range(x_min, x_max):
-            noeuds.append(construire_noeud(x, y))
+            noeud = {"x": x, "y": y, "semaphore": None}
+            for s in semaphores:
+                if s["coord_x"] == x and s["coord_y"] == y:
+                    noeud["semaphore"] = s
+            noeuds.append(noeud)
     return {
         "grille_id": config["grille_id"],
         "name": config["grille_name"],
