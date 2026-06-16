@@ -8,8 +8,8 @@ class HelicePOV:
         self.root.title("Simulation Hélice POV")
         self.root.configure(bg="#222")
         
-        self.W = 400
-        self.H = 400
+        self.W = 300
+        self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
         self.refresh_rate = 20  
@@ -153,11 +153,9 @@ class HelicePOV:
                     prev_y = self.CY + r_phys * math.sin(angle_rad_prev)
 
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
-                        # NOUVEAU : On utilise la couleur hexadécimale stockée
                         c = self.couleur_hex
                         tid = self.canvas.create_line(prev_x, prev_y, x, y, fill=c, width=4, capstyle=tk.ROUND)
                         
-                        # NOUVEAU : On enregistre les valeurs RGB exactes pour le fondu
                         self.pixels_remanents.append({
                             'id': tid, 'vie': 255, 
                             'r': self.couleur_rgb[0], 
