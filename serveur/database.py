@@ -19,6 +19,7 @@ TABLES = [
         id          TEXT PRIMARY KEY,
         name        TEXT NOT NULL,
         state       TEXT NOT NULL DEFAULT 'Awaiting',
+        type        TEXT,
         speed       REAL NOT NULL DEFAULT 1.0,
         position_x  REAL NOT NULL DEFAULT 0.0,
         position_y  REAL NOT NULL DEFAULT 0.0

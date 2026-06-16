@@ -58,13 +58,16 @@ class TestConfigEtCoordonnees(BaseTemporaire):
 
     def test_coordonnees_dans_la_grille(self):
         config_store.ajouter_config(5, 5, 2, 3)
-        self.assertTrue(valider_coordonnees(0, 0))
-        self.assertTrue(valider_coordonnees(4, 4))
+        self.assertTrue(valider_coordonnees(0, 0))    # base
+        self.assertTrue(valider_coordonnees(-2, 1))   # colonne negative, grille
+        self.assertTrue(valider_coordonnees(2, 5))    # bord de la grille
 
     def test_coordonnees_hors_grille(self):
         config_store.ajouter_config(5, 5, 2, 3)
-        self.assertFalse(valider_coordonnees(5, 0))   # x trop grand
-        self.assertFalse(valider_coordonnees(-1, 0))  # x negatif
+        self.assertFalse(valider_coordonnees(3, 1))   # x trop grand
+        self.assertFalse(valider_coordonnees(-3, 1))  # x trop petit
+        self.assertFalse(valider_coordonnees(0, 6))   # y trop grand
+        self.assertFalse(valider_coordonnees(1, 0))   # y=0 hors base (x != 0)
 
     def test_coordonnees_sans_config(self):
         # Sans config, aucune coordonnee ne peut etre validee
@@ -78,26 +81,26 @@ class TestSemaphore(BaseTemporaire):
         config_store.ajouter_config(5, 5, 2, 3)
 
     def test_ajout_et_lecture(self):
-        resultat = semaphore_store.ajouter_semaphore("S1", 30, "Helice", 1, 1)
+        resultat = semaphore_store.ajouter_semaphore("S1", 30, "helice", 1, 1)
         self.assertEqual(resultat["status"], "ok")
         liste = semaphore_store.lire_semaphore()
         self.assertEqual(len(liste), 1)
         self.assertEqual(liste[0]["name"], "S1")
 
     def test_valider_id_existant_et_inexistant(self):
-        resultat = semaphore_store.ajouter_semaphore("S1", 30, "Helice", 1, 1)
+        resultat = semaphore_store.ajouter_semaphore("S1", 30, "helice", 1, 1)
         self.assertTrue(valider_id("semaphore", resultat["id"]))
         self.assertFalse(valider_id("semaphore", "id-qui-n-existe-pas"))
 
     def test_modification(self):
-        resultat = semaphore_store.ajouter_semaphore("S1", 30, "Helice", 1, 1)
+        resultat = semaphore_store.ajouter_semaphore("S1", 30, "helice", 1, 1)
         semaphore_store.modifier_semaphore(resultat["id"], name="S1-modifie", state="Occupied")
         liste = semaphore_store.lire_semaphore()
         self.assertEqual(liste[0]["name"], "S1-modifie")
         self.assertEqual(liste[0]["state"], "Occupied")
 
     def test_suppression(self):
-        semaphore_store.ajouter_semaphore("S1", 30, "Helice", 1, 1)
+        semaphore_store.ajouter_semaphore("S1", 30, "helice", 1, 1)
         semaphore_store.supprimer_semaphores()
         self.assertEqual(semaphore_store.lire_semaphore(), [])
 
@@ -105,9 +108,9 @@ class TestSemaphore(BaseTemporaire):
 class TestValidations(BaseTemporaire):
 
     def test_type_semaphore(self):
-        self.assertTrue(valider_type_semaphore("Ascii"))
-        self.assertTrue(valider_type_semaphore("Tracant"))
-        self.assertTrue(valider_type_semaphore("Helice"))
+        self.assertTrue(valider_type_semaphore("table"))
+        self.assertTrue(valider_type_semaphore("helice"))
+        self.assertTrue(valider_type_semaphore("caractere"))
         self.assertFalse(valider_type_semaphore("HELICE"))   # casse incorrecte
         self.assertFalse(valider_type_semaphore("Autre"))
 
@@ -127,7 +130,7 @@ class TestMissionsDisponibles(BaseTemporaire):
     def setUp(self):
         super().setUp()
         config_store.ajouter_config(5, 5, 2, 3)
-        sema = semaphore_store.ajouter_semaphore("S1", 30, "Helice", 1, 1)
+        sema = semaphore_store.ajouter_semaphore("S1", 30, "helice", 1, 1)
         forme = shape_store.ajouter_shape("Lettre A", "A")
         self.sema_id = sema["id"]
         self.shape_id = forme["id"]
