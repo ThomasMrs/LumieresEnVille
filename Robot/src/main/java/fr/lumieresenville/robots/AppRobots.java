@@ -20,7 +20,7 @@ public class AppRobots {
     private static String SERVEUR = SERVEUR_DEFAUT;
     private static final int BASE_X = 0;
     private static final int BASE_Y = 0;
-    private static final long INTERVALLE_RECHERCHE_MS = 2000;
+    private static final long INTERVALLE_RECHERCHE_MS = 5000;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
