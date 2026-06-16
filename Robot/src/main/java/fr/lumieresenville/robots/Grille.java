@@ -11,23 +11,17 @@ import java.util.Set;
 
 public class Grille {
 
-    private static final int PAS_ANIMATION_PAR_CASE = 20;
-
     private Grille() {
     }
 
     // Deplace le robot
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
-        EtatGrille etatGrille = lireEtatGrille(!robot.estVolant());
+        EtatGrille etatGrille = lireEtatGrille();
         Point depart = new Point((int) Math.round(robot.getX()), (int) Math.round(robot.getY()));
         Point arrivee = new Point((int) Math.round(destinationX), (int) Math.round(destinationY));
 
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
-        if (robot.estVolant()) {
-            deplacerVolant(robot, depart, arrivee);
-            return;
-        }
 
         List<Point> chemin = calculerChemin(depart, arrivee, etatGrille.segments());
         System.out.println("[" + robot.getNom() + "] deplacement -> depart=" + depart
@@ -38,52 +32,22 @@ public class Grille {
 
         for (int i = 1; i < chemin.size(); i++) {
             Point point = chemin.get(i);
-            glisserVers(robot, point.x(), point.y());
+            avancerVers(robot, point.x(), point.y());
         }
     }
 
-    private static void deplacerVolant(Robot robot, Point depart, Point arrivee) throws Exception {
-        double distance = Math.hypot(arrivee.x() - depart.x(), arrivee.y() - depart.y());
-        int pas = Math.max(1, (int) Math.ceil(distance * PAS_ANIMATION_PAR_CASE));
-        System.out.println("[" + robot.getNom() + "] deplacement volant -> depart=" + depart
-                + ", destination=" + arrivee
-                + ", vitesse=" + robot.getVitesse() + " case(s)/s"
-                + ", pas=" + pas);
-        glisserVers(robot, arrivee.x(), arrivee.y());
+    // Un pas elementaire : met a jour la position, l'envoie au serveur, puis respecte la vitesse.
+    private static void avancerVers(Robot robot, int x, int y) throws Exception {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
+        }
+        robot.setPosition(x, y);
+        System.out.println("[" + robot.getNom() + "] avance -> (" + x + ", " + y + ")");
+        AppRobots.modifierRobot(robot);
+        attendreSelonVitesse(robot);
     }
 
-    // Glisse entre deux points en envoyant plusieurs positions intermediaires au serveur.
-    private static void glisserVers(Robot robot, double cibleX, double cibleY) throws Exception {
-        double departX = robot.getX();
-        double departY = robot.getY();
-        double deltaX = cibleX - departX;
-        double deltaY = cibleY - departY;
-        double distance = Math.hypot(deltaX, deltaY);
-        if (distance == 0) {
-            return;
-        }
-
-        int pas = Math.max(1, (int) Math.ceil(distance * PAS_ANIMATION_PAR_CASE));
-        long delaiMs = delaiParPas(robot, distance, pas);
-        System.out.println("[" + robot.getNom() + "] glisse -> (" + coord(departX) + ";" + coord(departY)
-                + ") vers (" + coord(cibleX) + ";" + coord(cibleY) + ") en " + pas + " position(s)");
-
-        for (int i = 1; i <= pas; i++) {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
-            }
-
-            double ratio = i / (double) pas;
-            robot.setPosition(departX + deltaX * ratio, departY + deltaY * ratio);
-            AppRobots.modifierRobot(robot);
-
-            if (i < pas) {
-                Thread.sleep(delaiMs);
-            }
-        }
-    }
-
-    private static EtatGrille lireEtatGrille(boolean chargerSegments) throws Exception {
+    private static EtatGrille lireEtatGrille() throws Exception {
         String configJson = AppRobots.get("/api/get_config");
         if (configJson.startsWith("ERREUR") || configJson.startsWith("erreur HTTP") || configJson.equals("OK")) {
             throw new Exception("configuration introuvable : " + configJson);
@@ -95,23 +59,21 @@ public class Grille {
             throw new Exception("configuration invalide : dimensions inconnues");
         }
 
-        List<Segment> segments = new ArrayList<>();
-        if (chargerSegments) {
-            String segmentsJson = AppRobots.get("/api/list_segment");
-            if (segmentsJson.startsWith("ERREUR") || segmentsJson.startsWith("erreur HTTP")) {
-                throw new Exception("segments introuvables : " + segmentsJson);
-            }
+        String segmentsJson = AppRobots.get("/api/list_segment");
+        if (segmentsJson.startsWith("ERREUR") || segmentsJson.startsWith("erreur HTTP")) {
+            throw new Exception("segments introuvables : " + segmentsJson);
+        }
 
-            for (String objet : objets(segmentsJson)) {
-                segments.add(new Segment(
-                        (int) nombre(objet, "coord_a_x"),
-                        (int) nombre(objet, "coord_a_y"),
-                        (int) nombre(objet, "coord_b_x"),
-                        (int) nombre(objet, "coord_b_y")));
-            }
-            if (segments.isEmpty()) {
-                throw new Exception("aucun segment disponible pour deplacer le robot");
-            }
+        List<Segment> segments = new ArrayList<>();
+        for (String objet : objets(segmentsJson)) {
+            segments.add(new Segment(
+                    (int) nombre(objet, "coord_a_x"),
+                    (int) nombre(objet, "coord_a_y"),
+                    (int) nombre(objet, "coord_b_x"),
+                    (int) nombre(objet, "coord_b_y")));
+        }
+        if (segments.isEmpty()) {
+            throw new Exception("aucun segment disponible pour deplacer le robot");
         }
 
         return new EtatGrille(largeur, hauteur, segments);
@@ -186,17 +148,13 @@ public class Grille {
         return chemin;
     }
 
-    private static long delaiParPas(Robot robot, double distance, int pas) {
+    private static void attendreSelonVitesse(Robot robot) throws InterruptedException {
         double vitesse = robot.getVitesse();
         if (vitesse <= 0) {
             vitesse = 1.0;
         }
-        long delaiTotalMs = Math.max(1, Math.round(distance * 1000.0 / vitesse));
-        return Math.max(1, Math.round(delaiTotalMs / (double) pas));
-    }
-
-    private static String coord(double valeur) {
-        return String.format(java.util.Locale.US, "%.2f", valeur);
+        long delaiMs = Math.max(100, Math.round(1000.0 / vitesse));
+        Thread.sleep(delaiMs);
     }
 
     private static List<String> objets(String json) {
