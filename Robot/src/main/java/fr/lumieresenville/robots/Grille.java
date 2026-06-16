@@ -16,7 +16,7 @@ public class Grille {
 
         // Il n'y a pas de routes en y = 0 (seulement la base) : pour quitter la base (0;0)
         // on monte d'abord sur le maillage en (0;1). Au retour, le deplacement en x ramene
-        // d'abord sur la colonne 0, donc la descente se fait naturellement par (0;1) -> (0;0).
+        // d'abord sur la colonne 0, donc la descente se fait par (0;1) -> (0;0).
         if (x == 0 && y == 0 && !(cibleX == 0 && cibleY == 0)) {
             y = 1;
             avancerVers(robot, x, y);
@@ -60,7 +60,7 @@ public class Grille {
             System.out.println("Grille non verifiee : dimensions inconnues.");
             return;
         }
-        // Grille centree sur x = 0 : x va de xmin a xmax ; y de 0 a hauteur-1
+        // Grille centree sur x = 0 ; y de 0 a hauteur-1
         int xmin = -(largeur / 2);
         int xmax = xmin + largeur - 1;
         if (x < xmin || x > xmax || y < 0 || y >= hauteur) {

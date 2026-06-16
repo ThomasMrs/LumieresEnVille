@@ -129,16 +129,16 @@ public class ApercuGrilleRobots {
         int colonnes = Math.max(1, etat.largeur);
         int lignes = Math.max(1, etat.hauteur);
 
-        // Grille centree sur x = 0 : colonnes de xmin a xmax (ex. nombre_x=5 -> -2..2)
+        // x centre sur 0 (xmin..xmax) ; y de 0 (base, en bas) a lignes-1 (maillage)
         int xmin = -(colonnes / 2);
         int xmax = xmin + colonnes - 1;
 
         double marge = 60;
-        double demiColonnes = Math.max(1, Math.max(Math.abs(xmin), xmax));
+        double demiX = Math.max(1, Math.max(Math.abs(xmin), xmax));
         double taille = Math.max(40, Math.min(
-                (largeur / 2 - marge) / demiColonnes,
+                (largeur / 2 - marge) / demiX,
                 (hauteur - 2 * marge) / Math.max(1, lignes - 1)));
-        double origineX = largeur / 2;        // x = 0 au centre de la fenetre
+        double origineX = largeur / 2;        // x = 0 au centre
         double origineY = hauteur - marge;    // base en bas, axe y vers le haut
 
         List<Node> elements = new ArrayList<>();
