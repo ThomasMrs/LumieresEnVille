@@ -90,7 +90,7 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.5), e -> rafraichir()));
+        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.25), e -> rafraichir()));
         rythme.setCycleCount(Timeline.INDEFINITE);
         rythme.play();
         rafraichir();
@@ -173,19 +173,19 @@ public class ApercuGrilleRobots {
         }
         int indexBase = 0;
         for (RobotVue r : etat.robots) {
-            String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
+            String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot-occupe" : "robot-libre";
             double cx;
             double cy;
             if (r.x() == 0 && r.y() == 0) {
-                double pas = Math.max(30, taille * 0.6);
+                double pas = Math.max(22, taille * 0.45);
                 cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
-                cy = origineY + Math.min(36, taille * 0.5);
+                cy = origineY + Math.min(34, taille * 0.5);
                 indexBase++;
             } else {
                 cx = origineX + r.x() * taille;
                 cy = origineY - r.y() * taille;
             }
-            elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(), cx, cy, taille));
+            dessinerRobot(elements, r.nom().isBlank() ? "R" : r.nom(), classe, cx, cy, taille);
         }
         zoneGrille.getChildren().setAll(elements);
     }
@@ -222,6 +222,22 @@ public class ApercuGrilleRobots {
         coord.setLayoutX(px + 6);
         coord.setLayoutY(py - 22);
         sortie.add(coord);
+    }
+
+    // Petit cercle colore pour un robot (forme JavaFX, plus petit que les pastilles), nom a cote.
+    private static void dessinerRobot(List<Node> sortie, String nom, String classeEtat,
+                                      double cx, double cy, double taille) {
+        double rayon = Math.max(7, taille * 0.16);
+        Circle rond = new Circle(cx, cy, rayon);
+        rond.getStyleClass().add("robot");
+        rond.getStyleClass().add(classeEtat);
+        sortie.add(rond);
+
+        Label nomLabel = new Label(nom);
+        nomLabel.getStyleClass().add("robot-nom");
+        nomLabel.setLayoutX(cx + rayon + 3);
+        nomLabel.setLayoutY(cy - 9);
+        sortie.add(nomLabel);
     }
 
     // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.

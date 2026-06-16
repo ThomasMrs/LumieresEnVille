@@ -62,19 +62,19 @@
     -fx-text-fill: #14532d;
 }
 
-/* Robots */
+/* Robots : petits cercles colores (formes JavaFX -> -fx-fill) */
 .robot {
-    -fx-border-color: #0f172a;
-    -fx-border-width: 2;
-    -fx-background-radius: 500;
-    -fx-border-radius: 500;
-}
-.robot .marqueur-texte {
-    -fx-text-fill: #0f172a;
+    -fx-stroke: #0f172a;
+    -fx-stroke-width: 1.5;
 }
 .robot-libre {
-    -fx-background-color: #38bdf8;
+    -fx-fill: #38bdf8;
 }
 .robot-occupe {
-    -fx-background-color: #fb923c;
+    -fx-fill: #fb923c;
+}
+.robot-nom {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
 }
