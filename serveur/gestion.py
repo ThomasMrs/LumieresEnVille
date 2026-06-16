@@ -34,14 +34,15 @@ def valider_type_semaphore(type_semaphore):
 
 def valider_coordonnees(coord_x, coord_y):
     """Verifie que les coordonnees sont dans les limites de la grille.
-    Retourne True si valide, False sinon.
-
-    La lecture de la config est deleguee a la couche stockage.
-    """
+    Retourne True si valide, False sinon """
     config = lire_config()
     if not config:
         return False
     nombre_x = config["nombre_x"]
-    # Grille centree sur x = 0 : x va de x_min a x_min + nombre_x - 1.
+    nombre_y = config["nombre_y"]
+    # Grille centree sur (0, 0) : on accepte les coordonnees negatives.
+    # x va de x_min a x_min + nombre_x - 1, y de y_min a y_min + nombre_y - 1.
     x_min = -(nombre_x // 2)
-    return x_min <= coord_x < x_min + nombre_x and 0 <= coord_y < config["nombre_y"]
+    y_min = -(nombre_y // 2)
+    return (x_min <= coord_x < x_min + nombre_x
+            and y_min <= coord_y < y_min + nombre_y)
