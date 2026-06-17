@@ -8,21 +8,33 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AppRobots {
 
-    private static final String SERVEUR = "http://192.168.1.14:8000";
+    private static final String SERVEUR_DEFAUT = "http://192.168.1.18:8000";
+    private static String SERVEUR = SERVEUR_DEFAUT;
+    private static final int BASE_X = 0;
+    private static final int BASE_Y = 0;
+    private static final long INTERVALLE_RECHERCHE_MS = 2000;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
     private static final DateTimeFormatter FORMAT_DATE =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    // un seul robot a la fois peut prendre une mission,
+    // pour eviter que deux robots prennent la meme
+    private static final Object VERROU_MISSIONS = new Object();
+    private static final AtomicBoolean EN_MARCHE = new AtomicBoolean(true);
+
     public static void main(String[] args) throws Exception {
+        SERVEUR = resoudreServeur(args);
+        System.out.println("Serveur utilise : " + SERVEUR);
+
         if (get("/api/list_robots").startsWith("ERREUR")) {
             System.out.println("Serveur injoignable (" + SERVEUR + ").");
             System.out.println("Demarre le serveur FastAPI, puis relance.");
@@ -30,68 +42,130 @@ public class AppRobots {
         }
 
         List<Robot> robots = lireRobotsDuServeur();
-
         if (robots.isEmpty()) {
-            System.out.println("Aucun robot trouve sur le serveur.");
-        } else {
-            for (Robot robot : robots) {
-                System.out.println("Robot trouve : " + robot);
+            System.out.println("Aucun robot enregistre sur le serveur.");
+            System.out.println("Cree des robots depuis l'IHM du serveur, puis relance.");
+            return;
+        }
+
+        ApercuGrilleRobots.lancer(SERVEUR);
+        System.out.println("Apercu graphique de la grille (JavaFX) lance.");
+
+        // Un thread par robot
+        List<Thread> threads = new ArrayList<>();
+        for (Robot robot : robots) {
+            Thread t = new Thread(new RobotWorker(robot), "robot-" + robot.getNom());
+            threads.add(t);
+            t.start();
+        }
+        System.out.println(robots.size() + " robot demarre, chacun dans son thread.");
+        System.out.println("Appuie sur Entree pour arreter.");
+
+        try {
+            CLAVIER.nextLine();
+        } catch (Exception ignore) {
+        }
+
+        System.out.println("Arret demande, on attend la fin des deplacements en cours...");
+        EN_MARCHE.set(false);
+        for (Thread t : threads) {
+            t.interrupt();
+        }
+        for (Thread t : threads) {
+            t.join();
+        }
+        System.out.println("Tous les robots sont arretes. Au revoir.");
+        ApercuGrilleRobots.fermer();
+    }
+
+    //un robot par thread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
+    private static final class RobotWorker implements Runnable {
+        private final Robot robot;
+
+        RobotWorker(Robot robot) {
+            this.robot = robot;
+        }
+
+        @Override
+        public void run() {
+            robot.setEtat(EtatRobot.AVAILABLE);
+            try {
+                modifierRobot(robot);
+            } catch (Exception e) {
+                log("initialisation impossible : " + e.getMessage());
             }
+
+            while (EN_MARCHE.get()) {
+                try {
+                    Mission mission = reclamerProchaineMission(robot);
+                    if (mission == null) {
+                        Thread.sleep(INTERVALLE_RECHERCHE_MS); 
+                        continue;
+                    }
+                    executerMission(robot, mission);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    log("erreur pendant la mission : " + e.getMessage());
+                    remettreDisponible(robot);
+                }
+            }
+            log("thread termine.");
         }
 
-        Robot robotDisponible = chercherRobotDisponible(robots);
-        Mission mission = choisirMissionDansTerminal();
-
-        if (mission == null) {
-            System.out.println("Aucune mission disponible.");
-        } else if (robotDisponible == null) {
-            System.out.println("Aucun robot disponible.");
-        } else {
-            faireLaMission(robotDisponible, mission);
-        }
-
-        while (true) {
-            System.out.println(LocalTime.now().withNano(0) + " robots   : " + get("/api/list_robots"));
-            System.out.println(LocalTime.now().withNano(0) + " missions : " + get("/api/list_missions"));
-            Thread.sleep(5000);
+        private void log(String message) {
+            System.out.println("[" + robot.getNom() + "] " + message);
         }
     }
 
-    // Deroulement d'une mission : robot -> OCCUPIED, mission -> "In progress",
-    // le robot REVEILLE le semaphore (-> "Occupied"), puis apres 2 s mission -> "Done"
-    // et robot -> AVAILABLE. Le semaphore se rendort tout seul de son cote.
-    private static void faireLaMission(Robot robot, Mission mission) throws Exception {
-        System.out.println("Mission choisie : " + mission);
+    // Reclame threads, la prochaine mission disponible.
+    // Renvoie null si aucune mission n'est disponible.
+    private static Mission reclamerProchaineMission(Robot robot) throws Exception {
+        synchronized (VERROU_MISSIONS) {
+            List<Mission> disponibles = lireMissionsDisponibles();
+            if (disponibles.isEmpty()) {
+                return null;
+            }
+            Mission mission = disponibles.get(0);
+            mission.prendreEnChargeParRobot(robot.getId(), maintenant());
+            robot.setEtat(EtatRobot.OCCUPIED);
+            robot.setMission(mission);
+            modifierMission(mission);
+            modifierRobot(robot);
+            System.out.println("[" + robot.getNom() + "] prend la mission " + mission.getNom()
+                    + " (semaphore " + mission.getSemaphoreId() + ").");
+            return mission;
+        }
+    }
 
+    //aller au semaphore, signaler l'arrivee, rentrer a la base.
+    private static void executerMission(Robot robot, Mission mission) throws Exception {
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
-        System.out.println("Semaphore lie   : " + semaphoreJson);
+        double coordX = nombre(semaphoreJson, "coord_x");
+        double coordY = nombre(semaphoreJson, "coord_y");
 
-        mission.demarrer(robot.getId(), maintenant());
-        robot.setEtat(EtatRobot.OCCUPIED);
-        System.out.println("PUT robot      : " + modifierRobot(robot));
-        System.out.println("PUT mission    : " + modifierMission(mission));
-        System.out.println("Reveil semaphore: " + reveillerSemaphore(mission.getSemaphoreId(), semaphoreJson));
+        Grille.deplacer(robot, coordX, coordY);
+        mission.signalerArriveeSemaphore();
+        modifierMission(mission);
+        System.out.println("[" + robot.getNom() + "] arrive au semaphore, mission transmise.");
 
-        Thread.sleep(2000);
+        Grille.deplacer(robot, BASE_X, BASE_Y);
+        remettreDisponible(robot);
+        System.out.println("[" + robot.getNom() + "] rentre a la base, de nouveau disponible.");
+    }
 
-        mission.terminer(maintenant());
+    private static void remettreDisponible(Robot robot) {
         robot.setEtat(EtatRobot.AVAILABLE);
-        System.out.println("PUT mission    : " + modifierMission(mission));
-        System.out.println("PUT robot      : " + modifierRobot(robot));
+        robot.setMission(null);
+        try {
+            modifierRobot(robot);
+        } catch (Exception e) {
+            System.out.println("[" + robot.getNom() + "] MAJ etat impossible : " + e.getMessage());
+        }
     }
 
-    // Reveille le semaphore : on relit ses champs (via le JSON deja recu) et on renvoie
-    // tout en passant state="Occupied". Le robot ne fait que l'allumer (cahier des charges).
-    private static String reveillerSemaphore(String id, String semaphoreJson) throws Exception {
-        String url = "/api/update_semaphore/" + enc(id)
-                + "?name=" + enc(champ(semaphoreJson, "name"))
-                + "&state=Occupied"
-                + "&duration=" + (int) nombre(semaphoreJson, "duration")
-                + "&type=" + enc(champ(semaphoreJson, "type"))
-                + "&coord_x=" + (int) nombre(semaphoreJson, "coord_x")
-                + "&coord_y=" + (int) nombre(semaphoreJson, "coord_y");
-        return put(url);
-    }
+    // === Lectures serveur ===
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
         List<Robot> robots = new ArrayList<>();
@@ -105,64 +179,28 @@ public class AppRobots {
         return robots;
     }
 
-    private static Robot chercherRobotDisponible(List<Robot> robots) {
-        for (Robot robot : robots) {
-            if (robot.getEtat() == EtatRobot.AVAILABLE) {
-                return robot;
-            }
-        }
-        return null;
-    }
-
-    private static Mission choisirMissionDansTerminal() throws Exception {
-        List<Mission> missions = lireMissions();
-        if (missions.isEmpty()) {
-            return null;
-        }
-
-        System.out.println("=== Missions (" + missions.size() + ") ===");
-        for (int i = 0; i < missions.size(); i++) {
-            Mission mission = missions.get(i);
-            String libre = mission.getRobotId().isBlank() ? "libre" : "occupee";
-            System.out.println((i + 1) + " - " + mission.getNom()
-                    + " | etat : " + mission.getEtat()
-                    + " | " + libre
-                    + " | equipe : " + mission.getTeam());
-        }
-
-        while (true) {
-            System.out.print("Choisis une mission (1 a " + missions.size() + ") : ");
-            String reponse = CLAVIER.nextLine();
-            try {
-                int numero = Integer.parseInt(reponse);
-                if (numero >= 1 && numero <= missions.size()) {
-                    return missions.get(numero - 1);
-                }
-            } catch (NumberFormatException e) {
-                // entree non numerique : on redemande
-            }
-            System.out.println("Numero invalide.");
-        }
-    }
-
-    private static List<Mission> lireMissions() throws Exception {
+    // missions en etat Awaiting et sans robot assigne.
+    private static List<Mission> lireMissionsDisponibles() throws Exception {
         List<Mission> missions = new ArrayList<>();
-        for (String objet : objets(get("/api/list_missions"))) {
+        for (String objet : objets(get("/api/missions/available"))) {
             missions.add(new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
                     champ(objet, "robot_id"), champ(objet, "state"),
-                    champ(objet, "start_date"), champ(objet, "end_date"), champ(objet, "team")));
+                    champ(objet, "start_date"), champ(objet, "end_date"),
+                    champ(objet, "team"), champ(objet, "time")));
         }
         return missions;
     }
 
-    private static String modifierRobot(Robot robot) throws Exception {
+    // === MAJ serveur ===
+
+    static String modifierRobot(Robot robot) throws Exception {
         String url = "/api/update_robot/" + enc(robot.getId())
                 + "?name=" + enc(robot.getNom())
                 + "&state=" + enc(etatServeur(robot.getEtat()))
-                + "&speed=" + (int) Math.round(robot.getVitesse()) // le serveur veut un entier
-                + "&position_x=" + robot.getX()
-                + "&position_y=" + robot.getY();
+                + "&speed=" + (float) Math.round(robot.getVitesse())
+                + "&position_x=" + (float) Math.round(robot.getX())
+                + "&position_y=" + (float) Math.round(robot.getY());
         return put(url);
     }
 
@@ -174,11 +212,47 @@ public class AppRobots {
                 + "&state=" + enc(mission.getEtat())
                 + "&start_date=" + enc(mission.getDebutMission())
                 + "&end_date=" + enc(mission.getFinMission())
-                + "&team=" + enc(mission.getTeam());
+                + "&team=" + enc(mission.getTeam())
+                + "&time=" + enc(mission.getTempsMission());
         return put(url);
     }
 
-    // Decoupe un tableau JSON [ {...}, {...} ] en objets, en suivant la profondeur des accolades.
+    // === Resolution de l'adresse serveur (configurable) ===
+
+    private static String resoudreServeur(String[] args) {
+        if (args != null && args.length > 0 && !args[0].isBlank()) {
+            return normaliserUrl(args[0]);
+        }
+        String env = System.getenv("LEV_SERVEUR");
+        if (env != null && !env.isBlank()) {
+            return normaliserUrl(env);
+        }
+        System.out.print("Adresse du serveur [" + SERVEUR_DEFAUT + "] : ");
+        String saisie;
+        try {
+            saisie = CLAVIER.nextLine();
+        } catch (Exception e) {
+            saisie = "";
+        }
+        if (saisie != null && !saisie.isBlank()) {
+            return normaliserUrl(saisie.trim());
+        }
+        return SERVEUR_DEFAUT;
+    }
+
+    private static String normaliserUrl(String url) {
+        String u = url.trim();
+        if (!u.startsWith("http://")) {
+            u = "http://" + u;
+        }
+        while (u.endsWith("/")) {
+            u = u.substring(0, u.length() - 1);
+        }
+        return u;
+    }
+
+
+    // Decoupe un tableau JSON 
     private static List<String> objets(String json) {
         List<String> liste = new ArrayList<>();
         int profondeur = 0;
@@ -195,24 +269,23 @@ public class AppRobots {
         }
         return liste;
     }
-
-    // Extrait la valeur d'un champ d'un objet JSON plat : "champ":"texte" ou "champ":nombre.
+// recup valeur d'un json
     private static String champ(String objet, String nom) {
         int i = objet.indexOf("\"" + nom + "\"");
         if (i < 0) return "";
         i = objet.indexOf(':', i) + 1;
         while (i < objet.length() && objet.charAt(i) == ' ') i++;
         if (i >= objet.length()) return "";
-        if (objet.charAt(i) == '"') {                       // valeur texte : entre guillemets
+        if (objet.charAt(i) == '"') {                      
             return objet.substring(i + 1, objet.indexOf('"', i + 1));
         }
-        int fin = i;                                        // valeur nombre/null : jusqu'a , ou }
+        int fin = i;                                       
         while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') fin++;
         String valeur = objet.substring(i, fin).trim();
         return valeur.equals("null") ? "" : valeur;
     }
 
-    private static double nombre(String objet, String nom) {
+    static double nombre(String objet, String nom) {
         String valeur = champ(objet, nom);
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
@@ -224,15 +297,14 @@ public class AppRobots {
             return EtatRobot.AVAILABLE;
         }
     }
-
-    // Le serveur attend "Available"/"Occupied"/"Disabled" (1re lettre majuscule, reste minuscule),
-    // alors que l'enum donne "AVAILABLE". On convertit avant l'envoi.
     private static String etatServeur(EtatRobot etat) {
         String n = etat.name();
         return n.charAt(0) + n.substring(1).toLowerCase();
     }
 
-    private static String get(String chemin) throws Exception {
+
+//helper
+    static String get(String chemin) throws Exception {
         return requete("GET", chemin);
     }
 
@@ -240,22 +312,20 @@ public class AppRobots {
         return requete("PUT", chemin);
     }
 
-    // Construit la requete selon la methode (GET/POST/PUT/DELETE), l'envoie, et renvoie
-    // le corps, "OK", "erreur HTTP ..." ou "ERREUR:..." si le serveur est injoignable.
     private static String requete(String methode, String chemin) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(SERVEUR + chemin))
-                .timeout(Duration.ofSeconds(4));
-        if (methode.equals("GET")) {
-            builder.GET();
-        } else if (methode.equals("POST")) {
-            builder.POST(HttpRequest.BodyPublishers.noBody());
-        } else if (methode.equals("PUT")) {
-            builder.PUT(HttpRequest.BodyPublishers.noBody());
-        } else if (methode.equals("DELETE")) {
-            builder.DELETE();
-        }
+        String urlComplete = SERVEUR + chemin;
         try {
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(urlComplete))
+                    .timeout(Duration.ofSeconds(4));
+            switch (methode) {
+                case "GET" -> builder.GET();
+                case "POST" -> builder.POST(HttpRequest.BodyPublishers.noBody());
+                case "PUT" -> builder.PUT(HttpRequest.BodyPublishers.noBody());
+                case "DELETE" -> builder.DELETE();
+                default -> builder.GET();
+            }
+
             HttpResponse<String> reponse = HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             if (reponse.statusCode() != 200) {
                 return "erreur HTTP " + reponse.statusCode() + " : " + reponse.body();
@@ -264,7 +334,7 @@ public class AppRobots {
                 return "OK";
             }
             return reponse.body();
-        } catch (Exception e) {                              // serveur eteint, mauvaise IP, reseau coupe...
+        } catch (Exception e) {                              
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
     }

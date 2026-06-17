@@ -1,0 +1,78 @@
+/* Style de l'apercu de la grille (JavaFX) - projet Lumieres en Ville */
+
+.racine {
+    -fx-background-color: #f5f7fa;
+}
+
+.entete {
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1f2937;
+    -fx-padding: 12 16 12 16;
+}
+
+.grille {
+    -fx-background-color: white;
+}
+
+/* Mailles vertes du quadrillage */
+.segment {
+    -fx-stroke: #228b22;
+    -fx-stroke-width: 3;
+    -fx-stroke-line-cap: round;
+}
+
+/* Point a chaque intersection */
+.noeud {
+    -fx-fill: #475569;
+}
+
+/* Etiquette (x;y) */
+.coord {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+}
+
+/* Libelle a l'interieur des pastilles (base, semaphore, robot) */
+.marqueur-texte {
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-text-fill: white;
+}
+
+/* Base des robots en (0;0) */
+.base {
+    -fx-background-color: #2563eb;
+    -fx-background-radius: 500;
+    -fx-border-radius: 500;
+}
+
+/* Semaphores */
+.semaphore {
+    -fx-background-color: #bbf7d0;
+    -fx-border-color: #166534;
+    -fx-border-width: 2;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+.semaphore .marqueur-texte {
+    -fx-text-fill: #14532d;
+}
+
+/* Robots */
+.robot {
+    -fx-border-color: #0f172a;
+    -fx-border-width: 2;
+    -fx-background-radius: 500;
+    -fx-border-radius: 500;
+}
+.robot .marqueur-texte {
+    -fx-text-fill: #0f172a;
+}
+.robot-libre {
+    -fx-background-color: #38bdf8;
+}
+.robot-occupe {
+    -fx-background-color: #fb923c;
+}
