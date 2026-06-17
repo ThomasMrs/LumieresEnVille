@@ -178,10 +178,32 @@ def boucle_automatisation():
                 
         if len(missions_valides) > 0:
             mission_en_cours = missions_valides[0]
-            etat = "IMPRESSION"
+            etat = "ATTENTE_DEPART"
             
+    elif etat == "ATTENTE_DEPART":
+        date_depart_str = mission_en_cours.get("start_date")
+        demarrer_maintenant = False
+        
+        if not date_depart_str: 
+            demarrer_maintenant = True
+        else:
+            try:
+                date_propre = date_depart_str.replace("T", " ").replace("Z", "").strip()
+                
+                date_depart = datetime.strptime(date_propre, "%Y-%m-%d %H:%M:%S")
+                
+                if datetime.now() >= date_depart:
+                    demarrer_maintenant = True
+            except Exception as e:
+                print(f"Format de date ignoré : {e}")
+                demarrer_maintenant = True
+
+        if demarrer_maintenant:
+            etat = "IMPRESSION"
             put_semaphore_state(mission_en_cours.get("semaphore_id"), "Occupied")
             lancer_dessin_physique()
+        else:
+            ui.mettre_a_jour_statut(f"Planifié pour : {date_depart_str}")
             
     if ui.root.winfo_exists():
         ui.root.after(3000, boucle_automatisation)
