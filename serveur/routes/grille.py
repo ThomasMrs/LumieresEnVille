@@ -77,9 +77,6 @@ def lire_grille():
         "segments": segments,
     }
 
-# =======================
-# Routes
-# =======================
 
 @router.post("/create_grille", tags=["Grille"])
 def create_grille(name: str):

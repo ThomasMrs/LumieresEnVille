@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from gestion import valider_id, valider_etat, ETATS_MISSION
+from gestion import valider_id, valider_etat, construire_champs
 from stockage.mission import (
     ajouter_missions,
     lire_missions,
@@ -9,10 +9,6 @@ from stockage.mission import (
 )
 
 router = APIRouter(prefix="/api", tags=["Mission"])
-
-# =======================
-# Routes
-# =======================
 
 @router.get("/list_missions")
 def read_missions():
@@ -67,59 +63,25 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
                    end_date: str | None = None, team: str | None = None,
                    time: str | None = None, color_r: int | None = None,
                    color_g: int | None = None, color_b: int | None = None):
-    # --- DEBUG : chaque erreur indique la valeur recue, l'attendu et pourquoi ---
     if not valider_id("mission", id):
-        return HTMLResponse(status_code=404,
-            content=f"404 - Mission introuvable : aucune mission avec id='{id}'. "
-                    f"Verifiez l'id via GET /api/list_missions.")
+        return HTMLResponse(status_code=404, content="404 - Mission introuvable")
     if state is not None and not valider_etat(state, "mission"):
         return HTMLResponse(status_code=400,
-            content=f"400 - Etat invalide : recu state='{state}'. "
-                    f"Attendu l'un de {sorted(ETATS_MISSION)} (sensible a la casse).")
+            content="400 - Etat invalide (Awaiting | Pending_robot | Pending_semaphore | Done)")
     if semaphore_id and not valider_id("semaphore", semaphore_id):
-        return HTMLResponse(status_code=404,
-            content=f"404 - Semaphore introuvable : aucun semaphore avec id='{semaphore_id}'. "
-                    f"Verifiez l'id via GET /api/list_semaphore.")
+        return HTMLResponse(status_code=404, content="404 - Semaphore introuvable")
     if shape_id and not valider_id("shape", shape_id):
-        return HTMLResponse(status_code=404,
-            content=f"404 - Shape introuvable : aucune shape avec id='{shape_id}'. "
-                    f"Verifiez l'id via GET /api/list_shape.")
+        return HTMLResponse(status_code=404, content="404 - Shape introuvable")
     if robot_id and not valider_id("robot", robot_id):
-        return HTMLResponse(status_code=404,
-            content=f"404 - Robot introuvable : aucun robot avec id='{robot_id}'. "
-                    f"Verifiez l'id via GET /api/list_robots.")
-    champs = {}
-    if name is not None:
-        champs["name"] = name
-    if semaphore_id is not None:
-        champs["semaphore_id"] = semaphore_id
-    if robot_id is not None:
-        champs["robot_id"] = robot_id
-    if state is not None:
-        champs["state"] = state
-    if start_date is not None:
-        champs["start_date"] = start_date
-    if end_date is not None:
-        champs["end_date"] = end_date
-    if team is not None:
-        champs["team"] = team
-    if shape_id is not None:
-        champs["shape_id"] = shape_id
-    if time is not None:
-        champs["time"] = time
-    if color_r is not None:
-        champs["color_r"] = color_r
-    if color_g is not None:
-        champs["color_g"] = color_g
-    if color_b is not None:
-        champs["color_b"] = color_b
+        return HTMLResponse(status_code=404, content="404 - Robot introuvable")
+    champs = construire_champs(name=name, semaphore_id=semaphore_id, robot_id=robot_id,
+                               state=state, start_date=start_date, end_date=end_date,
+                               team=team, shape_id=shape_id, time=time,
+                               color_r=color_r, color_g=color_g, color_b=color_b)
     try:
         modifier_missions(id, **champs)
     except Exception as e:
-        # On ne masque pas l'erreur : on renvoie le type d'exception et le detail.
-        return HTMLResponse(status_code=500,
-            content=f"500 - Echec de la modification : {e.__class__.__name__}: {e}. "
-                    f"Champs envoyes : {champs}.")
+        return HTMLResponse(status_code=500, content=f"500 - Echec de la modification : {e}")
     return {"id": id, "status": "updated"}
 
 

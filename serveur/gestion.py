@@ -8,12 +8,10 @@ TYPE_ROBOT = {"Roulant","Volant","Sautant"}
 
 
 def valider_id(table, id_verifier):
-    """Verifie qu'un ID existe dans la table donnee retourne True ou False """
     return existe_id(table, id_verifier)
 
 
 def valider_etat(state, type_entite):
-    """Verifie que l'etat des semaphores et robots est valide retourne True si valide False sinon """
     if type_entite in ("semaphore", "robot"):
         return state in ETATS_SEMAPHORE_ROBOT
     elif type_entite == "mission":
@@ -22,20 +20,15 @@ def valider_etat(state, type_entite):
 
 
 def valider_type_semaphore(type_semaphore):
-    """Verifie que le type de semaphore correspond a table ou helice ou caractere retourne True si valide False sinon"""
     return type_semaphore in TYPE_SEMAPHORE
 
 
 def valider_type_robot(type_robot):
-    """Verifie que le type de robot correspond a Roulant ou Volant ou Sautant retourne True si valide sinon False """
     return type_robot in TYPE_ROBOT
 
 
 def valider_coordonnees(coord_x, coord_y):
-    """Verifie que les coordonnees sont dans les limites de la grille
-    Retourne True si valide sinon False 
-    
-    La base est en 0;0 donc la grille est au dessus"""
+    # base en (0,0), la grille s'etend au dessus (y >= 1)
     config = lire_config()
     if not config:
         return False
@@ -46,3 +39,8 @@ def valider_coordonnees(coord_x, coord_y):
     if coord_x == 0 and coord_y == 0:
         return True
     return x_min <= coord_x < x_min + nombre_x and 1 <= coord_y <= nombre_y
+
+
+def construire_champs(**champs):
+    # ne garde que les champs reellement fournis
+    return {cle: valeur for cle, valeur in champs.items() if valeur is not None}

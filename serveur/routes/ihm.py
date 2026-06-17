@@ -124,13 +124,6 @@ def generer_page_html(message: str = "Bienvenue sur l'IHM !") -> str:
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <section class="form-nav">
-        <h1>Navigation</h1>
-        <a href="/api/ihm/starwars"><button type="button">Star Wars</button></a>
-        <a href="/api/ihm/pokemon"><button type="button">Pokémon</button></a>
-        <a href="/api/ihm/airbus"><button type="button">Airbus</button></a>
-    </section>
-
     <section class="dashboard">
         <h1>Dashboard — statut des robots</h1>
         {tableau_robots}

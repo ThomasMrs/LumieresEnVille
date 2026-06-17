@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from gestion import valider_id, valider_etat, valider_type_robot
+from gestion import valider_id, valider_etat, valider_type_robot, construire_champs
 from stockage.robot import (
     ajouter_robots,
     lire_robots,
@@ -10,10 +10,6 @@ from stockage.robot import (
 from stockage.mission import lire_missions
 
 router = APIRouter(prefix="/api", tags=["Robot"])
-
-# =======================
-# Routes
-# =======================
 
 @router.get("/list_robots")
 def read_robots():
@@ -45,17 +41,8 @@ def add_robot(name: str | None = None, speed: float | None = None,
               type: str | None = None):
     if type is not None and not valider_type_robot(type):
         return HTMLResponse(status_code=400, content="400 - Type invalide (Roulant | Volant | Sautant)")
-    champs = {}
-    if name is not None:
-        champs["name"] = name
-    if speed is not None:
-        champs["speed"] = speed
-    if position_x is not None:
-        champs["position_x"] = position_x
-    if position_y is not None:
-        champs["position_y"] = position_y
-    if type is not None:
-        champs["type"] = type
+    champs = construire_champs(name=name, speed=speed, position_x=position_x,
+                               position_y=position_y, type=type)
     id_robot = ajouter_robots(**champs)
     return {"id": id_robot, "status": "ok"}
 
@@ -70,19 +57,8 @@ def update_robot(id: str, name: str | None = None, state: str | None = None,
         return HTMLResponse(status_code=400, content="Etat invalide (Available | Occupied | Disabled)")
     if type is not None and not valider_type_robot(type):
         return HTMLResponse(status_code=400, content="400 - Type invalide (Roulant | Volant | Sautant)")
-    champs = {}
-    if name is not None:
-        champs["name"] = name
-    if state is not None:
-        champs["state"] = state
-    if speed is not None:
-        champs["speed"] = speed
-    if position_x is not None:
-        champs["position_x"] = position_x
-    if position_y is not None:
-        champs["position_y"] = position_y
-    if type is not None:
-        champs["type"] = type
+    champs = construire_champs(name=name, state=state, speed=speed,
+                               position_x=position_x, position_y=position_y, type=type)
     modifier_robots(id, **champs)
     return {"id": id, "status": "updated"}
 

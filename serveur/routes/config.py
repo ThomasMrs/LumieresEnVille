@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from gestion import construire_champs
 from stockage.config import (
     ajouter_config,
     lire_config,
@@ -7,9 +8,6 @@ from stockage.config import (
 
 router = APIRouter(prefix="/api", tags=["Config"])
 
-# =======================
-# Routes
-# =======================
 
 @router.post("/add_config")
 def add_config(nombre_x: int, nombre_y: int, nombre_semaphore: int, nombre_robot: int):
@@ -27,14 +25,7 @@ def update_config(nombre_x: int | None = None, nombre_y: int | None = None,
     config = lire_config()
     if not config:
         return {"status": "error", "detail": "Config introuvable"}
-    champs = {}
-    if nombre_x is not None:
-        champs["nombre_x"] = nombre_x
-    if nombre_y is not None:
-        champs["nombre_y"] = nombre_y
-    if nombre_semaphore is not None:
-        champs["nombre_semaphore"] = nombre_semaphore
-    if nombre_robot is not None:
-        champs["nombre_robot"] = nombre_robot
+    champs = construire_champs(nombre_x=nombre_x, nombre_y=nombre_y,
+                               nombre_semaphore=nombre_semaphore, nombre_robot=nombre_robot)
     modifier_config(config["id"], **champs)
     return {"id": config["id"], "status": "updated"}

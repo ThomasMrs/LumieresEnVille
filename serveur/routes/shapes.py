@@ -1,7 +1,7 @@
 from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from gestion import valider_id
+from gestion import valider_id, construire_champs
 from stockage.shape import (
     ajouter_shape,
     lire_shape,
@@ -12,9 +12,6 @@ from stockage.shape import (
 
 router = APIRouter(prefix="/api", tags=["Shape"])
 
-# =======================
-# Routes
-# =======================
 
 @router.get("/list_shapes")
 def read_shapes():
@@ -39,11 +36,7 @@ def add_shape(name: str, image: str):
 def update_shape(id: str, name: str | None = None, image: str | None = None):
     if not valider_id("shape", id):
         return HTMLResponse(status_code=404, content="Shape introuvable")
-    champs = {}
-    if name is not None:
-        champs["name"] = name
-    if image is not None:
-        champs["image"] = image
+    champs = construire_champs(name=name, image=image)
     modifier_shape(id, **champs)
     return {"id": id, "status": "updated"}
 

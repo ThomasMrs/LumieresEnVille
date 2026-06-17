@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from gestion import valider_id, valider_coordonnees
+from gestion import valider_id, valider_coordonnees, construire_champs
 from stockage.segment import (
     ajouter_segment,
     lire_segment,
@@ -10,9 +10,6 @@ from stockage.segment import (
 
 router = APIRouter(tags=["Segment"])
 
-# =======================
-# Routes
-# =======================
 
 @router.get("/list_segment")
 def read_segment():
@@ -49,15 +46,8 @@ def update_segment(id: str, coord_a_x: int | None = None, coord_a_y: int | None 
         check_y = coord_b_y if coord_b_y is not None else 0
         if not valider_coordonnees(check_x, check_y):
             return HTMLResponse(status_code=400, content="400 - Point B hors limites de la grille")
-    champs = {}
-    if coord_a_x is not None:
-        champs["coord_a_x"] = coord_a_x
-    if coord_a_y is not None:
-        champs["coord_a_y"] = coord_a_y
-    if coord_b_x is not None:
-        champs["coord_b_x"] = coord_b_x
-    if coord_b_y is not None:
-        champs["coord_b_y"] = coord_b_y
+    champs = construire_champs(coord_a_x=coord_a_x, coord_a_y=coord_a_y,
+                               coord_b_x=coord_b_x, coord_b_y=coord_b_y)
     modifier_segment(id, **champs)
     return {"id": id, "status": "updated"}
 
