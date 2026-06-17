@@ -224,7 +224,7 @@ public class Grille {
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
 
-    // Lit une dimension (ex. nombre_x) avec un nom de repli (ex. nbr_x) selon la version du serveur.
+    // Lit une dimension 
     private static int lireDimension(String json, String champPrincipal, String champCompatibilite) {
         int valeur = (int) nombre(json, champPrincipal);
         if (valeur <= 0) {
@@ -233,15 +233,15 @@ public class Grille {
         return valeur;
     }
 
-    // La grille lue depuis le serveur : dimensions + liste des routes.
+    // La grille lue depuis le serveur 
     private record EtatGrille(int largeur, int hauteur, List<Segment> segments) {
     }
 
-    // Une route entre deux points (a -> b).
+    // Une route entre deux points
     private record Segment(int ax, int ay, int bx, int by) {
     }
 
-    // Une case de la grille ; son toString affiche "(x;y)" pour les logs.
+    // Une case de la grille affichage des positions
     private record Point(int x, int y) {
         @Override
         public String toString() {
