@@ -5,12 +5,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javafx.animation.AnimationTimer;
@@ -27,9 +22,6 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.stage.Stage;
 
-// Apercu graphique JavaFX de la grille (robots, semaphores, base), rafraichi toutes les 0,5 s.
-// Grille centree sur x = 0 : la base (0;0) est detachee en bas, le maillage commence a y = 1.
-// Tout le style est deporte dans src/main/resources/grille.css.
 public class ApercuGrilleRobots {
 
     private static String SERVEUR = "http://192.168.1.96:8000";
@@ -40,7 +32,6 @@ public class ApercuGrilleRobots {
     private static Label entete;
     private static EtatGrille dernierEtat = new EtatGrille();
 
-    // Position AFFICHEE (grille) de chaque robot, interpolee vers la position serveur -> rendu fluide.
     private static final Map<String, double[]> POS_AFFICHEE = new HashMap<>();
     private static volatile boolean grilleChangee = true;
 
@@ -52,7 +43,6 @@ public class ApercuGrilleRobots {
         if (serveur != null && !serveur.isBlank()) {
             SERVEUR = serveur;
         }
-        // Demarre le moteur JavaFX (une seule fois) puis construit la fenetre sur le thread FX.
         try {
             Platform.startup(ApercuGrilleRobots::construireFenetre);
         } catch (IllegalStateException dejaDemarre) {
@@ -60,7 +50,6 @@ public class ApercuGrilleRobots {
         }
     }
 
-    // A appeler a la fin du programme pour arreter proprement le moteur JavaFX.
     public static void fermer() {
         try {
             Platform.exit();
@@ -69,7 +58,6 @@ public class ApercuGrilleRobots {
     }
 
     private static void construireFenetre() {
-        // Fermer la fenetre ne doit pas tuer la console (et inversement).
         Platform.setImplicitExit(false);
 
         entete = new Label("Chargement...");
@@ -96,13 +84,11 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        // Reseau : on recupere l'etat du serveur toutes les 0,25 s.
         Timeline reseau = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.25), e -> rafraichir()));
         reseau.setCycleCount(Timeline.INDEFINITE);
         reseau.play();
         rafraichir();
 
-        // Rendu fluide (~60 fps) : la position affichee des robots glisse vers leur position serveur.
         new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -115,7 +101,6 @@ public class ApercuGrilleRobots {
         }.start();
     }
 
-    // Va chercher les donnees serveur dans un thread de fond, puis met a jour l'UI sur le thread FX.
     private static void rafraichir() {
         if (!CHARGEMENT.compareAndSet(false, true)) {
             return;
@@ -136,8 +121,6 @@ public class ApercuGrilleRobots {
         thread.start();
     }
 
-    // Rapproche la position affichee de chaque robot de sa position serveur (glissement fluide).
-    // Renvoie true tant qu'au moins un robot n'est pas arrive a sa position cible.
     private static boolean interpolerPositions() {
         EtatGrille etat = dernierEtat;
         boolean bouge = false;
@@ -148,7 +131,7 @@ public class ApercuGrilleRobots {
             double dx = r.x() - pos[0];
             double dy = r.y() - pos[1];
             if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
-                pos[0] += dx * 0.2;   // 20 % du chemin restant par image -> arrive en ~0,2 s
+                pos[0] += dx * 0.2;
                 pos[1] += dy * 0.2;
                 bouge = true;
             } else {
@@ -156,7 +139,7 @@ public class ApercuGrilleRobots {
                 pos[1] = r.y();
             }
         }
-        POS_AFFICHEE.keySet().retainAll(presents);   // oublie les robots disparus
+        POS_AFFICHEE.keySet().retainAll(presents);
         return bouge;
     }
 
@@ -174,7 +157,6 @@ public class ApercuGrilleRobots {
         int colonnes = Math.max(1, etat.largeur);
         int lignes = Math.max(1, etat.hauteur);
 
-        // Grille centree sur x = 0 : colonnes de xmin a xmax
         int xmin = -(colonnes / 2);
         int xmax = xmin + colonnes - 1;
 
@@ -183,12 +165,11 @@ public class ApercuGrilleRobots {
         double taille = Math.max(40, Math.min(
                 (largeur / 2 - marge) / demiColonnes,
                 (hauteur - 2 * marge) / Math.max(1, lignes)));
-        double origineX = largeur / 2;        // x = 0 au centre de la fenetre
-        double origineY = hauteur - marge;    // base en bas, axe y vers le haut
+        double origineX = largeur / 2;
+        double origineY = hauteur - marge;
 
         List<Node> elements = new ArrayList<>();
 
-        // segment api
         dessinerSegments(elements, origineX, origineY, taille, etat.segments);
         dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
 
@@ -199,9 +180,6 @@ public class ApercuGrilleRobots {
                     origineX + s.x() * taille, origineY - s.y() * taille, taille));
         }
 
-        // Robots : dessines a leur position AFFICHEE (interpolee, donc fluide).
-        // Pres de la base (gy ~ 0) on les decale dessous et on les espace ; l'effet
-        // s'attenue a mesure qu'ils montent (gy -> 1).
         int nbRobots = etat.robots.size();
         for (int i = 0; i < nbRobots; i++) {
             RobotVue r = etat.robots.get(i);
@@ -258,7 +236,6 @@ public class ApercuGrilleRobots {
         }
     }
 
-    // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.
     private static StackPane marqueur(String classes, String texte, double cx, double cy, double taille) {
         double cote = Math.max(26, taille * 0.55);
         StackPane pastille = new StackPane();
@@ -283,7 +260,6 @@ public class ApercuGrilleRobots {
         return pastille;
     }
 
-    // === Lecture serveur (Java pur) ===
 
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();

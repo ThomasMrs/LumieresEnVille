@@ -11,12 +11,11 @@ import java.util.Set;
 
 public class Grille {
 
-    private static final long DELAI_PAS_MS = 250;   // une position envoyee toutes les 0,25 s
+    private static final long DELAI_PAS_MS = 250;
 
     private Grille() {
     }
 
-    // Deplace le robot
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
         EtatGrille etatGrille = lireEtatGrille(!robot.estVolant());
         Point depart = new Point((int) Math.round(robot.getX()), (int) Math.round(robot.getY()));
@@ -48,8 +47,6 @@ public class Grille {
         glisserVers(robot, arrivee.x(), arrivee.y());
     }
 
-    // Avance vers une case : envoie UNE position entiere au serveur, une mise a jour toutes les 0,25 s.
-    // Le rendu fluide est gere par l'apercu (ApercuGrilleRobots) qui interpole entre les cases.
     private static void glisserVers(Robot robot, double cibleX, double cibleY) throws Exception {
         if (Thread.currentThread().isInterrupted()) {
             throw new InterruptedException("deplacement interrompu pour " + robot.getNom());

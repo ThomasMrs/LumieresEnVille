@@ -7,8 +7,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -23,11 +21,7 @@ public class AppRobots {
     private static final long INTERVALLE_RECHERCHE_MS = 5000;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
-    private static final DateTimeFormatter FORMAT_DATE =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // un seul robot a la fois peut prendre une mission,
-    // pour eviter que deux robots prennent la meme
     private static final Object VERROU_MISSIONS = new Object();
     private static final AtomicBoolean EN_MARCHE = new AtomicBoolean(true);
 
@@ -53,7 +47,6 @@ public class AppRobots {
         ApercuGrilleRobots.lancer(SERVEUR);
         System.out.println("Apercu graphique de la grille (JavaFX) lance.");
 
-        // Un thread par robot
         List<Thread> threads = new ArrayList<>();
         for (Robot robot : robots) {
             Thread t = new Thread(new RobotWorker(robot), "robot-" + robot.getNom());
@@ -94,7 +87,6 @@ public class AppRobots {
         }
     }
 
-    //un robot par thread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.
     private static final class RobotWorker implements Runnable {
         private final Robot robot;
 
@@ -115,7 +107,7 @@ public class AppRobots {
                 try {
                     Mission mission = reclamerProchaineMission(robot);
                     if (mission == null) {
-                        Thread.sleep(INTERVALLE_RECHERCHE_MS); 
+                        Thread.sleep(INTERVALLE_RECHERCHE_MS);
                         continue;
                     }
                     executerMission(robot, mission);
@@ -135,8 +127,6 @@ public class AppRobots {
         }
     }
 
-    // Reclame threads, la prochaine mission disponible.
-    // Renvoie null si aucune mission n'est disponible.
     private static Mission reclamerProchaineMission(Robot robot) throws Exception {
         synchronized (VERROU_MISSIONS) {
             List<Mission> disponibles = lireMissionsDisponibles();
@@ -144,7 +134,7 @@ public class AppRobots {
                 return null;
             }
             Mission mission = disponibles.get(0);
-            mission.prendreEnChargeParRobot(robot.getId(), maintenant());
+            mission.prendreEnChargeParRobot(robot.getId());
             robot.setEtat(EtatRobot.OCCUPIED);
             robot.setMission(mission);
             modifierMission(mission);
@@ -155,7 +145,6 @@ public class AppRobots {
         }
     }
 
-    //aller au semaphore, signaler l'arrivee, rentrer a la base.
     private static void executerMission(Robot robot, Mission mission) throws Exception {
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
         double coordX = nombre(semaphoreJson, "coord_x");
@@ -181,7 +170,6 @@ public class AppRobots {
         }
     }
 
-    // === Lectures serveur ===
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
         List<Robot> robots = new ArrayList<>();
@@ -196,7 +184,6 @@ public class AppRobots {
         return robots;
     }
 
-    // missions en etat Awaiting et sans robot assigne.
     private static List<Mission> lireMissionsDisponibles() throws Exception {
         List<Mission> missions = new ArrayList<>();
         String json = get("/api/list_missions");
@@ -207,9 +194,7 @@ public class AppRobots {
         for (String objet : objets(json)) {
             Mission mission = new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
-                    champ(objet, "robot_id"), champ(objet, "state"),
-                    champ(objet, "start_date"), champ(objet, "end_date"),
-                    champ(objet, "team"), champ(objet, "time"));
+                    champ(objet, "robot_id"), champ(objet, "state"), champ(objet, "team"));
             if (missionDisponiblePourRobot(mission)) {
                 missions.add(mission);
             }
@@ -224,7 +209,6 @@ public class AppRobots {
                 && mission.getRobotId().isBlank();
     }
 
-    // === MAJ serveur ===
 
     static String modifierRobot(Robot robot) throws Exception {
         String url = "/api/update_robot/" + enc(robot.getId())
@@ -242,14 +226,10 @@ public class AppRobots {
                 + "&semaphore_id=" + enc(mission.getSemaphoreId())
                 + "&robot_id=" + enc(mission.getRobotId())
                 + "&state=" + enc(mission.getEtat())
-                + "&start_date=" + enc(mission.getDebutMission())
-                + "&end_date=" + enc(mission.getFinMission())
-                + "&team=" + enc(mission.getTeam())
-                + "&time=" + enc(mission.getTempsMission());
+                + "&team=" + enc(mission.getTeam());
         return put(url);
     }
 
-    // === Resolution de l'adresse serveur (configurable) ===
 
     private static String resoudreServeur(String[] args) {
         if (args != null && args.length > 0 && !args[0].isBlank()) {
@@ -284,7 +264,6 @@ public class AppRobots {
     }
 
 
-    // Decoupe un tableau JSON 
     private static List<String> objets(String json) {
         List<String> liste = new ArrayList<>();
         int profondeur = 0;
@@ -301,17 +280,16 @@ public class AppRobots {
         }
         return liste;
     }
-// recup valeur d'un json
     private static String champ(String objet, String nom) {
         int i = objet.indexOf("\"" + nom + "\"");
         if (i < 0) return "";
         i = objet.indexOf(':', i) + 1;
         while (i < objet.length() && objet.charAt(i) == ' ') i++;
         if (i >= objet.length()) return "";
-        if (objet.charAt(i) == '"') {                      
+        if (objet.charAt(i) == '"') {
             return objet.substring(i + 1, objet.indexOf('"', i + 1));
         }
-        int fin = i;                                       
+        int fin = i;
         while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') fin++;
         String valeur = objet.substring(i, fin).trim();
         return valeur.equals("null") ? "" : valeur;
@@ -335,7 +313,6 @@ public class AppRobots {
     }
 
 
-//helper
     static String get(String chemin) throws Exception {
         return requete("GET", chemin);
     }
@@ -366,13 +343,9 @@ public class AppRobots {
                 return "OK";
             }
             return reponse.body();
-        } catch (Exception e) {                              
+        } catch (Exception e) {
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
-    }
-
-    private static String maintenant() {
-        return LocalDateTime.now().format(FORMAT_DATE);
     }
 
     private static String enc(String texte) {
