@@ -3,7 +3,8 @@ from stockage.config import lire_config
 
 ETATS_SEMAPHORE_ROBOT = {"Available", "Occupied", "Disabled"}
 ETATS_MISSION = {"Awaiting", "Pending_robot", "Pending_semaphore", "Done"}
-TYPE_SEMAPHORE = {"Ascii", "Tracant", "Helice"}
+TYPE_SEMAPHORE = {"table", "helice", "caractere"}
+TYPE_ROBOT = {"Roulant","Volant","Sautant"}
 
 
 def valider_id(table, id_verifier):
@@ -27,9 +28,15 @@ def valider_etat(state, type_entite):
 
 
 def valider_type_semaphore(type_semaphore):
-    """Verifie que le type de semaphore correspond a Ascii, Tracant ou Helice.
+    """Verifie que le type de semaphore correspond a table, helice ou caractere.
     Retourne True si valide, False sinon."""
     return type_semaphore in TYPE_SEMAPHORE
+
+
+def valider_type_robot(type_robot):
+    """Verifie que le type de robot correspond a Roulant, Volant ou Sautant.
+    Retourne True si valide, False sinon."""
+    return type_robot in TYPE_ROBOT
 
 
 def valider_coordonnees(coord_x, coord_y):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from gestion import valider_id, valider_etat
+from gestion import valider_id, valider_etat, valider_type_robot
 from stockage.robot import (
     ajouter_robots,
     lire_robots,
@@ -40,8 +40,11 @@ def read_robot_missions(id: str):
 
 
 @router.post("/add_robot")
-def add_robot(name: str | None = None, speed: int | None = None,
-              position_x: int | None = None, position_y: int | None = None):
+def add_robot(name: str | None = None, speed: float | None = None,
+              position_x: float | None = None, position_y: float | None = None,
+              type: str | None = None):
+    if type is not None and not valider_type_robot(type):
+        return HTMLResponse(status_code=400, content="400 - Type invalide (Roulant | Volant | Sautant)")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -51,18 +54,22 @@ def add_robot(name: str | None = None, speed: int | None = None,
         champs["position_x"] = position_x
     if position_y is not None:
         champs["position_y"] = position_y
+    if type is not None:
+        champs["type"] = type
     id_robot = ajouter_robots(**champs)
     return {"id": id_robot, "status": "ok"}
 
 
 @router.put("/update_robot/{id}")
 def update_robot(id: str, name: str | None = None, state: str | None = None,
-                 speed: int | None = None, position_x: int | None = None,
-                 position_y: int | None = None):
+                 speed: float | None = None, position_x: float | None = None,
+                 position_y: float | None = None, type: str | None = None):
     if not valider_id("robot", id):
         return HTMLResponse(status_code=404, content="Robot introuvable")
     if state is not None and not valider_etat(state, "robot"):
         return HTMLResponse(status_code=400, content="Etat invalide (Available | Occupied | Disabled)")
+    if type is not None and not valider_type_robot(type):
+        return HTMLResponse(status_code=400, content="400 - Type invalide (Roulant | Volant | Sautant)")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -74,6 +81,8 @@ def update_robot(id: str, name: str | None = None, state: str | None = None,
         champs["position_x"] = position_x
     if position_y is not None:
         champs["position_y"] = position_y
+    if type is not None:
+        champs["type"] = type
     modifier_robots(id, **champs)
     return {"id": id, "status": "updated"}
 

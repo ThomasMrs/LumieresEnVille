@@ -97,6 +97,13 @@ form {
     gap: 14px;
 }
 
+/* Plusieurs formulaires dans une meme carte : separation nette */
+form + form {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px dashed var(--line);
+}
+
 h1 {
     font-size: 1.35rem;
     font-weight: 700;
@@ -141,6 +148,30 @@ select {
 
 input::placeholder {
     color: #94a3b8;
+}
+
+/* Champ fichier (upload CSV) : bouton natif aux couleurs du theme */
+input[type="file"] {
+    padding: 9px 12px;
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: var(--accent);
+    color: #fff;
 }
 
 input:focus,

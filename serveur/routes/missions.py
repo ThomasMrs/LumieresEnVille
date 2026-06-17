@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-from gestion import valider_id, valider_etat
+from gestion import valider_id, valider_etat, ETATS_MISSION
 from stockage.mission import (
     ajouter_missions,
     lire_missions,
@@ -67,16 +67,27 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
                    end_date: str | None = None, team: str | None = None,
                    time: str | None = None, color_r: int | None = None,
                    color_g: int | None = None, color_b: int | None = None):
+    # --- DEBUG : chaque erreur indique la valeur recue, l'attendu et pourquoi ---
     if not valider_id("mission", id):
-        return HTMLResponse(status_code=404, content="Mission introuvable")
+        return HTMLResponse(status_code=404,
+            content=f"404 - Mission introuvable : aucune mission avec id='{id}'. "
+                    f"Verifiez l'id via GET /api/list_missions.")
     if state is not None and not valider_etat(state, "mission"):
-        return HTMLResponse(status_code=400, content="Etat invalide (Awaiting | Pending_robot | Pending_semaphore | Done)")
+        return HTMLResponse(status_code=400,
+            content=f"400 - Etat invalide : recu state='{state}'. "
+                    f"Attendu l'un de {sorted(ETATS_MISSION)} (sensible a la casse).")
     if semaphore_id and not valider_id("semaphore", semaphore_id):
-        return HTMLResponse(status_code=404, content="Semaphore introuvable")
+        return HTMLResponse(status_code=404,
+            content=f"404 - Semaphore introuvable : aucun semaphore avec id='{semaphore_id}'. "
+                    f"Verifiez l'id via GET /api/list_semaphore.")
     if shape_id and not valider_id("shape", shape_id):
-        return HTMLResponse(status_code=404, content="Shape introuvable")
+        return HTMLResponse(status_code=404,
+            content=f"404 - Shape introuvable : aucune shape avec id='{shape_id}'. "
+                    f"Verifiez l'id via GET /api/list_shape.")
     if robot_id and not valider_id("robot", robot_id):
-        return HTMLResponse(status_code=404, content="Robot introuvable")
+        return HTMLResponse(status_code=404,
+            content=f"404 - Robot introuvable : aucun robot avec id='{robot_id}'. "
+                    f"Verifiez l'id via GET /api/list_robots.")
     champs = {}
     if name is not None:
         champs["name"] = name
@@ -102,7 +113,13 @@ def update_mission(id: str, name: str | None = None, semaphore_id: str | None = 
         champs["color_g"] = color_g
     if color_b is not None:
         champs["color_b"] = color_b
-    modifier_missions(id, **champs)
+    try:
+        modifier_missions(id, **champs)
+    except Exception as e:
+        # On ne masque pas l'erreur : on renvoie le type d'exception et le detail.
+        return HTMLResponse(status_code=500,
+            content=f"500 - Echec de la modification : {e.__class__.__name__}: {e}. "
+                    f"Champs envoyes : {champs}.")
     return {"id": id, "status": "updated"}
 
 

@@ -29,9 +29,9 @@ print(f"Grille créée : {resultat['segments']} segments")
 # =======================
 
 # Grille 5x5 centree : x va de -2 a 2, y de 0 a 4
-ajouter_semaphore("Ascii", 30, "Ascii", -2, 1)
-ajouter_semaphore("Helice", 45, "Helice", 0, 2)
-ajouter_semaphore("Tracant", 20, "Tracant", 2, 4)
+ajouter_semaphore("Caractere", 30, "caractere", -2, 1)
+ajouter_semaphore("Helice", 45, "helice", 0, 2)
+ajouter_semaphore("Table", 20, "table", 2, 4)
 
 semaphores = lire_semaphore()
 print(f"{len(semaphores)} semaphores insérés")
