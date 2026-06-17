@@ -97,6 +97,11 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
     
+    r = int(mission_en_cours.get("color_r"))
+    g = int(mission_en_cours.get("color_g"))
+    b = int(mission_en_cours.get("color_b"))
+    couleur_mission = (r, g, b)
+
     duree_str = mission_en_cours.get("time")
     try:
         duree_sec = int(duree_str)
@@ -135,10 +140,10 @@ def lancer_dessin_physique():
             
         if cible_affichage:
             if type_sem == "helice":
-                lancer_helice_ui(ui.root, cible_affichage, duree_sec)
+                lancer_helice_ui(ui.root, cible_affichage, couleur_mission, duree_sec)
             else:
                 if cible_affichage.endswith(".csv"):
-                    simuler_table_tracante_csv(cible_affichage, ui.root, duree_sec)
+                    simuler_table_tracante_csv(cible_affichage, ui.root, couleur_mission, duree_sec)
                 else:
                     ui.afficher_forme(cible_affichage)
                     var_attente = tk.IntVar()
@@ -154,7 +159,6 @@ def lancer_dessin_physique():
     
     etat = "RECHERCHE_MISSION"
     mission_en_cours = None
-
 def boucle_automatisation():
     global etat, mission_en_cours
     
@@ -174,10 +178,32 @@ def boucle_automatisation():
                 
         if len(missions_valides) > 0:
             mission_en_cours = missions_valides[0]
-            etat = "IMPRESSION"
+            etat = "ATTENTE_DEPART"
             
+    elif etat == "ATTENTE_DEPART":
+        date_depart_str = mission_en_cours.get("start_date")
+        demarrer_maintenant = False
+        
+        if not date_depart_str: 
+            demarrer_maintenant = True
+        else:
+            try:
+                date_propre = date_depart_str.replace("T", " ").replace("Z", "").strip()
+                
+                date_depart = datetime.strptime(date_propre, "%Y-%m-%d %H:%M:%S")
+                
+                if datetime.now() >= date_depart:
+                    demarrer_maintenant = True
+            except Exception as e:
+                print(f"Format de date ignoré : {e}")
+                demarrer_maintenant = True
+
+        if demarrer_maintenant:
+            etat = "IMPRESSION"
             put_semaphore_state(mission_en_cours.get("semaphore_id"), "Occupied")
             lancer_dessin_physique()
+        else:
+            ui.mettre_a_jour_statut(f"Planifié pour : {date_depart_str}")
             
     if ui.root.winfo_exists():
         ui.root.after(3000, boucle_automatisation)

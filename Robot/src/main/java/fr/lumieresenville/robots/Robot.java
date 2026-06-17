@@ -23,17 +23,13 @@ public class Robot {
         this.mission = null;
     }
 
-    // lire info robot
     public String getId()      { return id; }
     public String getNom()     { return nom; }
     public double getVitesse() { return vitesse; }
     public double getX()       { return x; }
     public double getY()       { return y; }
-    public String getType()    { return type; }
     public EtatRobot getEtat() { return etat; }
-    public Mission getMission() { return mission; }
 
-    // modif info robot
     public void setId(String id)             { this.id = id; }
     public void setVitesse(double vitesse)   { this.vitesse = vitesse; }
     public void setPosition(double x, double y) { this.x = x; this.y = y; }
@@ -43,18 +39,5 @@ public class Robot {
 
     public boolean estVolant() {
         return type.equalsIgnoreCase("volant");
-    }
-
-
-    @Override
-    public String toString() {
-        String texteMission = (mission == null)
-                ? "aucune mission"
-                : "-> " + mission.getSemaphoreId();
-
-        String texteId = (id == null) ? "id inconnu" : id;
-
-        String texteType = type.isBlank() ? "type inconnu" : type;
-        return nom + "  " + texteId + "  " + texteType + "  (" + (int) x + ", " + (int) y + ")  [" + etat + "]  " + texteMission;
     }
 }
