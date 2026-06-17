@@ -39,6 +39,7 @@ class HelicePOV:
 
     def _creer_matrice_lettre_A(self):
         """Cas de secours : Génère un 'A' rudimentaire si aucune donnée n'est envoyée."""
+        # tableau de 360 lignes (degrés) contenant chacune 10 colonnes (les 10 LEDs)
         matrice = [[None for _ in range(10)] for _ in range(360)]
         for a in range(80, 100): 
             matrice[a][9] = (255, 255, 255)
