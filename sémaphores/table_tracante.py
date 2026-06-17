@@ -19,10 +19,13 @@ class SimulateurTable:
         
         self._dessiner_axes()
         
+        self.rail_horizontal = self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#666666", width=3)
+        self.rail_vertical = self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#666666", width=3)
+        
         self.points = self.charger_points(fichier_csv)
         self.index_actuel = 0
         
-        self.stylo_visuel = self.canvas.create_oval(0, 0, 0, 0, fill="red", outline="")
+        self.stylo_visuel = self.canvas.create_oval(0, 0, 0, 0, fill="red", outline="black", width=1)
         self.derniere_pos = None
         
         self.top.after(500, self.animer)
@@ -60,7 +63,7 @@ class SimulateurTable:
         for r, a, s in points_bruts:
             r_ech = (r / r_max) * echelle
             x = self.CX + r_ech * math.cos(math.radians(a))
-            y = self.CY - r_ech * math.sin(math.radians(a))
+            y = self.CY - r_ech * math.sin(math.radians(a)) 
             coords.append((x, y, s))
             
         return coords
@@ -68,9 +71,15 @@ class SimulateurTable:
     def animer(self):
         if self.index_actuel >= len(self.points):
             self.canvas.itemconfig(self.stylo_visuel, state="hidden")
+            self.canvas.itemconfig(self.rail_horizontal, state="hidden")
+            self.canvas.itemconfig(self.rail_vertical, state="hidden")
             return
             
         x, y, s = self.points[self.index_actuel]
+        
+        self.canvas.coords(self.rail_horizontal, 0, y, self.W, y)
+        self.canvas.coords(self.rail_vertical, x, 0, x, self.H)
+        
         self.canvas.coords(self.stylo_visuel, x-5, y-5, x+5, y+5)
         
         if s == 1:
@@ -80,6 +89,8 @@ class SimulateurTable:
                 self.canvas.create_line(px, py, x, y, fill=self.couleur_hex, width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
         else:
             self.canvas.itemconfig(self.stylo_visuel, fill="lightblue")
+            
+        self.canvas.tag_raise(self.stylo_visuel)
             
         self.derniere_pos = (x, y)
         self.index_actuel += 1
