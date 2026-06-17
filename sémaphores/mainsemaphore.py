@@ -1,7 +1,5 @@
-import threading
 import os
 import math
-import time
 import tkinter as tk
 from api_client import *
 from gui import Interface
