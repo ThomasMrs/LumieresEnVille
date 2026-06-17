@@ -43,10 +43,7 @@ def modifier_segment(id_segment, **champs):
 
 
 def remplacer_segments(segments):
-    """Supprime tous les segments puis insere la liste fournie.
-
-    segments : liste de tuples (id, coord_a_x, coord_a_y, coord_b_x, coord_b_y).
-    """
+    """Supprime tous les segments puis insere la liste des nouveaux segments"""
     conn = get_connection()
     conn.execute("DELETE FROM segment")
     conn.executemany(

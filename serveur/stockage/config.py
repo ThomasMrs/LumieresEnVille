@@ -3,8 +3,7 @@ from stockage.db import get_connection
 
 
 def ajouter_config(nombre_x, nombre_y, nombre_semaphore, nombre_robot):
-    """Cree la configuration. Il n'y a qu'une seule config a la fois :
-    on supprime l'ancienne avant d'inserer la nouvelle."""
+    """Cree la configuration, il ne peut avoir qu'elle seule grille a la fois"""
     id_config = str(uuid4())
     conn = get_connection()
     conn.execute("DELETE FROM config")
@@ -37,7 +36,7 @@ def modifier_config(id_config, **champs):
 
 
 def definir_grille(config_id, grille_id, grille_name):
-    """Associe une grille (id + nom) a la configuration existante."""
+    """ Grille assoscie id + nom a la configuration existante"""
     conn = get_connection()
     conn.execute(
         "UPDATE config SET grille_id = ?, grille_name = ? WHERE id = ?",

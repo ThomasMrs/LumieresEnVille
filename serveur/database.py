@@ -37,7 +37,7 @@ TABLES = [
         name   TEXT NOT NULL,
         image  TEXT NOT NULL
     )""",
-    # Table mission (creee apres les tables referencees par ses cles etrangeres)
+    # Table mission 
     """CREATE TABLE IF NOT EXISTS mission (
         id            TEXT PRIMARY KEY,
         name          TEXT,
@@ -80,7 +80,7 @@ TABLES = [
 
 
 def init_db(db_path=DB_PATH):
-    """Cree toutes les tables si elles n'existent pas encore."""
+    """Cree toutes les tables si elles n'existent pas"""
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     for instruction in TABLES:
@@ -89,5 +89,4 @@ def init_db(db_path=DB_PATH):
     conn.close()
     return db_path
 
-# Initialisation automatique de la base par defaut au demarrage du serveur.
 init_db()

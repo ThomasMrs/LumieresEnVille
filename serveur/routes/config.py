@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-# Couche stockage : tout le SQL est defini dans stockage/config.py
 from stockage.config import (
     ajouter_config,
     lire_config,

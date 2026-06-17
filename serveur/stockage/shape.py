@@ -41,9 +41,9 @@ def modifier_shape(id_shape, **champs):
 
 
 def importer_shape_csv(chemin_csv):
-    """Lit un CSV de forme et l'insere dans la table shape.
+    """Lit un CSV l'insere dans la table shape.
     Ligne 1 = nom de la forme.
-    Lignes suivantes = points au format : label;x;y;actif"""
+    Lignes suivantes = points au format : label;x;y;stylo"""
     fichier = Path(chemin_csv)
     if not fichier.exists():
         return None
