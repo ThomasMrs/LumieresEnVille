@@ -34,6 +34,7 @@ public class ApercuGrilleRobots {
 
     private static final Map<String, double[]> POS_AFFICHEE = new HashMap<>();
     private static volatile boolean grilleChangee = true;
+    private static final double VITESSE_INTERPOLATION = 0.025;
 
     public static void main(String[] args) {
         lancer(args.length > 0 ? args[0] : SERVEUR);
@@ -130,9 +131,11 @@ public class ApercuGrilleRobots {
             double[] pos = POS_AFFICHEE.computeIfAbsent(r.nom(), k -> new double[]{r.x(), r.y()});
             double dx = r.x() - pos[0];
             double dy = r.y() - pos[1];
-            if (Math.abs(dx) > 0.01 || Math.abs(dy) > 0.01) {
-                pos[0] += dx * 0.2;
-                pos[1] += dy * 0.2;
+            double dist = Math.hypot(dx, dy);
+            if (dist > 0.01) {
+                double pas = Math.min(dist, VITESSE_INTERPOLATION);
+                pos[0] += dx / dist * pas;
+                pos[1] += dy / dist * pas;
                 bouge = true;
             } else {
                 pos[0] = r.x();

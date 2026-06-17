@@ -11,7 +11,7 @@ import java.util.Set;
 
 public class Grille {
 
-    private static final long DELAI_PAS_MS = 250;
+    private static final long DELAI_PAS_MS = 700;
 
     private Grille() {
     }
@@ -52,6 +52,7 @@ public class Grille {
             throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
         }
         robot.setPosition(cibleX, cibleY);
+        System.out.println("[" + robot.getNom() + "] -> (" + (int) Math.round(cibleX) + ", " + (int) Math.round(cibleY) + ")");
         AppRobots.modifierRobot(robot);
         Thread.sleep(DELAI_PAS_MS);
     }
