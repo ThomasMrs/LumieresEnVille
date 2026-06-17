@@ -1,10 +1,8 @@
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
-# Couche stockage : on reutilise la connexion centralisee
 from stockage.db import get_connection
 
 router = APIRouter(prefix="/api", tags=["Health"])
-
 
 @router.get("/health")
 def health():
@@ -15,7 +13,6 @@ def health():
         return HTMLResponse(status_code=200, content="Serveur ON")
     except Exception:
         return HTMLResponse(status_code=503, content="Serveur OFF")
-
 
 @router.get("/health_all")
 def health_all():

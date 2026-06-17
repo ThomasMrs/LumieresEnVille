@@ -31,7 +31,6 @@ def read_one_semaphore(id: str):
         if s["id"] == id:
             return s
 
-
 @router.post("/add_semaphore")
 def add_semaphore(name: str, duration: int, type: str, coord_x: int, coord_y: int):
     if not valider_type_semaphore(type):
@@ -40,12 +39,10 @@ def add_semaphore(name: str, duration: int, type: str, coord_x: int, coord_y: in
         return HTMLResponse(status_code=400, content="400 - Coordonnees hors limites de la grille")
     return ajouter_semaphore(name, duration, type, coord_x, coord_y)
 
-
 @router.put("/update_semaphore/{id}")
 def update_semaphore(id: str, name: str | None = None, state: str | None = None,
                      duration: int | None = None, type: str | None = None,
                      coord_x: int | None = None, coord_y: int | None = None):
-    # --- DEBUG : chaque erreur indique la valeur recue, l'attendu et pourquoi ---
     if not valider_id("semaphore", id):
         return HTMLResponse(status_code=404,
             content=f"404 - Semaphore introuvable : aucun semaphore avec id='{id}'. "
@@ -90,7 +87,6 @@ def update_semaphore(id: str, name: str | None = None, state: str | None = None,
     try:
         modifier_semaphore(id, **champs)
     except Exception as e:
-        # On ne masque pas l'erreur : on renvoie le type d'exception et le detail.
         return HTMLResponse(status_code=500,
             content=f"500 - Echec de la modification : {e.__class__.__name__}: {e}. "
                     f"Champs envoyes : {champs}.")

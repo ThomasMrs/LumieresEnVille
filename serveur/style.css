@@ -60,6 +60,37 @@ body > p {
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Tableau de statut : pleine largeur et toujours en premier */
+.dashboard {
+    grid-column: 1 / -1;   /* occupe toute la largeur de la grille */
+    order: -1;             /* place la carte avant toutes les autres */
+}
+
+.dashboard table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+.dashboard th,
+.dashboard td {
+    border: 1px solid var(--line);
+    padding: 10px 14px;
+    text-align: left;
+}
+
+.dashboard th {
+    background: var(--accent-soft);
+    color: var(--ink);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.dashboard tbody tr:nth-child(even) {
+    background: var(--bg-1);
+}
+
 /* Cartes de formulaire */
 section {
     background: #ffffff;

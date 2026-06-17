@@ -28,7 +28,7 @@ print(f"Grille créée : {resultat['segments']} segments")
 # Semaphores (3 types)
 # =======================
 
-# Grille 5x5 centree : x va de -2 a 2, y de 0 a 4
+# Grille 5x5 centree : base en (0, 0), x va de -2 a 2, y de 1 a 5
 ajouter_semaphore("Caractere", 30, "caractere", -2, 1)
 ajouter_semaphore("Helice", 45, "helice", 0, 2)
 ajouter_semaphore("Table", 20, "table", 2, 4)
@@ -40,9 +40,12 @@ print(f"{len(semaphores)} semaphores insérés")
 # Robots (3)
 # =======================
 
-ajouter_robots(name="Robot-01", speed=1.5, position_x=0, position_y=0)
-ajouter_robots(name="Robot-02", speed=2.0, position_x=2, position_y=3)
-ajouter_robots(name="Robot-03", speed=0.8, position_x=-1, position_y=1)
+ajouter_robots(name="Robot-01", speed=1.5, position_x=0.0, position_y=0.0,
+               type="Roulant", state="Available")
+ajouter_robots(name="Robot-02", speed=2.0, position_x=2.0, position_y=3.0,
+               type="Volant", state="Occupied")
+ajouter_robots(name="Robot-03", speed=0.8, position_x=-1.0, position_y=1.0,
+               type="Sautant", state="Disabled")
 
 robots = lire_robots()
 print(f"{len(robots)} robots insérés")
@@ -84,61 +87,65 @@ sh_ids = [s["id"] for s in shapes]
 
 # --- Etat : Awaiting (en attente de tout) ---
 ajouter_missions("Mission Attente 1", s_ids[0], None, "Awaiting",
-                 "", "", "Lux Sky Troopers", "", sh_ids[0])
+                 "2026-07-01", "2026-07-05", "Lux Sky Troopers", "30", sh_ids[0],
+                 255, 0, 0)
 ajouter_missions("Mission Attente 2", s_ids[1], None, "Awaiting",
-                 "", "", "Equipe Beta", "", sh_ids[1])
+                 "2026-07-02", "2026-07-06", "Equipe Beta", "45", sh_ids[1],
+                 0, 255, 0)
 ajouter_missions("Mission Attente 3", s_ids[2], None, "Awaiting",
-                 "2026-07-01", "", "Equipe Gamma", "", sh_ids[2])
+                 "2026-07-03", "2026-07-07", "Equipe Gamma", "60", sh_ids[2],
+                 0, 0, 255)
 
 # --- Etat : Pending_robot (semaphore ok, robot manquant) ---
 ajouter_missions("Mission PendRobot 1", s_ids[0], None, "Pending_robot",
-                 "2026-06-10", "", "Lux Sky Troopers", "60", sh_ids[0])
+                 "2026-06-10", "2026-06-11", "Lux Sky Troopers", "60", sh_ids[0],
+                 255, 128, 0)
 ajouter_missions("Mission PendRobot 2", s_ids[1], None, "Pending_robot",
-                 "2026-06-12", "", "Equipe Beta", "90", sh_ids[1])
+                 "2026-06-12", "2026-06-13", "Equipe Beta", "90", sh_ids[1],
+                 128, 0, 255)
 ajouter_missions("Mission PendRobot 3", s_ids[2], None, "Pending_robot",
-                 "", "", "Equipe Gamma", "45", sh_ids[2])
+                 "2026-06-14", "2026-06-15", "Equipe Gamma", "45", sh_ids[2],
+                 0, 128, 255)
 
 # --- Etat : Pending_semaphore (robot ok, semaphore occupe) ---
 ajouter_missions("Mission PendSema 1", s_ids[0], r_ids[0], "Pending_semaphore",
-                 "2026-06-15", "", "Lux Sky Troopers", "120", sh_ids[0])
+                 "2026-06-15", "2026-06-16", "Lux Sky Troopers", "120", sh_ids[0],
+                 255, 0, 128)
 ajouter_missions("Mission PendSema 2", s_ids[1], r_ids[1], "Pending_semaphore",
-                 "2026-06-16", "", "Equipe Beta", "30", sh_ids[1])
+                 "2026-06-16", "2026-06-17", "Equipe Beta", "30", sh_ids[1],
+                 0, 255, 128)
 ajouter_missions("Mission PendSema 3", s_ids[2], r_ids[2], "Pending_semaphore",
-                 "2026-06-17", "", "Equipe Gamma", "60", sh_ids[2])
+                 "2026-06-17", "2026-06-18", "Equipe Gamma", "60", sh_ids[2],
+                 128, 255, 0)
 
 # --- Etat : Done (terminee) ---
 ajouter_missions("Mission Done 1", s_ids[0], r_ids[0], "Done",
-                 "2026-06-01", "2026-06-02", "Lux Sky Troopers", "60", sh_ids[0])
+                 "2026-06-01", "2026-06-02", "Lux Sky Troopers", "60", sh_ids[0],
+                 200, 50, 50)
 ajouter_missions("Mission Done 2", s_ids[1], r_ids[1], "Done",
-                 "2026-06-03", "2026-06-04", "Equipe Beta", "120", sh_ids[1])
+                 "2026-06-03", "2026-06-04", "Equipe Beta", "120", sh_ids[1],
+                 50, 200, 50)
 ajouter_missions("Mission Done 3", s_ids[2], r_ids[2], "Done",
-                 "2026-06-05", "2026-06-06", "Equipe Gamma", "90", sh_ids[2])
+                 "2026-06-05", "2026-06-06", "Equipe Gamma", "90", sh_ids[2],
+                 50, 50, 200)
 
-# --- Missions avec differentes configs ---
+# --- Missions avec differentes configs (tous champs remplis) ---
 
-# Tous les champs remplis
 ajouter_missions("Mission Complete", s_ids[0], r_ids[0], "Awaiting",
-                 "2026-07-01", "2026-07-10", "Lux Sky Troopers", "180", sh_ids[0])
-
-# Sans robot, sans dates
-ajouter_missions("Mission Minimale", s_ids[1], None, "Awaiting",
-                 "", "", "Equipe Beta", "", sh_ids[1])
-
-# Avec robot mais sans date de fin
-ajouter_missions("Mission Sans Fin", s_ids[2], r_ids[2], "Pending_semaphore",
-                 "2026-08-01", "", "Equipe Gamma", "45", sh_ids[2])
-
-# Meme semaphore, meme shape, equipes differentes
+                 "2026-07-01", "2026-07-10", "Lux Sky Troopers", "180", sh_ids[0],
+                 255, 215, 0)
 ajouter_missions("Mission Doublon A", s_ids[0], r_ids[1], "Awaiting",
-                 "2026-09-01", "2026-09-05", "Lux Sky Troopers", "60", sh_ids[0])
+                 "2026-09-01", "2026-09-05", "Lux Sky Troopers", "60", sh_ids[0],
+                 220, 20, 60)
 ajouter_missions("Mission Doublon B", s_ids[0], r_ids[2], "Pending_robot",
-                 "2026-09-01", "2026-09-05", "Equipe Beta", "60", sh_ids[0])
-
-# Temps differents
+                 "2026-09-01", "2026-09-05", "Equipe Beta", "60", sh_ids[0],
+                 60, 20, 220)
 ajouter_missions("Mission Rapide", s_ids[1], r_ids[0], "Done",
-                 "2026-06-20", "2026-06-20", "Lux Sky Troopers", "10", sh_ids[1])
+                 "2026-06-20", "2026-06-20", "Lux Sky Troopers", "10", sh_ids[1],
+                 255, 105, 180)
 ajouter_missions("Mission Longue", s_ids[2], r_ids[1], "Done",
-                 "2026-06-20", "2026-06-25", "Equipe Beta", "500", sh_ids[2])
+                 "2026-06-20", "2026-06-25", "Equipe Beta", "500", sh_ids[2],
+                 75, 0, 130)
 
 missions = lire_missions()
 print(f"{len(missions)} missions insérées")

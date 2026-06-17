@@ -19,11 +19,9 @@ router = APIRouter(prefix="/api", tags=["Team"])
 def read_teams():
     return lire_equipe()
 
-
 @router.post("/add_team")
 def add_team(name: str, ip: str | None = None, allowed: bool = False):
     return ajouter_equipe(name, ip, allowed)
-
 
 @router.put("/update_team/{id}")
 def update_team(id: str, name: str | None = None, ip: str | None = None,
@@ -40,12 +38,10 @@ def update_team(id: str, name: str | None = None, ip: str | None = None,
     modifier_equipes(id, **champs)
     return {"id": id, "status": "updated"}
 
-
 @router.delete("/delete_teams")
 def delete_teams():
     supprimer_equipes()
     return {"status": "deleted"}
-
 
 @router.get("/list_teams_allowed")
 def read_teams_allowed():

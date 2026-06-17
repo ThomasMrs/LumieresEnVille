@@ -18,7 +18,6 @@ router = APIRouter(tags=["Segment"])
 def read_segment():
     return lire_segment()
 
-
 @router.get("/segment/{id}")
 def read_one_segment(id: str):
     if not valider_id("segment", id):
@@ -27,7 +26,6 @@ def read_one_segment(id: str):
         if s["id"] == id:
             return s
 
-
 @router.post("/add_segment")
 def add_segment(coord_a_x: int, coord_a_y: int, coord_b_x: int, coord_b_y: int):
     if not valider_coordonnees(coord_a_x, coord_a_y):
@@ -35,7 +33,6 @@ def add_segment(coord_a_x: int, coord_a_y: int, coord_b_x: int, coord_b_y: int):
     if not valider_coordonnees(coord_b_x, coord_b_y):
         return HTMLResponse(status_code=400, content="400 - Point B hors limites de la grille")
     return ajouter_segment(coord_a_x, coord_a_y, coord_b_x, coord_b_y)
-
 
 @router.put("/update_segment/{id}")
 def update_segment(id: str, coord_a_x: int | None = None, coord_a_y: int | None = None,
@@ -63,7 +60,6 @@ def update_segment(id: str, coord_a_x: int | None = None, coord_a_y: int | None 
         champs["coord_b_y"] = coord_b_y
     modifier_segment(id, **champs)
     return {"id": id, "status": "updated"}
-
 
 @router.delete("/delete_segments")
 def delete_segments():
