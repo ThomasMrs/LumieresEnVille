@@ -8,12 +8,16 @@ from gui import Interface
 from table_tracante import simuler_table_tracante_csv
 from simulateur_helice import lancer_helice_ui
 
+# Variables et initialisation
 ui = Interface()
 etat = "RECHERCHE_MISSION"
 mission_en_cours = None
 DOSSIER_ACTUEL = os.path.dirname(os.path.abspath(__file__))
 
+# Fonctions géométriques et traitement points
+
 def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
+    """Crée un fichier local temporaire pour que les simulateurs puissent le lire."""
     chemin = os.path.join(DOSSIER_ACTUEL, nom_fichier)
     with open(chemin, 'w') as f:
         f.write("rayon;angle;stylo\n")
@@ -22,9 +26,11 @@ def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
     return chemin
 
 def centrer_points_polaires(points):
+    """Recherche le barycentre de la forme et décale tous les points pour la centrer sur le repère."""
     if not points: 
         return points
 
+    # Conversion temporaire en cartésien pour calculer le centre
     coords = []
     for p in points:
         x = p['r'] * math.cos(math.radians(p['a']))
@@ -36,6 +42,7 @@ def centrer_points_polaires(points):
     centre_x = (min(xs) + max(xs)) / 2.0
     centre_y = (min(ys) + max(ys)) / 2.0
 
+    # Décalage des points et reconversion en polaire
     points_centres = []
     for p in coords:
         nx = p['x'] - centre_x
@@ -43,12 +50,12 @@ def centrer_points_polaires(points):
         
         nouveau_rayon = math.hypot(nx, ny)
         nouvel_angle = math.degrees(math.atan2(ny, nx)) % 360
-        
         points_centres.append({'r': nouveau_rayon, 'a': int(nouvel_angle), 's': p['s']})
 
     return points_centres
 
 def interpoler_points(points):
+    """Calcule des points intermédiaires (densification) pour lisser le tracé entre deux sommets éloignés."""
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
@@ -78,12 +85,14 @@ def interpoler_points(points):
             
             rt = math.hypot(xt, yt)
             at = (math.degrees(math.atan2(yt, xt)) - PHASE_SHIFT) % 360
-            
             points_denses.append({'r': int(rt), 'a': int(at), 's': 1})
             
     return points_denses
 
+# Boucle principale
+
 def lancer_dessin_physique():
+    """Gère l'extraction des données, le choix du moteur (Hélice/Table/Ascii) et le chronomètre."""
     global etat, mission_en_cours
     
     if mission_en_cours is None: 
@@ -97,9 +106,9 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
     
-    duree_str = mission_en_cours.get("time")
+    # Durée
     try:
-        duree_sec = int(duree_str)
+        duree_sec = int(mission_en_cours.get("time"))
     except Exception:
         duree_sec = 10  
     
@@ -110,6 +119,7 @@ def lancer_dessin_physique():
         points_bruts = []
         cible_affichage = None
         
+        # Si liste de points
         if isinstance(donnees, list):
             for pt in donnees:
                 try:
@@ -119,20 +129,22 @@ def lancer_dessin_physique():
                     points_bruts.append({"r": r_pt, "a": a_pt, "s": s_pt})
                 except Exception:
                     pass
-            
             points_centres = centrer_points_polaires(points_bruts)
             points_finaux = interpoler_points(points_centres)
             cible_affichage = ecrire_csv_temporaire(points_finaux)
             
+        # 2. Si caractère Ascii
         elif isinstance(donnees, str) and len(donnees.strip()) < 5:
             cible_affichage = donnees.strip()
             
+        # 3. Si c'est c'est une chaîne CSV 
         elif isinstance(donnees, str):
             points_bruts = decoder_chaine_image(donnees)
             points_centres = centrer_points_polaires(points_bruts)
             points_finaux = interpoler_points(points_centres)
             cible_affichage = ecrire_csv_temporaire(points_finaux)
             
+        # Je choisis le simulateur à lancer selon le type de sémaphore
         if cible_affichage:
             if type_sem == "helice":
                 lancer_helice_ui(ui.root, cible_affichage, duree_sec)
@@ -143,12 +155,13 @@ def lancer_dessin_physique():
                     ui.afficher_forme(cible_affichage)
                     var_attente = tk.IntVar()
                     ui.root.after(duree_sec * 1000, lambda: var_attente.set(1))
-                    ui.root.wait_variable(var_attente)
+                    ui.root.wait_variable(var_attente) 
                     ui.afficher_forme("") 
                     
     else:
         ui.mettre_a_jour_statut("ERREUR - Shape introuvable")
     
+    # Fin de mission 
     put_mission_state(m_id, "Done")
     put_semaphore_state(mission_en_cours.get("semaphore_id"), "Available")
     
@@ -156,6 +169,7 @@ def lancer_dessin_physique():
     mission_en_cours = None
 
 def boucle_automatisation():
+    """Tourne en toile de fond pour scruter les nouvelles missions en mode Pending."""
     global etat, mission_en_cours
     
     try:
@@ -179,6 +193,7 @@ def boucle_automatisation():
             put_semaphore_state(mission_en_cours.get("semaphore_id"), "Occupied")
             lancer_dessin_physique()
             
+    # Relance la boucle toutes les 3 secondes via Tkinter
     if ui.root.winfo_exists():
         ui.root.after(3000, boucle_automatisation)
 

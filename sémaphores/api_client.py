@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 
+# Configuration du lien avec l'API
 ip_serveur = input("IP du serveur (ex: 192.168.1.14) : ").strip()
 if not ip_serveur:
     ip_serveur = "127.0.0.1" 
@@ -8,7 +9,10 @@ if not ip_serveur:
 BASE_URL = f"http://{ip_serveur}:8000"
 print(f"Configuré sur {BASE_URL} ")
 
+# Requêtes de lecture (Get) 
+
 def get_missions():
+    """Récupère la liste de toutes les missions avec un timeout court pour ne pas bloquer l'UI."""
     try:
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
         return response.json() if response.status_code == 200 else []
@@ -17,6 +21,7 @@ def get_missions():
         return []
 
 def get_shape(shape_id):
+    """Récupère le dictionnaire JSON contenant les données d'une forme précise."""
     try:
         response = requests.get(f"{BASE_URL}/api/shape/{shape_id}")
         return response.json() if response.status_code == 200 else {}
@@ -24,6 +29,7 @@ def get_shape(shape_id):
         return {}
 
 def get_semaphore(semaphore_id):
+    """Parcourt tous les sémaphores pour trouver celui qui correspond à l'ID de la mission."""
     try:
         response = requests.get(f"{BASE_URL}/api/list_semaphore")
         sems = response.json()
@@ -34,7 +40,21 @@ def get_semaphore(semaphore_id):
         pass
     return {}
 
+def get_shape_csv(shape_id):
+    """Télécharge les données brutes d'une forme au format CSV."""
+    url = f"{BASE_URL}/api/shape/{shape_id}/csv"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return response.text
+        return None
+    except:
+        return None
+
+# Requêtes de mise à jour (Put)
+
 def put_mission_state(mission_id, state):
+    """Met à jour l'état d'une mission et force l'horodatage de fin."""
     url = f"{BASE_URL}/api/update_mission/{mission_id}"
     maintenant = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     try:
@@ -44,6 +64,7 @@ def put_mission_state(mission_id, state):
         return False
 
 def put_semaphore_state(semaphore_id, state):
+    """Libère ou occupe un sémaphore physique."""
     url = f"{BASE_URL}/api/update_semaphore/{semaphore_id}"
     try:
         rep = requests.put(url, params={"state": state})
@@ -51,7 +72,10 @@ def put_semaphore_state(semaphore_id, state):
     except:
         return False
 
+# Traitement données 
+
 def decoder_chaine_image(chaine):
+    """Nettoie une chaîne CSV brute (supprime les en-têtes et les espaces) et extrait les points R, A, S."""
     points = []
     if not chaine: return points
     
@@ -76,13 +100,3 @@ def decoder_chaine_image(chaine):
             continue
             
     return points
-
-def get_shape_csv(shape_id):
-    url = f"{BASE_URL}/api/shape/{shape_id}/csv"
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            return response.text
-        return None
-    except:
-        return None
