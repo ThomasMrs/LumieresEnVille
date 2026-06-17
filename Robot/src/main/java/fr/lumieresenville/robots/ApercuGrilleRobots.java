@@ -6,7 +6,9 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javafx.animation.KeyFrame;
@@ -125,26 +127,42 @@ public class ApercuGrilleRobots {
         }
 
         EtatGrille etat = dernierEtat;
-        int colonnes = Math.max(1, etat.largeur);
-        int lignes = Math.max(1, etat.hauteur);
 
-        // Grille centree sur x = 0 : colonnes de xmin a xmax
-        int xmin = -(colonnes / 2);
-        int xmax = xmin + colonnes - 1;
+        // Bornes reelles a partir des segments + base (0,0) + semaphores :
+        // la grille s'adapte a n'importe quel format/etendue de coordonnees.
+        double minX = 0;
+        double maxX = 0;
+        double minY = 0;
+        double maxY = 0;
+        for (SegmentVue s : etat.segments) {
+            minX = Math.min(minX, Math.min(s.ax(), s.bx()));
+            maxX = Math.max(maxX, Math.max(s.ax(), s.bx()));
+            minY = Math.min(minY, Math.min(s.ay(), s.by()));
+            maxY = Math.max(maxY, Math.max(s.ay(), s.by()));
+        }
+        for (SemaphoreVue s : etat.semaphores) {
+            minX = Math.min(minX, s.x());
+            maxX = Math.max(maxX, s.x());
+            minY = Math.min(minY, s.y());
+            maxY = Math.max(maxY, s.y());
+        }
 
         double marge = 60;
-        double demiColonnes = Math.max(1, Math.max(Math.abs(xmin), xmax));
-        double taille = Math.max(40, Math.min(
-                (largeur / 2 - marge) / demiColonnes,
-                (hauteur - 2 * marge) / Math.max(1, lignes)));
-        double origineX = largeur / 2;        // x = 0 au centre de la fenetre
-        double origineY = hauteur - marge;    // base en bas, axe y vers le haut
+        double centreX = (minX + maxX) / 2.0;
+        double centreY = (minY + maxY) / 2.0;
+        double etendueX = Math.max(1, maxX - minX);
+        double etendueY = Math.max(1, maxY - minY);
+        double taille = Math.min(90, Math.max(20, Math.min(
+                (largeur - 2 * marge) / etendueX,
+                (hauteur - 2 * marge) / etendueY)));
+        // origineX/origineY = pixel de la grille (0,0) ; tout est mis a l'echelle et centre.
+        double origineX = largeur / 2.0 - centreX * taille;
+        double origineY = hauteur / 2.0 + centreY * taille;
 
         List<Node> elements = new ArrayList<>();
 
-        // SEGEMENT
         dessinerSegments(elements, origineX, origineY, taille, etat.segments);
-        dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
+        dessinerNoeuds(elements, origineX, origineY, taille, etat.segments);
 
         elements.add(marqueur("base", "BASE", origineX, origineY, taille));
 
@@ -200,23 +218,31 @@ public class ApercuGrilleRobots {
     }
 
     private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
-                                       int xmin, int xmax, int lignes) {
-        for (int y = 1; y <= lignes; y++) {
-            for (int x = xmin; x <= xmax; x++) {
-                double px = ox + x * taille;
-                double py = oy - y * taille;
-
-                Circle point = new Circle(px, py, 3);
-                point.getStyleClass().add("noeud");
-                sortie.add(point);
-
-                Label coord = new Label("(" + x + ";" + y + ")");
-                coord.getStyleClass().add("coord");
-                coord.setLayoutX(px + 6);
-                coord.setLayoutY(py - 22);
-                sortie.add(coord);
-            }
+                                       List<SegmentVue> segments) {
+        Set<String> vus = new HashSet<>();
+        for (SegmentVue s : segments) {
+            ajouterNoeud(sortie, vus, s.ax(), s.ay(), ox, oy, taille);
+            ajouterNoeud(sortie, vus, s.bx(), s.by(), ox, oy, taille);
         }
+    }
+
+    private static void ajouterNoeud(List<Node> sortie, Set<String> vus, int x, int y,
+                                     double ox, double oy, double taille) {
+        if (!vus.add(x + ";" + y) || (x == 0 && y == 0)) {
+            return;
+        }
+        double px = ox + x * taille;
+        double py = oy - y * taille;
+
+        Circle point = new Circle(px, py, 3);
+        point.getStyleClass().add("noeud");
+        sortie.add(point);
+
+        Label coord = new Label("(" + x + ";" + y + ")");
+        coord.getStyleClass().add("coord");
+        coord.setLayoutX(px + 6);
+        coord.setLayoutY(py - 22);
+        sortie.add(coord);
     }
 
     // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.
