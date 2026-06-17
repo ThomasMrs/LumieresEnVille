@@ -34,12 +34,4 @@ public class Mission {
     public void signalerArriveeSemaphore() {
         this.etat = "Pending_semaphore";
     }
-
-    @Override
-    public String toString() {
-        return nom + "  id=" + id
-                + "  semaphore_id=" + semaphoreId
-                + "  robot_id=" + robotId
-                + "  etat=" + etat;
-    }
 }
