@@ -1,7 +1,8 @@
 package fr.lumieresenville.robots;
 
 public class Robot {
-
+    
+    // Attributs
     private String id;
     private final String nom;
     private double vitesse;
@@ -12,6 +13,7 @@ public class Robot {
     private Mission mission;
 
 
+    // Constructeur
     public Robot(String nom, double x, double y) {
         this.id = null;
         this.nom = nom;
@@ -23,6 +25,7 @@ public class Robot {
         this.mission = null;
     }
 
+    // lecture
     public String getId()      { return id; }
     public String getNom()     { return nom; }
     public double getVitesse() { return vitesse; }
@@ -30,6 +33,7 @@ public class Robot {
     public double getY()       { return y; }
     public EtatRobot getEtat() { return etat; }
 
+    // modification
     public void setId(String id)             { this.id = id; }
     public void setVitesse(double vitesse)   { this.vitesse = vitesse; }
     public void setPosition(double x, double y) { this.x = x; this.y = y; }
@@ -37,6 +41,7 @@ public class Robot {
     public void setEtat(EtatRobot etat)      { this.etat = etat; }
     public void setMission(Mission mission)  { this.mission = mission; }
 
+    // Type
     public boolean estVolant() {
         return type.equalsIgnoreCase("volant");
     }

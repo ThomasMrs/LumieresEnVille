@@ -32,6 +32,7 @@ public class ApercuGrilleRobots {
     private static Label entete;
     private static EtatGrille dernierEtat = new EtatGrille();
 
+    // Position affichee de chaque robot, qui glisse vers sa position serveur (rendu fluide).
     private static final Map<String, double[]> POS_AFFICHEE = new HashMap<>();
     private static volatile boolean grilleChangee = true;
     private static final double VITESSE_INTERPOLATION = 0.025;
@@ -90,6 +91,7 @@ public class ApercuGrilleRobots {
         reseau.play();
         rafraichir();
 
+        // ~60 fois/seconde : on rapproche un peu les robots de leur position, et on redessine.
         new AnimationTimer() {
             @Override
             public void handle(long now) {
@@ -122,6 +124,8 @@ public class ApercuGrilleRobots {
         thread.start();
     }
 
+    // Rapproche la position affichee de chaque robot de sa position serveur.
+    // Renvoie true tant qu'au moins un robot n'est pas encore arrive (il glisse).
     private static boolean interpolerPositions() {
         EtatGrille etat = dernierEtat;
         boolean bouge = false;
