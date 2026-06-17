@@ -19,7 +19,6 @@ public class Mission {
         this.team = team;
     }
 
-    // lire les informations de la mission.
     public String getId()           { return id; }
     public String getNom()          { return nom; }
     public String getSemaphoreId()  { return semaphoreId; }
@@ -27,7 +26,6 @@ public class Mission {
     public String getEtat()         { return etat; }
     public String getTeam()         { return team; }
 
-    // Le robot prend la mission
     public void prendreEnChargeParRobot(String robotId) {
         this.robotId = robotId;
         this.etat = "Pending_robot";
@@ -37,7 +35,6 @@ public class Mission {
         this.etat = "Pending_semaphore";
     }
 
-//affichage terminale
     @Override
     public String toString() {
         return nom + "  id=" + id
