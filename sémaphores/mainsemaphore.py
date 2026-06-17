@@ -55,7 +55,7 @@ def centrer_points_polaires(points):
     return points_centres
 
 def interpoler_points(points):
-    """Calcule des points intermédiaires (densification) pour lisser le tracé entre deux sommets éloignés."""
+    """Calcule des points intermédiaires pour lisser le tracé entre deux sommets éloignés."""
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
