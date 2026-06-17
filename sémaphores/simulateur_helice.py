@@ -38,11 +38,37 @@ class HelicePOV:
         self.animate()
 
     def _creer_matrice_lettre_A(self):
-        """Cas de secours : Génère un 'A' rudimentaire si aucune donnée n'est envoyée."""
-        # tableau de 360 lignes (degrés) contenant chacune 10 colonnes (les 10 LEDs)
+        """Génère une véritable lettre 'A' visible sur l'hélice."""
         matrice = [[None for _ in range(10)] for _ in range(360)]
-        for a in range(80, 100): 
-            matrice[a][9] = (255, 255, 255)
+
+       
+        def draw_line(x1, y1, x2, y2):
+            dist = math.hypot(x2 - x1, y2 - y1)
+            steps = int(dist * 20) # Haute résolution pour un tracé net
+            for i in range(steps + 1):
+                t = i / steps if steps > 0 else 0
+                x = x1 + t * (x2 - x1)
+                y = y1 + t * (y2 - y1)
+
+                r_float = math.hypot(x, y)
+                r_idx = int(round(r_float))
+
+                if 0 <= r_idx <= 9:
+                    angle_rad = math.atan2(y, -x)
+                    idx = int(math.degrees(angle_rad)) % 360
+                    
+                    # On allume la LED ciblée
+                    matrice[idx][r_idx] = True
+                    matrice[(idx + 1) % 360][r_idx] = True
+                    matrice[(idx - 1) % 360][r_idx] = True
+                    if r_idx < 9:
+                        matrice[idx][r_idx + 1] = True
+
+        
+        draw_line(0, 8, -4, -8)
+        draw_line(0, 8, 4, -8)
+        draw_line(-2, 0, 2, 0)
+
         return matrice
 
     def _creer_interface(self):
