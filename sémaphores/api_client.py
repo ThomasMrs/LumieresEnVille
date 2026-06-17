@@ -1,15 +1,17 @@
 import requests
 from datetime import datetime
 
-BASE_URL = "http://192.168.1.14:8000"
+ip_serveur = input("IP du serveur (ex: 192.168.1.14) : ").strip()
+if not ip_serveur:
+    ip_serveur = "127.0.0.1" 
+
+BASE_URL = f"http://{ip_serveur}:8000"
+print(f"Configuré sur {BASE_URL} ")
 
 def get_missions():
     try:
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return []
+        return response.json() if response.status_code == 200 else []
     except Exception as e:
         print("Erreur de connexion au serveur API:", e)
         return []
@@ -17,9 +19,7 @@ def get_missions():
 def get_shape(shape_id):
     try:
         response = requests.get(f"{BASE_URL}/api/shape/{shape_id}")
-        if response.status_code == 200:
-            return response.json()
-        return {}
+        return response.json() if response.status_code == 200 else {}
     except:
         return {}
 
@@ -37,12 +37,8 @@ def get_semaphore(semaphore_id):
 def put_mission_state(mission_id, state):
     url = f"{BASE_URL}/api/update_mission/{mission_id}"
     maintenant = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    params = {
-        "state": state, 
-        "end_date": maintenant
-    }
     try:
-        rep = requests.put(url, params=params)
+        rep = requests.put(url, params={"state": state, "end_date": maintenant})
         return rep.status_code == 200
     except:
         return False
@@ -56,23 +52,25 @@ def put_semaphore_state(semaphore_id, state):
         return False
 
 def decoder_chaine_image(chaine):
-    """Transforme la chaine Pxxx.xxx.x en dictionnaire r, a, s"""
     points = []
-    if not chaine or chaine == "T": 
-        return points
-        
-    segments = chaine.split('P')
-    for seg in segments:
-        if seg == "": 
-            continue
+    if not chaine: return points
+    for ligne in chaine.replace("\r", "").split("\n"):
+        ligne = ligne.strip()
+        if not ligne or ligne.lower().startswith(("rayon", "name", "label")): continue
+        colonnes = ligne.split(";")
+        if len(colonnes) < 4: continue
         try:
-            parts = seg.split('.')
-            rayon = float(parts[0])
-            angle = int(parts[1])
-            stylo = int(parts[2])
-            points.append({'r': rayon, 'a': angle, 's': stylo})
-        except: 
-            print("Erreur de parsing sur le segment:", seg)
+            points.append({'r': float(colonnes[1]), 'a': float(colonnes[2]), 's': int(colonnes[3])})
+        except ValueError:
             continue
-            
     return points
+
+def get_shape_csv(shape_id):
+    url = f"{BASE_URL}/api/shape/{shape_id}/csv"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return response.text
+        return None
+    except:
+        return None

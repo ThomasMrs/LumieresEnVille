@@ -1,14 +1,5 @@
 package fr.lumieresenville.robots;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
-import java.awt.RenderingHints;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -19,66 +10,234 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.stage.Stage;
 
+// Apercu graphique JavaFX de la grille (robots, semaphores, base), rafraichi toutes les 0,5 s.
+// Tout le style est deporte dans src/main/resources/grille.css.
 public class ApercuGrilleRobots {
 
     private static String SERVEUR = "http://192.168.1.18:8000";
     private static final HttpClient HTTP = HttpClient.newHttpClient();
+    private static final AtomicBoolean CHARGEMENT = new AtomicBoolean(false);
+
+    private static Pane zoneGrille;
+    private static Label entete;
+    private static EtatGrille dernierEtat = new EtatGrille();
 
     public static void main(String[] args) {
-        if (args != null && args.length > 0 && !args[0].isBlank()) {
-            SERVEUR = args[0];
-        }
-        lancer();
+        lancer(args.length > 0 ? args[0] : SERVEUR);
     }
 
-    // Surcharge appelee par AppRobots pour partager la meme adresse serveur (configurable).
     public static void lancer(String serveur) {
         if (serveur != null && !serveur.isBlank()) {
             SERVEUR = serveur;
         }
-        lancer();
+        // Demarre le moteur JavaFX (une seule fois) puis construit la fenetre sur le thread FX.
+        try {
+            Platform.startup(ApercuGrilleRobots::construireFenetre);
+        } catch (IllegalStateException dejaDemarre) {
+            Platform.runLater(ApercuGrilleRobots::construireFenetre);
+        }
     }
 
-    public static void lancer() {
-        if (GraphicsEnvironment.isHeadless()) {
-            System.out.println("Apercu graphique indisponible : environnement sans interface graphique.");
+    // A appeler a la fin du programme pour arreter proprement le moteur JavaFX.
+    public static void fermer() {
+        try {
+            Platform.exit();
+        } catch (Exception ignore) {
+        }
+    }
+
+    private static void construireFenetre() {
+        // La fermeture de la fenetre ne doit pas tuer la console (et inversement).
+        Platform.setImplicitExit(false);
+
+        entete = new Label("Chargement...");
+        entete.getStyleClass().add("entete");
+
+        zoneGrille = new Pane();
+        zoneGrille.getStyleClass().add("grille");
+        // On redessine a chaque redimensionnement de la zone.
+        zoneGrille.widthProperty().addListener((o, a, b) -> redessiner());
+        zoneGrille.heightProperty().addListener((o, a, b) -> redessiner());
+
+        BorderPane racine = new BorderPane();
+        racine.getStyleClass().add("racine");
+        racine.setTop(entete);
+        racine.setCenter(zoneGrille);
+
+        Scene scene = new Scene(racine, 760, 640);
+        var css = ApercuGrilleRobots.class.getResource("/grille.css");
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
+        }
+
+        Stage fenetre = new Stage();
+        fenetre.setTitle("Apercu - Robots et grille");
+        fenetre.setScene(scene);
+        fenetre.show();
+
+        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.5), e -> rafraichir()));
+        rythme.setCycleCount(Timeline.INDEFINITE);
+        rythme.play();
+        rafraichir();
+    }
+
+    // Va chercher les donnees serveur dans un thread de fond, puis met a jour l'UI sur le thread FX.
+    private static void rafraichir() {
+        if (!CHARGEMENT.compareAndSet(false, true)) {
+            return;
+        }
+        Thread thread = new Thread(() -> {
+            try {
+                EtatGrille etat = lireEtatGrille();
+                Platform.runLater(() -> {
+                    dernierEtat = etat;
+                    entete.setText(etat.message);
+                    redessiner();
+                });
+            } finally {
+                CHARGEMENT.set(false);
+            }
+        }, "apercu-grille-refresh");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private static void redessiner() {
+        if (zoneGrille == null) {
+            return;
+        }
+        double largeur = zoneGrille.getWidth();
+        double hauteur = zoneGrille.getHeight();
+        if (largeur < 60 || hauteur < 60) {
             return;
         }
 
-        SwingUtilities.invokeLater(() -> {
-            GrillePanel panel = new GrillePanel();
-            JFrame fenetre = new JFrame("Apercu temporaire - Robots et grille");
-            fenetre.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            fenetre.setContentPane(panel);
-            fenetre.pack();
-            fenetre.setLocationRelativeTo(null);
-            fenetre.setVisible(true);
+        EtatGrille etat = dernierEtat;
+        int colonnes = Math.max(1, etat.largeur);
+        int lignes = Math.max(1, etat.hauteur);
 
-            AtomicBoolean chargementEnCours = new AtomicBoolean(false);
-            Timer timer = new Timer(500, e -> {
-                if (!chargementEnCours.compareAndSet(false, true)) {
-                    return;
-                }
-                Thread thread = new Thread(() -> {
-                    try {
-                        EtatGrille etat = lireEtatGrille();
-                        SwingUtilities.invokeLater(() -> panel.setEtat(etat));
-                    } finally {
-                        chargementEnCours.set(false);
-                    }
-                }, "apercu-grille-refresh");
-                thread.setDaemon(true);
-                thread.start();
-            });
-            timer.setInitialDelay(0);
-            timer.start();
-        });
+        // Grille centree sur x = 0 : colonnes de xmin a xmax (ex. nombre_x=3 -> -1, 0, 1)
+        int xmin = -(colonnes / 2);
+        int xmax = xmin + colonnes - 1;
+
+        double marge = 60;
+        double demiColonnes = Math.max(1, Math.max(Math.abs(xmin), xmax));
+        double taille = Math.max(40, Math.min(
+                (largeur / 2 - marge) / demiColonnes,
+                (hauteur - 2 * marge) / Math.max(1, lignes - 1)));
+        double origineX = largeur / 2;        // x = 0 au centre de la fenetre
+        double origineY = hauteur - marge;    // base en bas, axe y vers le haut
+
+        List<Node> elements = new ArrayList<>();
+
+        // Toute la grille est dessinee (y compris y = 0) : le robot est toujours sur une ligne.
+        dessinerSegments(elements, origineX, origineY, taille, xmin, xmax, lignes);
+        dessinerNoeuds(elements, origineX, origineY, taille, xmin, xmax, lignes);
+        elements.add(marqueur("base", "BASE", origineX, origineY, taille));
+
+        for (SemaphoreVue s : etat.semaphores) {
+            elements.add(marqueur("semaphore", s.nom().isBlank() ? "S" : s.nom(),
+                    origineX + s.x() * taille, origineY - s.y() * taille, taille));
+        }
+
+        // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles (comme l'image)
+        int totalBase = 0;
+        for (RobotVue r : etat.robots) {
+            if (r.x() == 0 && r.y() == 0) {
+                totalBase++;
+            }
+        }
+        int indexBase = 0;
+        for (RobotVue r : etat.robots) {
+            String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
+            double cx;
+            double cy;
+            if (r.x() == 0 && r.y() == 0) {
+                double pas = Math.max(30, taille * 0.6);
+                cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
+                cy = origineY + Math.min(36, taille * 0.5);
+                indexBase++;
+            } else {
+                cx = origineX + r.x() * taille;
+                cy = origineY - r.y() * taille;
+            }
+            elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(), cx, cy, taille));
+        }
+        zoneGrille.getChildren().setAll(elements);
     }
+
+    private static void dessinerSegments(List<Node> sortie, double ox, double oy, double taille,
+                                         int xmin, int xmax, int lignes) {
+        for (int y = 0; y < lignes; y++) {
+            for (int x = xmin; x <= xmax; x++) {
+                double px = ox + x * taille;
+                double py = oy - y * taille;
+                if (x + 1 <= xmax) {
+                    sortie.add(segment(px, py, ox + (x + 1) * taille, py));
+                }
+                if (y + 1 < lignes) {
+                    sortie.add(segment(px, py, px, oy - (y + 1) * taille));
+                }
+            }
+        }
+    }
+
+    private static Line segment(double x1, double y1, double x2, double y2) {
+        Line ligne = new Line(x1, y1, x2, y2);
+        ligne.getStyleClass().add("segment");
+        return ligne;
+    }
+
+    private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
+                                       int xmin, int xmax, int lignes) {
+        for (int y = 0; y < lignes; y++) {
+            for (int x = xmin; x <= xmax; x++) {
+                double px = ox + x * taille;
+                double py = oy - y * taille;
+
+                Circle point = new Circle(px, py, 3);
+                point.getStyleClass().add("noeud");
+                sortie.add(point);
+
+                Label coord = new Label("(" + x + ";" + y + ")");
+                coord.getStyleClass().add("coord");
+                coord.setLayoutX(px + 6);
+                coord.setLayoutY(py - 22);
+                sortie.add(coord);
+            }
+        }
+    }
+
+    // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.
+    private static StackPane marqueur(String classes, String texte, double cx, double cy, double taille) {
+        double cote = Math.max(26, taille * 0.55);
+        StackPane pastille = new StackPane();
+        for (String classe : classes.split(" ")) {
+            pastille.getStyleClass().add(classe);
+        }
+        Label libelle = new Label(texte);
+        libelle.getStyleClass().add("marqueur-texte");
+        pastille.getChildren().add(libelle);
+        pastille.setPrefSize(cote, cote);
+        pastille.setLayoutX(cx - cote / 2);
+        pastille.setLayoutY(cy - cote / 2);
+        return pastille;
+    }
+
+    // === Lecture serveur (Java pur) ===
 
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();
@@ -88,7 +247,6 @@ public class ApercuGrilleRobots {
             etat.message = grilleJson;
             return etat;
         }
-
         int largeur = (int) nombre(grilleJson, "nombre_x");
         int hauteur = (int) nombre(grilleJson, "nombre_y");
         if (largeur > 0) {
@@ -121,11 +279,9 @@ public class ApercuGrilleRobots {
             }
         }
 
-        etat.message = "Serveur: " + SERVEUR + " | "
-                + etat.largeur + "x" + etat.hauteur + " | "
-                + etat.semaphores.size() + " semaphore(s) | "
-                + etat.robots.size() + " robot(s) | "
-                + LocalTime.now().withNano(0);
+        etat.message = "Serveur " + SERVEUR + "   |   grille " + etat.largeur + " x " + etat.hauteur
+                + "   |   " + etat.semaphores.size() + " semaphore(s)   |   "
+                + etat.robots.size() + " robot(s)   |   " + LocalTime.now().withNano(0);
         return etat;
     }
 
@@ -207,143 +363,5 @@ public class ApercuGrilleRobots {
     }
 
     private record RobotVue(String nom, int x, int y, String etat, double vitesse) {
-    }
-
-    private static final class GrillePanel extends JPanel {
-        private static final int MARGE = 48;
-        private static final int INFO_HAUTEUR = 80;
-        private EtatGrille etat = new EtatGrille();
-
-        GrillePanel() {
-            setPreferredSize(new Dimension(760, 640));
-            setBackground(new Color(245, 247, 250));
-            setFont(new Font("Arial", Font.PLAIN, 13));
-        }
-
-        void setEtat(EtatGrille etat) {
-            this.etat = etat;
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics graphics) {
-            super.paintComponent(graphics);
-            Graphics2D g = (Graphics2D) graphics.create();
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            dessinerEntete(g);
-
-            int largeurDisponible = getWidth() - (MARGE * 2);
-            int hauteurDisponible = getHeight() - (MARGE * 2) - INFO_HAUTEUR;
-            int taille = Math.max(20, Math.min(largeurDisponible / etat.largeur, hauteurDisponible / etat.hauteur));
-            int origineX = (getWidth() - taille * etat.largeur) / 2;
-            int origineY = MARGE + INFO_HAUTEUR / 2;
-
-            dessinerGrille(g, origineX, origineY, taille);
-            dessinerBase(g, origineX, origineY, taille);
-            dessinerSemaphores(g, origineX, origineY, taille);
-            dessinerRobots(g, origineX, origineY, taille);
-            dessinerLegende(g);
-
-            g.dispose();
-        }
-
-        private void dessinerEntete(Graphics2D g) {
-            g.setColor(new Color(31, 41, 55));
-            g.setFont(getFont().deriveFont(Font.BOLD, 18f));
-            g.drawString("Apercu temporaire de la grille", MARGE, 32);
-            g.setFont(getFont());
-            g.setColor(new Color(75, 85, 99));
-            g.drawString(etat.message, MARGE, 54);
-        }
-
-        private void dessinerGrille(Graphics2D g, int ox, int oy, int taille) {
-            g.setStroke(new BasicStroke(1f));
-            for (int y = 0; y < etat.hauteur; y++) {
-                for (int x = 0; x < etat.largeur; x++) {
-                    int px = ox + x * taille;
-                    int py = oy + y * taille;
-                    g.setColor(Color.WHITE);
-                    g.fillRect(px, py, taille, taille);
-                    g.setColor(new Color(203, 213, 225));
-                    g.drawRect(px, py, taille, taille);
-                    g.setColor(new Color(148, 163, 184));
-                    g.setFont(getFont().deriveFont(10f));
-                    g.drawString(x + "," + y, px + 4, py + 13);
-                }
-            }
-        }
-
-        private void dessinerBase(Graphics2D g, int ox, int oy, int taille) {
-            int px = ox;
-            int py = oy;
-            g.setColor(new Color(219, 234, 254));
-            g.fillRect(px + 2, py + 2, taille - 3, taille - 3);
-            g.setColor(new Color(37, 99, 235));
-            g.setStroke(new BasicStroke(2f));
-            g.drawRect(px + 3, py + 3, taille - 6, taille - 6);
-            texteCentre(g, "BASE", px, py, taille, new Color(30, 64, 175), 11f);
-        }
-
-        private void dessinerSemaphores(Graphics2D g, int ox, int oy, int taille) {
-            for (SemaphoreVue semaphore : etat.semaphores) {
-                int px = ox + semaphore.x() * taille;
-                int py = oy + semaphore.y() * taille;
-                int marge = Math.max(5, taille / 7);
-                g.setColor(new Color(187, 247, 208));
-                g.fillRoundRect(px + marge, py + marge, taille - 2 * marge, taille - 2 * marge, 10, 10);
-                g.setColor(new Color(22, 101, 52));
-                g.setStroke(new BasicStroke(2f));
-                g.drawRoundRect(px + marge, py + marge, taille - 2 * marge, taille - 2 * marge, 10, 10);
-                texteCentre(g, "S", px, py - taille / 10, taille, new Color(20, 83, 45), 18f);
-                texteCentre(g, semaphore.nom(), px, py + taille / 5, taille, new Color(20, 83, 45), 10f);
-            }
-        }
-
-        private void dessinerRobots(Graphics2D g, int ox, int oy, int taille) {
-            for (RobotVue robot : etat.robots) {
-                int px = ox + robot.x() * taille;
-                int py = oy + robot.y() * taille;
-                int diametre = Math.max(18, taille / 2);
-                int rx = px + (taille - diametre) / 2;
-                int ry = py + (taille - diametre) / 2;
-
-                g.setColor(robot.etat().equalsIgnoreCase("Occupied")
-                        ? new Color(251, 146, 60)
-                        : new Color(56, 189, 248));
-                g.fillOval(rx, ry, diametre, diametre);
-                g.setColor(new Color(15, 23, 42));
-                g.setStroke(new BasicStroke(2f));
-                g.drawOval(rx, ry, diametre, diametre);
-                texteCentre(g, "R", px, py - 1, taille, new Color(15, 23, 42), 16f);
-                texteCentre(g, robot.nom(), px, py + taille / 3, taille, new Color(15, 23, 42), 10f);
-            }
-        }
-
-        private void dessinerLegende(Graphics2D g) {
-            int y = getHeight() - 28;
-            g.setFont(getFont());
-            g.setColor(new Color(37, 99, 235));
-            g.drawString("BASE: depart (0,0)", MARGE, y);
-            g.setColor(new Color(22, 101, 52));
-            g.drawString("S: semaphore", MARGE + 160, y);
-            g.setColor(new Color(234, 88, 12));
-            g.drawString("R orange: robot occupe", MARGE + 280, y);
-            g.setColor(new Color(2, 132, 199));
-            g.drawString("R bleu: robot disponible", MARGE + 450, y);
-        }
-
-        private void texteCentre(Graphics2D g, String texte, int x, int y, int taille, Color couleur, float taillePolice) {
-            if (texte == null || texte.isBlank()) {
-                return;
-            }
-            String affichage = texte.length() > 12 ? texte.substring(0, 12) : texte;
-            g.setFont(getFont().deriveFont(Font.BOLD, taillePolice));
-            FontMetrics fm = g.getFontMetrics();
-            int tx = x + (taille - fm.stringWidth(affichage)) / 2;
-            int ty = y + (taille + fm.getAscent() - fm.getDescent()) / 2;
-            g.setColor(couleur);
-            g.drawString(affichage, tx, ty);
-        }
     }
 }

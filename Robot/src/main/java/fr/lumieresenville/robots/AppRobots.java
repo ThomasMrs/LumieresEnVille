@@ -35,9 +35,6 @@ public class AppRobots {
         SERVEUR = resoudreServeur(args);
         System.out.println("Serveur utilise : " + SERVEUR);
 
-        ApercuGrilleRobots.lancer(SERVEUR);
-        System.out.println("Apercu graphique de la grille lance.");
-
         if (get("/api/list_robots").startsWith("ERREUR")) {
             System.out.println("Serveur injoignable (" + SERVEUR + ").");
             System.out.println("Demarre le serveur FastAPI, puis relance.");
@@ -50,6 +47,9 @@ public class AppRobots {
             System.out.println("Cree des robots depuis l'IHM du serveur, puis relance.");
             return;
         }
+
+        ApercuGrilleRobots.lancer(SERVEUR);
+        System.out.println("Apercu graphique de la grille (JavaFX) lance.");
 
         // Un thread par robot
         List<Thread> threads = new ArrayList<>();
@@ -75,6 +75,7 @@ public class AppRobots {
             t.join();
         }
         System.out.println("Tous les robots sont arretes. Au revoir.");
+        ApercuGrilleRobots.fermer();
     }
 
     //un robot par thread, qui tourne en boucle pour chercher une mission, l'executer, puis revenir a la base.

@@ -61,41 +61,71 @@ def interpoler_points(points):
     return points_denses
 
 def lancer_dessin_physique():
-    """Gère toute la séquence de dessin physique"""
+    """Gère la séquence de dessin en lisant la liste JSON des points dans la shape"""
     global etat, mission_en_cours
     
     if mission_en_cours is None: 
         return
     
-    ui.mettre_a_jour_statut("Préparation du tracé")
+    ui.mettre_a_jour_statut("Préparation du tracé...")
+    ui.afficher_forme("") 
     
-    shape = get_shape(mission_en_cours.get("shape_id"))
+    m_id = mission_en_cours.get("id")
+    shape_id = mission_en_cours.get("shape_id")
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
-    
-    image_data = shape.get("image", "").strip()
     type_sem = sem.get("type", "").lower()
     
-    if "P" in image_data and "." in image_data:
-        ui.afficher_forme("★") 
-        points_bruts = decoder_chaine_image(image_data)
-        points_finaux = interpoler_points(points_bruts)
-        cible_affichage = ecrire_csv_temporaire(points_finaux)
-    else:
-        cible_affichage = image_data
-        ui.afficher_forme(cible_affichage)
-        
-    if type_sem == "helice":
-        lancer_helice_ui(ui.root, cible_affichage)
-    else:
-        if cible_affichage.endswith(".csv"):
-            simuler_table_tracante_csv(cible_affichage, ui.root)
+    shape = get_shape(shape_id)
     
-    put_mission_state(mission_en_cours.get("id"), "Done")
+    if shape:
+        
+        donnees = shape.get("points") or shape.get("data") or shape.get("image")
+        
+        points_bruts = []
+        cible_affichage = None
+        
+        if isinstance(donnees, list):
+            for pt in donnees:
+                try:
+                    r = float(pt.get("r", pt.get("rayon", 0)))
+                    a = int(float(pt.get("a", pt.get("angle", 0))))
+                    s = int(pt.get("s", pt.get("stylo", 1)))
+                    points_bruts.append({"r": r, "a": a, "s": s})
+                except Exception as e:
+                    print("Erreur de lecture sur un point :", pt)
+            
+            points_finaux = interpoler_points(points_bruts)
+            cible_affichage = ecrire_csv_temporaire(points_finaux)
+            
+        # CAS 2 : Si c'est juste une lettre ASCII (ex: "A")
+        elif isinstance(donnees, str) and len(donnees.strip()) < 5:
+            cible_affichage = donnees.strip()
+            ui.afficher_forme(cible_affichage)
+            
+        # CAS 3 : Fallback si c'est encore l'ancien format texte
+        elif isinstance(donnees, str):
+            points_bruts = decoder_chaine_image(donnees)
+            points_finaux = interpoler_points(points_bruts)
+            cible_affichage = ecrire_csv_temporaire(points_finaux)
+        # -----------------------------------
+            
+        # Lancement du simulateur
+        if cible_affichage:
+            if type_sem == "helice":
+                lancer_helice_ui(ui.root, cible_affichage)
+            else:
+                if cible_affichage.endswith(".csv"):
+                    simuler_table_tracante_csv(cible_affichage, ui.root)
+                    
+    else:
+        print(f"Erreur : Impossible de récupérer la Shape {shape_id}")
+        ui.mettre_a_jour_statut("ERREUR - Shape introuvable")
+    
+    put_mission_state(m_id, "Done")
     put_semaphore_state(mission_en_cours.get("semaphore_id"), "Available")
     
     etat = "RECHERCHE_MISSION"
     mission_en_cours = None
-
 def boucle_automatisation():
     """Boucle principale qui interroge l'API régulièrement"""
     global etat, mission_en_cours
