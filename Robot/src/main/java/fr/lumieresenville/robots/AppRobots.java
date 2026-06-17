@@ -7,8 +7,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -23,8 +21,6 @@ public class AppRobots {
     private static final long INTERVALLE_RECHERCHE_MS = 5000;
     private static final HttpClient HTTP = HttpClient.newHttpClient();
     private static final Scanner CLAVIER = new Scanner(System.in);
-    private static final DateTimeFormatter FORMAT_DATE =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // un seul robot a la fois peut prendre une mission,
     // pour eviter que deux robots prennent la meme
@@ -144,7 +140,7 @@ public class AppRobots {
                 return null;
             }
             Mission mission = disponibles.get(0);
-            mission.prendreEnChargeParRobot(robot.getId(), maintenant());
+            mission.prendreEnChargeParRobot(robot.getId());
             robot.setEtat(EtatRobot.OCCUPIED);
             robot.setMission(mission);
             modifierMission(mission);
@@ -207,9 +203,7 @@ public class AppRobots {
         for (String objet : objets(json)) {
             Mission mission = new Mission(
                     champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
-                    champ(objet, "robot_id"), champ(objet, "state"),
-                    champ(objet, "start_date"), champ(objet, "end_date"),
-                    champ(objet, "team"), champ(objet, "time"));
+                    champ(objet, "robot_id"), champ(objet, "state"), champ(objet, "team"));
             if (missionDisponiblePourRobot(mission)) {
                 missions.add(mission);
             }
@@ -242,10 +236,7 @@ public class AppRobots {
                 + "&semaphore_id=" + enc(mission.getSemaphoreId())
                 + "&robot_id=" + enc(mission.getRobotId())
                 + "&state=" + enc(mission.getEtat())
-                + "&start_date=" + enc(mission.getDebutMission())
-                + "&end_date=" + enc(mission.getFinMission())
-                + "&team=" + enc(mission.getTeam())
-                + "&time=" + enc(mission.getTempsMission());
+                + "&team=" + enc(mission.getTeam());
         return put(url);
     }
 
@@ -369,10 +360,6 @@ public class AppRobots {
         } catch (Exception e) {                              
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
-    }
-
-    private static String maintenant() {
-        return LocalDateTime.now().format(FORMAT_DATE);
     }
 
     private static String enc(String texte) {
