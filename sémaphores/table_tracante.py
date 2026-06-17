@@ -12,7 +12,6 @@ class SimulateurTable:
         self.CX = self.W / 2
         self.CY = self.H / 2
         
-        # On convertit le tuple RGB (ex: 255, 0, 0) en code Hexadécimal (ex: #ff0000)
         self.couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
         
         self.canvas = tk.Canvas(self.top, width=self.W, height=self.H, bg="white", highlightthickness=0)
