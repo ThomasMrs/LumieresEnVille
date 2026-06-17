@@ -169,7 +169,7 @@ def lancer_dessin_physique():
     mission_en_cours = None
 
 def boucle_automatisation():
-    """Tourne en toile de fond pour scruter les nouvelles missions en mode Pending."""
+    """Tourne en fond pour regarder les nouvelles missions en mode Pending."""
     global etat, mission_en_cours
     
     try:
