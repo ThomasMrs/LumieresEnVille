@@ -59,7 +59,7 @@ def decoder_chaine_image(chaine):
     
     for ligne in chaine_propre.split("\n"):
         ligne = ligne.strip()
-        if not ligne or ligne.lower().startswith(("rayon", "name", "label")): 
+        if not ligne or ligne.lower().startswith(("rayon", "angle", "stylo")): 
             continue
             
         colonnes = ligne.split(";")
