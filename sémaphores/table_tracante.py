@@ -6,7 +6,7 @@ class SimulateurTable:
         self.top = tk.Toplevel(root)
         self.top.title("Simulateur Table Traçante")
         # Couleur de fond de la fenêtre Tkinter
-        self.top.configure(bg="#333")
+        self.top.configure(bg="#f50000")
         
         # Dimensions fixes 
         # Taille du plan de travail papier
@@ -15,22 +15,22 @@ class SimulateurTable:
         self.CX = self.W / 2
         self.CY = self.H / 2
         
-        self.canvas = tk.Canvas(self.top, width=self.W, height=self.H, bg="white", highlightthickness=0)
+        self.canvas = tk.Canvas(self.top, width=self.W, height=self.H, bg="#f50000", highlightthickness=0)
         self.canvas.pack(padx=20, pady=20)
         
         self._dessiner_axes()
         
         # Les bras mécaniques qui suivent le curseur
         # Couleur et épaisseur 
-        self.rail_horizontal = self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#666666", width=3)
-        self.rail_vertical = self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#666666", width=3)
+        self.rail_horizontal = self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#eaf500", width=3)
+        self.rail_vertical = self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#eaf500", width=3)
         
         # Lecture des données 
         self.points = self.charger_points(fichier_csv)
         self.index_actuel = 0
         
         # Le marqueur 
-        self.stylo_visuel = self.canvas.create_oval(0, 0, 0, 0, fill="red", outline="black", width=1)
+        self.stylo_visuel = self.canvas.create_oval(0, 0, 0, 0, fill="#eaf500", outline="#eaf500", width=1)
         self.derniere_pos = None
         
         self.top.after(500, self.animer)
@@ -38,11 +38,11 @@ class SimulateurTable:
     def _dessiner_axes(self):
         """Dessine les pointillés de repérage en arrière-plan."""
         # Style des axes (dash = taille pointillé)
-        self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#cccccc", dash=(4, 4))
-        self.canvas.create_text(self.W - 10, self.CY - 10, text="X", fill="#999999", font=("Arial", 8, "bold"))
-        self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#cccccc", dash=(4, 4))
-        self.canvas.create_text(self.CX + 10, 10, text="Y", fill="#999999", font=("Arial", 8, "bold"))
-        self.canvas.create_text(self.CX - 10, self.CY + 10, text="0", fill="#999999", font=("Arial", 8))
+        self.canvas.create_line(0, self.CY, self.W, self.CY, fill="white", dash=(4, 4))
+        self.canvas.create_text(self.W - 10, self.CY - 10, text="X", fill="white", font=("Arial", 8, "bold"))
+        self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="white", dash=(4, 4))
+        self.canvas.create_text(self.CX + 10, 10, text="Y", fill="white", font=("Arial", 8, "bold"))
+        self.canvas.create_text(self.CX - 10, self.CY + 10, text="0", fill="white", font=("Arial", 8))
 
     def charger_points(self, fichier_csv):
         """Extrait les points polaires et les convertit en cartésien normé (mise à l'échelle)."""
@@ -102,11 +102,11 @@ class SimulateurTable:
         # Le stylo frotte le papier, on laisse une trace noire quand c'est en 1
         if s == 1:
             # Couleur du curseur quand stylo posé
-            self.canvas.itemconfig(self.stylo_visuel, fill="red")
+            self.canvas.itemconfig(self.stylo_visuel, fill="#eaf500")
             if self.derniere_pos:
                 px, py = self.derniere_pos
                 # Couleur et épaisseur dessin sur le papier
-                self.canvas.create_line(px, py, x, y, fill="black", width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
+                self.canvas.create_line(px, py, x, y, fill="#eaf500", width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
         # le stylo est en 0, il ne trace pas, on le met en bleu
         else:
             self.canvas.itemconfig(self.stylo_visuel, fill="lightblue")
