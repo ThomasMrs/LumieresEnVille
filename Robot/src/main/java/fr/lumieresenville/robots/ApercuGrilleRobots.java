@@ -5,10 +5,17 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayListrrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -22,6 +29,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.stage.Stage;
 
+
 public class ApercuGrilleRobots {
 
     private static String SERVEUR = "http://192.168.1.96:8000";
@@ -32,11 +40,6 @@ public class ApercuGrilleRobots {
     private static Label entete;
     private static EtatGrille dernierEtat = new EtatGrille();
 
-    // Position affichee de chaque robot, qui glisse vers sa position serveur (rendu fluide).
-    private static final Map<String, double[]> POS_AFFICHEE = new HashMap<>();
-    private static volatile boolean grilleChangee = true;
-    private static final double VITESSE_INTERPOLATION = 0.025;
-
     public static void main(String[] args) {
         lancer(args.length > 0 ? args[0] : SERVEUR);
     }
@@ -45,6 +48,7 @@ public class ApercuGrilleRobots {
         if (serveur != null && !serveur.isBlank()) {
             SERVEUR = serveur;
         }
+        // Demarre le moteur JavaFX (une seule fois) puis construit la fenetre sur le thread FX.
         try {
             Platform.startup(ApercuGrilleRobots::construireFenetre);
         } catch (IllegalStateException dejaDemarre) {
@@ -52,6 +56,7 @@ public class ApercuGrilleRobots {
         }
     }
 
+    // A appeler a la fin du programme pour arreter proprement le moteur JavaFX.
     public static void fermer() {
         try {
             Platform.exit();
@@ -60,6 +65,7 @@ public class ApercuGrilleRobots {
     }
 
     private static void construireFenetre() {
+        // Fermer la fenetre ne doit pas tuer la console (et inversement).
         Platform.setImplicitExit(false);
 
         entete = new Label("Chargement...");
@@ -67,8 +73,8 @@ public class ApercuGrilleRobots {
 
         zoneGrille = new Pane();
         zoneGrille.getStyleClass().add("grille");
-        zoneGrille.widthProperty().addListener((o, a, b) -> grilleChangee = true);
-        zoneGrille.heightProperty().addListener((o, a, b) -> grilleChangee = true);
+        zoneGrille.widthProperty().addListener((o, a, b) -> redessiner());
+        zoneGrille.heightProperty().addListener((o, a, b) -> redessiner());
 
         BorderPane racine = new BorderPane();
         racine.getStyleClass().add("racine");
@@ -86,24 +92,13 @@ public class ApercuGrilleRobots {
         fenetre.setScene(scene);
         fenetre.show();
 
-        Timeline reseau = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.25), e -> rafraichir()));
-        reseau.setCycleCount(Timeline.INDEFINITE);
-        reseau.play();
+        Timeline rythme = new Timeline(new KeyFrame(javafx.util.Duration.seconds(0.1), e -> rafraichir()));
+        rythme.setCycleCount(Timeline.INDEFINITE);
+        rythme.play();
         rafraichir();
-
-        // ~60 fois/seconde : on rapproche un peu les robots de leur position, et on redessine.
-        new AnimationTimer() {
-            @Override
-            public void handle(long now) {
-                boolean bouge = interpolerPositions();
-                if (bouge || grilleChangee) {
-                    grilleChangee = false;
-                    redessiner();
-                }
-            }
-        }.start();
     }
 
+    // Va chercher les donnees serveur dans un thread de fond, puis met a jour l'UI sur le thread FX.
     private static void rafraichir() {
         if (!CHARGEMENT.compareAndSet(false, true)) {
             return;
@@ -114,7 +109,7 @@ public class ApercuGrilleRobots {
                 Platform.runLater(() -> {
                     dernierEtat = etat;
                     entete.setText(etat.message);
-                    grilleChangee = true;
+                    redessiner();
                 });
             } finally {
                 CHARGEMENT.set(false);
@@ -122,32 +117,6 @@ public class ApercuGrilleRobots {
         }, "apercu-grille-refresh");
         thread.setDaemon(true);
         thread.start();
-    }
-
-    // Rapproche la position affichee de chaque robot de sa position serveur.
-    // Renvoie true tant qu'au moins un robot n'est pas encore arrive (il glisse).
-    private static boolean interpolerPositions() {
-        EtatGrille etat = dernierEtat;
-        boolean bouge = false;
-        Set<String> presents = new HashSet<>();
-        for (RobotVue r : etat.robots) {
-            presents.add(r.nom());
-            double[] pos = POS_AFFICHEE.computeIfAbsent(r.nom(), k -> new double[]{r.x(), r.y()});
-            double dx = r.x() - pos[0];
-            double dy = r.y() - pos[1];
-            double dist = Math.hypot(dx, dy);
-            if (dist > 0.01) {
-                double pas = Math.min(dist, VITESSE_INTERPOLATION);
-                pos[0] += dx / dist * pas;
-                pos[1] += dy / dist * pas;
-                bouge = true;
-            } else {
-                pos[0] = r.x();
-                pos[1] = r.y();
-            }
-        }
-        POS_AFFICHEE.keySet().retainAll(presents);
-        return bouge;
     }
 
     private static void redessiner() {
@@ -162,6 +131,8 @@ public class ApercuGrilleRobots {
 
         EtatGrille etat = dernierEtat;
 
+
+        // la grille s'adapte a n'importe quel format/etendue de coordonnees.
         double minX = 0;
         double maxX = 0;
         double minY = 0;
@@ -187,35 +158,46 @@ public class ApercuGrilleRobots {
         double taille = Math.min(90, Math.max(20, Math.min(
                 (largeur - 2 * marge) / etendueX,
                 (hauteur - 2 * marge) / etendueY)));
-        double ox = largeur / 2.0 - centreX * taille;
-        double oy = hauteur / 2.0 + centreY * taille;
+        // origineX/origineY = pixel de la grille (0,0) ; tout est mis a l'echelle et centre.
+        double origineX = largeur / 2.0 - centreX * taille;
+        double origineY = hauteur / 2.0 + centreY * taille;
 
         List<Node> elements = new ArrayList<>();
 
-        dessinerSegments(elements, ox, oy, taille, etat.segments);
-        dessinerNoeuds(elements, ox, oy, taille, etat.segments);
+        dessinerSegments(elements, origineX, origineY, taille, etat.segments);
+        dessinerNoeuds(elements, origineX, origineY, taille, etat.segments);
 
-        elements.add(marqueur("base", "BASE", ox, oy, taille));
+        elements.add(marqueur("base", "BASE", origineX, origineY, taille));
 
         for (SemaphoreVue s : etat.semaphores) {
             elements.add(marqueur("semaphore", s.nom().isBlank() ? "S" : s.nom(),
-                    ox + s.x() * taille, oy - s.y() * taille, taille));
+                    origineX + s.x() * taille, origineY - s.y() * taille, taille));
         }
 
-        int nbRobots = etat.robots.size();
-        for (int i = 0; i < nbRobots; i++) {
-            RobotVue r = etat.robots.get(i);
+        // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles
+        int totalBase = 0;
+        for (RobotVue r : etat.robots) {
+            if (estALaBase(r)) {
+                totalBase++;
+            }
+        }
+        int indexBase = 0;
+        for (RobotVue r : etat.robots) {
             String classe = r.etat().equalsIgnoreCase("Occupied") ? "robot robot-occupe" : "robot robot-libre";
             if (r.estVolant()) {
                 classe += " robot-volant";
             }
-            double[] pos = POS_AFFICHEE.getOrDefault(r.nom(), new double[]{r.x(), r.y()});
-            double gx = pos[0];
-            double gy = pos[1];
-            double facteurBase = Math.max(0, Math.min(1, 1 - gy));
-            double pas = Math.max(26, taille * 0.55);
-            double cx = ox + gx * taille + facteurBase * (i - (nbRobots - 1) / 2.0) * pas;
-            double cy = oy - gy * taille + facteurBase * Math.min(34, taille * 0.5);
+            double cx;
+            double cy;
+            if (estALaBase(r)) {
+                double pas = Math.max(30, taille * 0.6);
+                cx = origineX + (indexBase - (totalBase - 1) / 2.0) * pas;
+                cy = origineY + Math.min(36, taille * 0.5);
+                indexBase++;
+            } else {
+                cx = origineX + r.x() * taille;
+                cy = origineY - r.y() * taille;
+            }
             elements.add(marqueur(classe, r.nom().isBlank() ? "R" : r.nom(), cx, cy, taille));
         }
         zoneGrille.getChildren().setAll(elements);
@@ -266,6 +248,7 @@ public class ApercuGrilleRobots {
         sortie.add(coord);
     }
 
+    // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.
     private static StackPane marqueur(String classes, String texte, double cx, double cy, double taille) {
         double cote = Math.max(26, taille * 0.55);
         StackPane pastille = new StackPane();
@@ -290,6 +273,7 @@ public class ApercuGrilleRobots {
         return pastille;
     }
 
+    // === Lecture serveur (Java pur) ===
 
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();
@@ -299,8 +283,8 @@ public class ApercuGrilleRobots {
             etat.message = configJson;
             return etat;
         }
-        int largeur = lireDimension(configJson, "nombre_x", "nbr_x");
-        int hauteur = lireDimension(configJson, "nombre_y", "nbr_y");
+        int largeur = (int) nombre(configJson, "nombre_x");
+        int hauteur = (int) nombre(configJson, "nombre_y");
         if (largeur > 0) {
             etat.largeur = largeur;
         }
@@ -416,12 +400,8 @@ public class ApercuGrilleRobots {
         return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
 
-    private static int lireDimension(String json, String champPrincipal, String champCompatibilite) {
-        int valeur = (int) nombre(json, champPrincipal);
-        if (valeur <= 0) {
-            valeur = (int) nombre(json, champCompatibilite);
-        }
-        return valeur;
+    private static boolean estALaBase(RobotVue robot) {
+        return Math.abs(robot.x()) < 0.001 && Math.abs(robot.y()) < 0.001;
     }
 
     private static final class EtatGrille {
