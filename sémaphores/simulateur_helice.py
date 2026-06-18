@@ -6,7 +6,7 @@ class HelicePOV:
     def __init__(self, root, fichier_initial=None):
         self.root = root
         self.root.title("Simulation Hélice POV")
-        # 🛠️ MODIF POSSIBLE : Couleur du fond
+        # Couleur du fond
         self.root.configure(bg="#222")
         
         # Dimensions de base 
