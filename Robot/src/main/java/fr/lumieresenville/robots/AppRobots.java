@@ -158,8 +158,8 @@ public class AppRobots {
     //aller au semaphore, signaler l'arrivee, rentrer a la base.
     private static void executerMission(Robot robot, Mission mission) throws Exception {
         String semaphoreJson = get("/api/semaphore/" + enc(mission.getSemaphoreId()));
-        double coordX = nombre(semaphoreJson, "coord_x");
-        double coordY = nombre(semaphoreJson, "coord_y");
+        double coordX = JsonMini.nombre(semaphoreJson, "coord_x");
+        double coordY = JsonMini.nombre(semaphoreJson, "coord_y");
 
         Grille.deplacer(robot, coordX, coordY);
         mission.signalerArriveeSemaphore();
@@ -185,11 +185,11 @@ public class AppRobots {
 
     private static List<Robot> lireRobotsDuServeur() throws Exception {
         List<Robot> robots = new ArrayList<>();
-        for (String objet : objets(get("/api/list_robots"))) {
-            Robot robot = new Robot(champ(objet, "name"), nombre(objet, "position_x"), nombre(objet, "position_y"));
-            robot.setId(champ(objet, "id"));
-            robot.setVitesse(nombre(objet, "speed"));
-            robot.setEtat(etatRobot(champ(objet, "state")));
+        for (String objet : JsonMini.objets(get("/api/list_robots"))) {
+            Robot robot = new Robot(JsonMini.champ(objet, "name"), JsonMini.nombre(objet, "position_x"), JsonMini.nombre(objet, "position_y"));
+            robot.setId(JsonMini.champ(objet, "id"));
+            robot.setVitesse(JsonMini.nombre(objet, "speed"));
+            robot.setEtat(etatRobot(JsonMini.champ(objet, "state")));
             robots.add(robot);
         }
         return robots;
@@ -203,12 +203,12 @@ public class AppRobots {
             System.out.println("Lecture missions impossible : " + json);
             return missions;
         }
-        for (String objet : objets(json)) {
+        for (String objet : JsonMini.objets(json)) {
             Mission mission = new Mission(
-                    champ(objet, "id"), champ(objet, "name"), champ(objet, "semaphore_id"),
-                    champ(objet, "robot_id"), champ(objet, "state"),
-                    champ(objet, "start_date"), champ(objet, "end_date"),
-                    champ(objet, "team"), champ(objet, "time"));
+                    JsonMini.champ(objet, "id"), JsonMini.champ(objet, "name"), JsonMini.champ(objet, "semaphore_id"),
+                    JsonMini.champ(objet, "robot_id"), JsonMini.champ(objet, "state"),
+                    JsonMini.champ(objet, "start_date"), JsonMini.champ(objet, "end_date"),
+                    JsonMini.champ(objet, "team"), JsonMini.champ(objet, "time"));
             if (missionDisponiblePourRobot(mission)) {
                 missions.add(mission);
             }
@@ -282,45 +282,6 @@ public class AppRobots {
         return u;
     }
 
-
-    // Decoupe un tableau JSON 
-    private static List<String> objets(String json) {
-        List<String> liste = new ArrayList<>();
-        int profondeur = 0;
-        int debut = -1;
-        for (int i = 0; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (c == '{') {
-                if (profondeur == 0) debut = i;
-                profondeur++;
-            } else if (c == '}') {
-                profondeur--;
-                if (profondeur == 0) liste.add(json.substring(debut, i + 1));
-            }
-        }
-        return liste;
-    }
-// recup valeur d'un json
-    private static String champ(String objet, String nom) {
-        int i = objet.indexOf("\"" + nom + "\"");
-        if (i < 0) return "";
-        i = objet.indexOf(':', i) + 1;
-        while (i < objet.length() && objet.charAt(i) == ' ') i++;
-        if (i >= objet.length()) return "";
-        if (objet.charAt(i) == '"') {                      
-            return objet.substring(i + 1, objet.indexOf('"', i + 1));
-        }
-        int fin = i;                                       
-        while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') fin++;
-        String valeur = objet.substring(i, fin).trim();
-        return valeur.equals("null") ? "" : valeur;
-    }
-
-    static double nombre(String objet, String nom) {
-        String valeur = champ(objet, nom);
-        return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
-    }
-
     private static EtatRobot etatRobot(String texte) {
         try {
             return EtatRobot.valueOf(texte.toUpperCase());
@@ -332,7 +293,6 @@ public class AppRobots {
         String n = etat.name();
         return n.charAt(0) + n.substring(1).toLowerCase();
     }
-
 
 //helper
     static String get(String chemin) throws Exception {

@@ -280,8 +280,8 @@ public class ApercuGrilleRobots {
             etat.message = configJson;
             return etat;
         }
-        int largeur = (int) nombre(configJson, "nombre_x");
-        int hauteur = (int) nombre(configJson, "nombre_y");
+        int largeur = (int) JsonMini.nombre(configJson, "nombre_x");
+        int hauteur = (int) JsonMini.nombre(configJson, "nombre_y");
         if (largeur > 0) {
             etat.largeur = largeur;
         }
@@ -291,36 +291,36 @@ public class ApercuGrilleRobots {
 
         String segmentsJson = get("/api/list_segment");
         if (!segmentsJson.startsWith("ERREUR") && !segmentsJson.startsWith("erreur HTTP")) {
-            for (String objet : objets(segmentsJson)) {
+            for (String objet : JsonMini.objets(segmentsJson)) {
                 etat.segments.add(new SegmentVue(
-                        (int) nombre(objet, "coord_a_x"),
-                        (int) nombre(objet, "coord_a_y"),
-                        (int) nombre(objet, "coord_b_x"),
-                        (int) nombre(objet, "coord_b_y")));
+                        (int) JsonMini.nombre(objet, "coord_a_x"),
+                        (int) JsonMini.nombre(objet, "coord_a_y"),
+                        (int) JsonMini.nombre(objet, "coord_b_x"),
+                        (int) JsonMini.nombre(objet, "coord_b_y")));
             }
         }
 
         String semaphoresJson = get("/api/list_semaphore");
         if (!semaphoresJson.startsWith("ERREUR") && !semaphoresJson.startsWith("erreur HTTP")) {
-            for (String objet : objets(semaphoresJson)) {
+            for (String objet : JsonMini.objets(semaphoresJson)) {
                 etat.semaphores.add(new SemaphoreVue(
-                        champ(objet, "name"),
-                        (int) nombre(objet, "coord_x"),
-                        (int) nombre(objet, "coord_y"),
-                        champ(objet, "state")));
+                        JsonMini.champ(objet, "name"),
+                        (int) JsonMini.nombre(objet, "coord_x"),
+                        (int) JsonMini.nombre(objet, "coord_y"),
+                        JsonMini.champ(objet, "state")));
             }
         }
 
         String robotsJson = get("/api/list_robots");
         if (!robotsJson.startsWith("ERREUR") && !robotsJson.startsWith("erreur HTTP")) {
-            for (String objet : objets(robotsJson)) {
+            for (String objet : JsonMini.objets(robotsJson)) {
                 etat.robots.add(new RobotVue(
-                        champ(objet, "name"),
-                        nombre(objet, "position_x"),
-                        nombre(objet, "position_y"),
-                        champ(objet, "state"),
-                        nombre(objet, "speed"),
-                        champ(objet, "type")));
+                        JsonMini.champ(objet, "name"),
+                        JsonMini.nombre(objet, "position_x"),
+                        JsonMini.nombre(objet, "position_y"),
+                        JsonMini.champ(objet, "state"),
+                        JsonMini.nombre(objet, "speed"),
+                        JsonMini.champ(objet, "type")));
             }
         }
 
@@ -346,55 +346,6 @@ public class ApercuGrilleRobots {
         } catch (Exception e) {
             return "ERREUR: serveur injoignable (" + e.getMessage() + ")";
         }
-    }
-
-    private static List<String> objets(String json) {
-        List<String> liste = new ArrayList<>();
-        int profondeur = 0;
-        int debut = -1;
-        for (int i = 0; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (c == '{') {
-                if (profondeur == 0) {
-                    debut = i;
-                }
-                profondeur++;
-            } else if (c == '}') {
-                profondeur--;
-                if (profondeur == 0 && debut >= 0) {
-                    liste.add(json.substring(debut, i + 1));
-                }
-            }
-        }
-        return liste;
-    }
-
-    private static String champ(String objet, String nom) {
-        int i = objet.indexOf("\"" + nom + "\"");
-        if (i < 0) {
-            return "";
-        }
-        i = objet.indexOf(':', i) + 1;
-        while (i < objet.length() && objet.charAt(i) == ' ') {
-            i++;
-        }
-        if (i >= objet.length()) {
-            return "";
-        }
-        if (objet.charAt(i) == '"') {
-            return objet.substring(i + 1, objet.indexOf('"', i + 1));
-        }
-        int fin = i;
-        while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') {
-            fin++;
-        }
-        String valeur = objet.substring(i, fin).trim();
-        return valeur.equals("null") ? "" : valeur;
-    }
-
-    private static double nombre(String objet, String nom) {
-        String valeur = champ(objet, nom);
-        return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
 
     private static boolean estALaBase(RobotVue robot) {

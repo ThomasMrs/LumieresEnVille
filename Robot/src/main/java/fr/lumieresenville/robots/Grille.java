@@ -53,8 +53,8 @@ public class Grille {
             throw new Exception("configuration introuvable : " + configJson);
         }
 
-        int largeur = (int) nombre(configJson, "nombre_x");
-        int hauteur = (int) nombre(configJson, "nombre_y");
+        int largeur = (int) JsonMini.nombre(configJson, "nombre_x");
+        int hauteur = (int) JsonMini.nombre(configJson, "nombre_y");
         if (largeur <= 0 || hauteur <= 0) {
             throw new Exception("configuration invalide : dimensions inconnues");
         }
@@ -65,12 +65,12 @@ public class Grille {
         }
 
         List<Segment> segments = new ArrayList<>();
-        for (String objet : objets(segmentsJson)) {
+        for (String objet : JsonMini.objets(segmentsJson)) {
             segments.add(new Segment(
-                    (int) nombre(objet, "coord_a_x"),
-                    (int) nombre(objet, "coord_a_y"),
-                    (int) nombre(objet, "coord_b_x"),
-                    (int) nombre(objet, "coord_b_y")));
+                    (int) JsonMini.nombre(objet, "coord_a_x"),
+                    (int) JsonMini.nombre(objet, "coord_a_y"),
+                    (int) JsonMini.nombre(objet, "coord_b_x"),
+                    (int) JsonMini.nombre(objet, "coord_b_y")));
         }
         if (segments.isEmpty()) {
             throw new Exception("aucun segment disponible pour deplacer le robot");
@@ -155,55 +155,6 @@ public class Grille {
         }
         long delaiMs = Math.max(100, Math.round(1000.0 / vitesse));
         Thread.sleep(delaiMs);
-    }
-
-    private static List<String> objets(String json) {
-        List<String> liste = new ArrayList<>();
-        int profondeur = 0;
-        int debut = -1;
-        for (int i = 0; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (c == '{') {
-                if (profondeur == 0) {
-                    debut = i;
-                }
-                profondeur++;
-            } else if (c == '}') {
-                profondeur--;
-                if (profondeur == 0 && debut >= 0) {
-                    liste.add(json.substring(debut, i + 1));
-                }
-            }
-        }
-        return liste;
-    }
-
-    private static String champ(String objet, String nom) {
-        int i = objet.indexOf("\"" + nom + "\"");
-        if (i < 0) {
-            return "";
-        }
-        i = objet.indexOf(':', i) + 1;
-        while (i < objet.length() && objet.charAt(i) == ' ') {
-            i++;
-        }
-        if (i >= objet.length()) {
-            return "";
-        }
-        if (objet.charAt(i) == '"') {
-            return objet.substring(i + 1, objet.indexOf('"', i + 1));
-        }
-        int fin = i;
-        while (fin < objet.length() && objet.charAt(fin) != ',' && objet.charAt(fin) != '}') {
-            fin++;
-        }
-        String valeur = objet.substring(i, fin).trim();
-        return valeur.equals("null") ? "" : valeur;
-    }
-
-    private static double nombre(String objet, String nom) {
-        String valeur = champ(objet, nom);
-        return valeur.isBlank() ? 0 : Double.parseDouble(valeur);
     }
 
     private record EtatGrille(int largeur, int hauteur, List<Segment> segments) {
