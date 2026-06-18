@@ -3,7 +3,7 @@ import math
 import os
 
 class HelicePOV:
-    # On a ajouté "couleur" qui prend le Cyan par défaut
+    
     def __init__(self, root, fichier_initial=None, couleur=(0, 255, 255)):
         self.root = root
         self.root.title("Simulation Hélice POV")
