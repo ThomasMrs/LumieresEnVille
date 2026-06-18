@@ -17,6 +17,14 @@ public class Grille {
 
     //Deplacer un robot vers une destination
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
+        deplacer(robot, destinationX, destinationY, false);
+    }
+//a
+    public static void deplacerRetour(Robot robot, double destinationX, double destinationY) throws Exception {
+        deplacer(robot, destinationX, destinationY, true);
+    }
+
+    private static void deplacer(Robot robot, double destinationX, double destinationY, boolean autreChemin) throws Exception {
         EtatGrille etatGrille = lireEtatGrille();
         Point depart = new Point((int) Math.round(robot.getX()), (int) Math.round(robot.getY()));
         Point arrivee = new Point((int) Math.round(destinationX), (int) Math.round(destinationY));
@@ -24,11 +32,19 @@ public class Grille {
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
 
-        List<Point> chemin = calculerChemin(depart, arrivee, etatGrille.segments());
+//a
+        List<Segment> segments = etatGrille.segments();
+        if (autreChemin) {
+            segments = new ArrayList<>(segments);
+            Collections.reverse(segments);
+        }
+
+
+        List<Point> chemin = calculerChemin(depart, arrivee, segments);
         System.out.println("[" + robot.getNom() + "] deplacement -> depart=" + depart
                 + ", destination=" + arrivee
                 + ", vitesse=" + robot.getVitesse() + " case(s)/s"
-                + ", segments=" + etatGrille.segments().size()
+                + ", segments=" + segments.size()
                 + ", pas=" + Math.max(0, chemin.size() - 1));
 
         for (int i = 1; i < chemin.size(); i++) {

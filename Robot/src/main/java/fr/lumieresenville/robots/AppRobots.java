@@ -166,7 +166,7 @@ public class AppRobots {
         modifierMission(mission);
         System.out.println("[" + robot.getNom() + "] arrive au semaphore, mission transmise.");
 
-        Grille.deplacer(robot, BASE_X, BASE_Y);
+        Grille.deplacerRetour(robot, BASE_X, BASE_Y);
         remettreDisponible(robot);
         System.out.println("[" + robot.getNom() + "] rentre a la base, de nouveau disponible.");
     }
