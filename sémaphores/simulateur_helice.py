@@ -125,7 +125,7 @@ class HelicePOV:
         
         for r, a, s in points:
             if s == 1:
-                # Mise à l'échelle sur le nombre de LEDs physiques (9)
+                # Mise à l'échelle sur le nombre de LEDs physiques 
                 led_idx = int((r / r_max) * 9)
                 if led_idx > 9: led_idx = 9
                 if led_idx < 0: led_idx = 0
@@ -194,7 +194,7 @@ class HelicePOV:
                 for i in range(10):
                     idx = int((angle_physique + self.CORRECTION_PHASE) % 360)
                     
-                    # Écartement des LEDs sur le bras
+                    # Écartement des leds
                     r_phys = (i + 1) * ((taille_min / 2 - 20) / 10.5) 
                     
                     x = self.CX + r_phys * math.cos(angle_rad)

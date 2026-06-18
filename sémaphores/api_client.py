@@ -2,7 +2,6 @@ import requests
 from datetime import datetime
 
 # Configuration du lien avec l'API
-# Remplacer l'input pour figer l'IP si ça t'agace de la taper
 ip_serveur = input("IP du serveur (ex: 192.168.1.14) : ").strip()
 if not ip_serveur:
     ip_serveur = "127.0.0.1" 

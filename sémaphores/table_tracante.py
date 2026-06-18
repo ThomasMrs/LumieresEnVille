@@ -21,7 +21,7 @@ class SimulateurTable:
         self._dessiner_axes()
         
         # Les bras mécaniques qui suivent le curseur
-        # Couleur et épaisseur des bras CNC
+        # Couleur et épaisseur 
         self.rail_horizontal = self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#666666", width=3)
         self.rail_vertical = self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#666666", width=3)
         
