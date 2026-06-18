@@ -32,13 +32,6 @@ public class Grille {
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
 
-//a
-        List<Segment> segments = etatGrille.segments();
-        if (autreChemin) {
-            segments = new ArrayList<>(segments);
-            Collections.reverse(segments);
-        }
-
 
         List<Point> chemin = calculerChemin(depart, arrivee, segments);
         System.out.println("[" + robot.getNom() + "] deplacement -> depart=" + depart
