@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,22 +15,23 @@ public class Grille {
 
     // Pause entre deux cases
     private static final long DELAI_PAS_MS = 700;
+    private static final int PAS_VOLANT_PAR_CASE = 10;
 
     private Grille() {
     }
 
     // Deplace le robot de sa position actuelle jusqu'a (destinationX, destinationY).
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
-        EtatGrille etatGrille = lireEtatGrille(!robot.estVolant());
+        if (robot.estVolant()) {
+            deplacerVolant(robot, destinationX, destinationY);
+            return;
+        }
+
+        EtatGrille etatGrille = lireEtatGrille(true);
         Point depart = new Point((int) Math.round(robot.getX()), (int) Math.round(robot.getY()));
         Point arrivee = new Point((int) Math.round(destinationX), (int) Math.round(destinationY));
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
-
-        if (robot.estVolant()) {
-            deplacerVolant(robot, depart, arrivee);
-            return;
-        }
 
         // Sinon : plus court chemin en suivant les segments 
         List<Point> chemin = calculerChemin(depart, arrivee, etatGrille.segments());
@@ -45,11 +47,34 @@ public class Grille {
         }
     }
 
-    // Robot volant : trajet direct vers l'arrivee, en ligne droite (sans suivre les routes).
-    private static void deplacerVolant(Robot robot, Point depart, Point arrivee) throws Exception {
-        System.out.println("[" + robot.getNom() + "] deplacement volant -> depart=" + depart
-                + ", destination=" + arrivee + ", vitesse=" + robot.getVitesse() + " case(s)/s");
-        glisserVers(robot, arrivee.x(), arrivee.y());
+    // Robot volant : trajet direct en ligne droite, sans lire la grille ni suivre les routes.
+    private static void deplacerVolant(Robot robot, double destinationX, double destinationY) throws Exception {
+        double departX = robot.getX();
+        double departY = robot.getY();
+        double distance = Math.hypot(destinationX - departX, destinationY - departY);
+        int nombrePas = Math.max(1, (int) Math.ceil(distance * PAS_VOLANT_PAR_CASE));
+        long delaiMs = delaiParPas(robot, distance, nombrePas);
+
+        System.out.println("[" + robot.getNom() + "] vol en ligne droite -> depart=("
+                + coord(departX) + ";" + coord(departY) + "), destination=("
+                + coord(destinationX) + ";" + coord(destinationY) + "), vitesse="
+                + coord(robot.getVitesse()) + " case(s)/s, pas=" + nombrePas);
+
+        for (int i = 1; i <= nombrePas; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException("deplacement interrompu pour " + robot.getNom());
+            }
+
+            double progression = i / (double) nombrePas;
+            double x = departX + (destinationX - departX) * progression;
+            double y = departY + (destinationY - departY) * progression;
+            robot.setPosition(x, y);
+            AppRobots.modifierRobot(robot);
+
+            if (i < nombrePas) {
+                Thread.sleep(delaiMs);
+            }
+        }
     }
 
     private static void glisserVers(Robot robot, double cibleX, double cibleY) throws Exception {
@@ -231,6 +256,19 @@ public class Grille {
             valeur = (int) nombre(json, champCompatibilite);
         }
         return valeur;
+    }
+
+    private static long delaiParPas(Robot robot, double distance, int nombrePas) {
+        double vitesse = robot.getVitesse();
+        if (vitesse <= 0) {
+            vitesse = 1.0;
+        }
+        long delaiTotalMs = Math.max(1, Math.round(distance * 1000.0 / vitesse));
+        return Math.max(1, Math.round(delaiTotalMs / (double) nombrePas));
+    }
+
+    private static String coord(double valeur) {
+        return String.format(Locale.US, "%.2f", valeur);
     }
 
     // La grille lue depuis le serveur 
