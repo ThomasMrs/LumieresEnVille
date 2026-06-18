@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 
 # Configuration du lien avec l'API
+# Remplacer l'input pour figer l'IP si ça t'agace de la taper
 ip_serveur = input("IP du serveur (ex: 192.168.1.14) : ").strip()
 if not ip_serveur:
     ip_serveur = "127.0.0.1" 
@@ -14,6 +15,7 @@ print(f"Configuré sur {BASE_URL} ")
 def get_missions():
     """Récupère la liste de toutes les missions avec un timeout court pour ne pas bloquer l'UI."""
     try:
+        # Le timeout (secondes max avant d'abandonner la requête)
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
         return response.json() if response.status_code == 200 else []
     except Exception as e:
@@ -44,6 +46,7 @@ def get_shape_csv(shape_id):
     """Télécharge les données brutes d'une forme au format CSV."""
     url = f"{BASE_URL}/api/shape/{shape_id}/csv"
     try:
+        # Timeout 
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             return response.text

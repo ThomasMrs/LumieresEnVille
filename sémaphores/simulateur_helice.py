@@ -6,16 +6,20 @@ class HelicePOV:
     def __init__(self, root, fichier_initial=None):
         self.root = root
         self.root.title("Simulation Hélice POV")
+        # 🛠️ MODIF POSSIBLE : Couleur du fond
         self.root.configure(bg="#222")
         
         # Dimensions de base 
+        # Taille par défaut de la fenêtre
         self.W = 300
         self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
         
         # Réglages du moteur
+        # FPS du moteur (20ms)
         self.refresh_rate = 20  
+        # Vitesse par défaut
         self.vitesse_rotation = 5.0
         self.angle_moteur = 0.0
         
@@ -23,6 +27,7 @@ class HelicePOV:
         self.pixels_remanents = []
         self.lettre_actuelle = "A"
         self.matrices_polaires = {"A": self._creer_matrice_lettre_A()}
+        # Décalage du point 0°
         self.CORRECTION_PHASE = 90
         
         self._creer_interface()
@@ -85,6 +90,7 @@ class HelicePOV:
         tk.Button(self.control_frame, text="Afficher", command=self.update_lettre).pack()
 
         tk.Label(self.control_frame, text="Vitesse (°/frame):", bg="#333", fg="white").pack(anchor="w", pady=(20,0))
+        # 🛠️ MODIF POSSIBLE : Plage de la barre de vitesse (to=60)
         self.slider_vitesse = tk.Scale(self.control_frame, from_=1, to=60, orient=tk.HORIZONTAL, bg="#333", fg="white", highlightthickness=0, command=self.update_vitesse)
         self.slider_vitesse.set(self.vitesse_rotation)
         self.slider_vitesse.pack(fill=tk.X, pady=5)
@@ -119,6 +125,7 @@ class HelicePOV:
         
         for r, a, s in points:
             if s == 1:
+                # Mise à l'échelle sur le nombre de LEDs physiques (9)
                 led_idx = int((r / r_max) * 9)
                 if led_idx > 9: led_idx = 9
                 if led_idx < 0: led_idx = 0
@@ -128,12 +135,15 @@ class HelicePOV:
 
     def _initialiser_matrice_rotation(self):
         """Prépare les objets Tkinter (bras mécaniques et LEDs) sans les positionner."""
+        # Couleur et épaisseur des bras métalliques
         self.bras_gui = [self.canvas.create_line(0,0,0,0, fill="gray", width=4) for _ in range(4)]
+        # Couleur des LEDs quand elles sont éteintes
         self.leds_gui = [[self.canvas.create_oval(0,0,0,0, fill="#111") for _ in range(10)] for _ in range(4)]
 
     def _gerer_remanence(self):
         """Réduit la durée de vie des pixels. S'ils sont à 0, on les détruit pour simuler le fondu."""
         for p in self.pixels_remanents[:]:
+            # Vitesse d'estompage de la lumière (plus grand = disparaît plus vite)
             p['vie'] -= 15
             if p['vie'] <= 0:
                 self.canvas.delete(p['id'])
@@ -175,6 +185,7 @@ class HelicePOV:
 
                 # Barres en métal
                 if dernier_pas:
+                    # Longueur visuelle des barres sur l'écran
                     x_b = self.CX + (self.W / 2.5) * math.cos(angle_rad)
                     y_b = self.CY + (self.H / 2.5) * math.sin(angle_rad)
                     self.canvas.coords(self.bras_gui[b], self.CX, self.CY, x_b, y_b)
@@ -182,6 +193,8 @@ class HelicePOV:
                 # Allumage des 10 LEDs
                 for i in range(10):
                     idx = int((angle_physique + self.CORRECTION_PHASE) % 360)
+                    
+                    # Écartement des LEDs sur le bras
                     r_phys = (i + 1) * ((taille_min / 2 - 20) / 10.5) 
                     
                     x = self.CX + r_phys * math.cos(angle_rad)
@@ -191,8 +204,10 @@ class HelicePOV:
 
                     # indication de la matrice pour l'angle et la led nécessaire
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
+                        # Couleur du flash LED (ici Cyan)
                         c = "#00ffff"  
                         # On trace une ligne pour éviter les "trous noirs" dus à la vitesse
+                        # Épaisseur du tracé
                         tid = self.canvas.create_line(prev_x, prev_y, x, y, fill=c, width=4, capstyle=tk.ROUND)
                         self.pixels_remanents.append({'id': tid, 'vie': 255, 'r': 0, 'g': 255, 'b': 255})
                         
@@ -201,6 +216,7 @@ class HelicePOV:
                             self.canvas.coords(self.leds_gui[b][i], x-3, y-3, x+3, y+3)
                     else:
                         if dernier_pas:
+                            # Couleur des LEDs éteintes
                             self.canvas.itemconfig(self.leds_gui[b][i], fill="#111")
                             self.canvas.coords(self.leds_gui[b][i], x-3, y-3, x+3, y+3)
                             
