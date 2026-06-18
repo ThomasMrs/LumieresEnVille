@@ -21,7 +21,7 @@ ajouter_config(5, 5, 3, 3)
 print("Config 5x5 créée")
 
 # Grille generee
-resultat = creer_grille("Grille Test")
+resultat = creer_grille("Grille numéro 1")
 print(f"Grille créée : {resultat['segments']} segments")
 
 # =======================
@@ -29,9 +29,9 @@ print(f"Grille créée : {resultat['segments']} segments")
 # =======================
 
 # Grille 5x5 centree : base en (0, 0), x va de -2 a 2, y de 1 a 5
-ajouter_semaphore("Caractere", 30, "caractere", -2, 1)
-ajouter_semaphore("Helice", 45, "helice", 0, 2)
-ajouter_semaphore("Table", 20, "table", 2, 4)
+ajouter_semaphore("Sémaphore Caractere", 30, "caractere", -2, 1)
+ajouter_semaphore("Sémaphore Helice", 45, "helice", 0, 2)
+ajouter_semaphore("Sémaphore Table", 20, "table", 2, 4)
 
 semaphores = lire_semaphore()
 print(f"{len(semaphores)} semaphores insérés")
@@ -40,12 +40,12 @@ print(f"{len(semaphores)} semaphores insérés")
 # Robots (3)
 # =======================
 
-ajouter_robots(name="Robot-01", speed=1.5, position_x=0.0, position_y=0.0,
+ajouter_robots(name="Robot-roulant-01", speed=1.5, position_x=0.0, position_y=0.0,
                type="Roulant", state="Available")
-ajouter_robots(name="Robot-02", speed=2.0, position_x=2.0, position_y=3.0,
-               type="Volant", state="Occupied")
-ajouter_robots(name="Robot-03", speed=0.8, position_x=-1.0, position_y=1.0,
-               type="Sautant", state="Disabled")
+ajouter_robots(name="Robot-volant-02", speed=2.0, position_x=2.0, position_y=3.0,
+               type="Volant", state="Available")
+ajouter_robots(name="Robot-sautant-03", speed=0.8, position_x=-1.0, position_y=1.0,
+               type="Sautant", state="Available")
 
 robots = lire_robots()
 print(f"{len(robots)} robots insérés")
@@ -54,9 +54,9 @@ print(f"{len(robots)} robots insérés")
 # Teams (3)
 # =======================
 
-ajouter_equipe("Lux Sky Troopers", "192.168.1.10", 1)
-ajouter_equipe("Equipe Beta", "192.168.1.20", 1)
-ajouter_equipe("Equipe Gamma", "192.168.1.30", 0)
+ajouter_equipe("Lux Sky Troopers", "192.168.1.96", 1)
+ajouter_equipe("Equipe Pokemon", "192.168.1.24", 1)
+ajouter_equipe("Equipe Masilia", "192.168.1.22", 1)
 
 print("3 teams insérées")
 
@@ -64,11 +64,11 @@ print("3 teams insérées")
 # Shapes (3)
 # =======================
 
-ajouter_shape("Etoile", "*")
-ajouter_shape("Lettre A", "A")
-ajouter_shape("Barre a roue", "T")
+ajouter_shape("Caractere : Etoile", "*")
+ajouter_shape("Caractere : Lettre A", "A")
+ajouter_shape("Caractere : Barre a roue", "T")
 
-# Import de tous les CSV presents dans templates/
+# Import de tous les CSV presents dans templates
 dossier_templates = Path(__file__).parent.parent / "templates"
 for chemin_csv in sorted(dossier_templates.glob("*.csv")):
     resultat_csv = importer_shape_csv(str(chemin_csv))
