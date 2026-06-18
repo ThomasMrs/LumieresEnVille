@@ -43,7 +43,7 @@ class Interface:
 
     # Mise à jour visuelle
     def mettre_a_jour_statut(self, texte):
-        # [TAG_STATUT] - Mise à jour du texte d'état en haut de l'UI
+        # [TAG_STATUT] - Mise à jour du texte d'état 
         self.canvas.itemconfig(self.txt_statut, text=texte)
 
     def mettre_a_jour_details(self, texte):
@@ -56,7 +56,7 @@ class Interface:
         tk.Label(self.frame_choix, text="Missions Serveur (API) :", bg="black", fg="cyan", font=("Arial", 10, "bold")).pack(pady=5)
         
         for m in missions:
-            # [TAG_CALLBACK] - Utilisation d'une lambda pour capturer la mission (late binding)
+            # [TAG_CALLBACK] - Utilisation d'une lambda pour capturer la mission 
             text_bouton = f"{m.get('name')} (ID: {m.get('id')})"
             tk.Button(self.frame_choix, text=text_bouton, command=lambda mc=m: callback(mc)).pack(fill="x", pady=2)
 

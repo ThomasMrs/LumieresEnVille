@@ -55,7 +55,7 @@ def centrer_points_polaires(points):
 
 def interpoler_points(points):
     """Calcule des points intermédiaires pour lisser le tracé entre deux sommets éloignés."""
-    # [TAG_ROTATION] - Pour pivoter le dessin entier de 90 ou 180 degrés
+    # [TAG_ROTATION] - Pour pivoter le dessin
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
@@ -76,7 +76,7 @@ def interpoler_points(points):
         y2 = p2['r'] * math.sin(math.radians(a2))
         
         distance = math.hypot(x2 - x1, y2 - y1)
-        # [TAG_LISSAGE] - Densité des points pour fluidifier le moteur
+        # [TAG_LISSAGE] - Densité des points 
         nb_etapes = max(20, int(distance * 2))
         
         for t in range(nb_etapes):
@@ -178,7 +178,7 @@ def boucle_automatisation():
         
         missions_valides = []
         for m in toutes_les_missions:
-            # [TAG_DATE] - Vérification de l'heure de départ de la mission
+            # [TAG_ETAT_DEPART] - Vérification de l'état de départ
             if isinstance(m, dict) and m.get("state") in ["Pending", "Pending_semaphore"]:
                 missions_valides.append(m)
                 
