@@ -44,7 +44,7 @@ def get_available_missions(team: str | None = None):
 def add_mission(semaphore_id: str, shape_id: str, team: str,
                 name: str | None = None, robot_id: str | None = None,
                 start_date: str = "", end_date: str = "", time: str = "",
-                color_r: int = 0, color_g: int = 0, color_b: int = 0):
+                color_r: int = 135, color_g: int = 206, color_b: int = 235):
     if not valider_id("semaphore", semaphore_id):
         return HTMLResponse(status_code=404, content="Semaphore introuvable")
     if not valider_id("shape", shape_id):
