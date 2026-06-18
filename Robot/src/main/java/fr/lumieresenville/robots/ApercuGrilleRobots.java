@@ -37,10 +37,12 @@ public class ApercuGrilleRobots {
     private static Label entete;
     private static EtatGrille dernierEtat = new EtatGrille();
 
+    // Lance l'apercu si cette classe est executee directement.
     public static void main(String[] args) {
         lancer(args.length > 0 ? args[0] : SERVEUR);
     }
 
+    // Demarre JavaFX et ouvre la fenetre d'apercu de la grille.
     public static void lancer(String serveur) {
         if (serveur != null && !serveur.isBlank()) {
             SERVEUR = serveur;
@@ -54,6 +56,7 @@ public class ApercuGrilleRobots {
     }
 
     // A appeler a la fin du programme pour arreter proprement le moteur JavaFX.
+    // Ferme proprement la partie graphique JavaFX.
     public static void fermer() {
         try {
             Platform.exit();
@@ -61,6 +64,7 @@ public class ApercuGrilleRobots {
         }
     }
 
+    // Construit la fenetre, la zone de dessin et le rafraichissement automatique.
     private static void construireFenetre() {
         // Fermer la fenetre ne doit pas tuer la console (et inversement).
         Platform.setImplicitExit(false);
@@ -96,6 +100,7 @@ public class ApercuGrilleRobots {
     }
 
     // Va chercher les donnees serveur dans un thread de fond, puis met a jour l'UI sur le thread FX.
+    // Recharge les donnees du serveur sans bloquer l'affichage.
     private static void rafraichir() {
         if (!CHARGEMENT.compareAndSet(false, true)) {
             return;
@@ -116,6 +121,7 @@ public class ApercuGrilleRobots {
         thread.start();
     }
 
+    // Redessine toute la grille avec les derniers robots, semaphores et segments connus.
     private static void redessiner() {
         if (zoneGrille == null) {
             return;
@@ -200,6 +206,7 @@ public class ApercuGrilleRobots {
         zoneGrille.getChildren().setAll(elements);
     }
 
+    // Ajoute toutes les lignes qui representent les segments de la grille.
     private static void dessinerSegments(List<Node> sortie, double ox, double oy, double taille,
                                          List<SegmentVue> segments) {
         for (SegmentVue s : segments) {
@@ -211,12 +218,14 @@ public class ApercuGrilleRobots {
         }
     }
 
+    // Cree une ligne graphique entre deux points de l'ecran.
     private static Line segment(double x1, double y1, double x2, double y2) {
         Line ligne = new Line(x1, y1, x2, y2);
         ligne.getStyleClass().add("segment");
         return ligne;
     }
 
+    // Ajoute les petits points et coordonnees visibles sur les intersections.
     private static void dessinerNoeuds(List<Node> sortie, double ox, double oy, double taille,
                                        List<SegmentVue> segments) {
         Set<String> vus = new HashSet<>();
@@ -226,6 +235,7 @@ public class ApercuGrilleRobots {
         }
     }
 
+    // Ajoute un noeud si ce point n'a pas deja ete dessine.
     private static void ajouterNoeud(List<Node> sortie, Set<String> vus, int x, int y,
                                      double ox, double oy, double taille) {
         if (!vus.add(x + ";" + y) || (x == 0 && y == 0)) {
@@ -246,6 +256,7 @@ public class ApercuGrilleRobots {
     }
 
     // Pastille (StackPane) centree sur (cx, cy), stylee par CSS via ses classes.
+    // Cree une pastille pour afficher une base, un semaphore ou un robot.
     private static StackPane marqueur(String classes, String texte, double cx, double cy, double taille) {
         double cote = Math.max(26, taille * 0.55);
         StackPane pastille = new StackPane();
@@ -272,6 +283,7 @@ public class ApercuGrilleRobots {
 
     //ecture serveur
 
+    // Lit sur le serveur la configuration, les segments, les semaphores et les robots.
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();
 
@@ -331,6 +343,7 @@ public class ApercuGrilleRobots {
         return etat;
     }
 
+    // Envoie une requete GET au serveur et renvoie sa reponse sous forme de texte.
     private static String get(String chemin) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -348,6 +361,7 @@ public class ApercuGrilleRobots {
         }
     }
 
+    // Verifie si un robot se trouve a la position de la base.
     private static boolean estALaBase(RobotVue robot) {
         return Math.abs(robot.x()) < 0.001 && Math.abs(robot.y()) < 0.001;
     }
@@ -368,6 +382,7 @@ public class ApercuGrilleRobots {
     }
 
     private record RobotVue(String nom, double x, double y, String etat, double vitesse, String type) {
+        // Verifie si le robot doit etre affiche comme un robot volant.
         boolean estVolant() {
             return type != null && type.equalsIgnoreCase("volant");
         }
