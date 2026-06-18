@@ -45,11 +45,20 @@ public class Grille {
         }
     }
 
-    // Robot volant trajet direct vers l'arrivee
+    // Robot volant : vol direct en ligne droite, mais case par case pour que le
+    // deplacement reste visible sur l'apercu (1 entier/case, comme au sol).
     private static void deplacerVolant(Robot robot, Point depart, Point arrivee) throws Exception {
+        int pas = Math.max(Math.abs(arrivee.x() - depart.x()), Math.abs(arrivee.y() - depart.y()));
         System.out.println("[" + robot.getNom() + "] deplacement volant -> depart=" + depart
-                + ", destination=" + arrivee + ", vitesse=" + robot.getVitesse() + " case(s)/s");
-        glisserVers(robot, arrivee.x(), arrivee.y());
+                + ", destination=" + arrivee + ", vitesse=" + robot.getVitesse() + " case(s)/s"
+                + ", pas=" + pas);
+
+        // Interpolation lineaire : chaque etape est arrondie sur la grille entiere.
+        for (int i = 1; i <= pas; i++) {
+            int x = (int) Math.round(depart.x() + (double) (arrivee.x() - depart.x()) * i / pas);
+            int y = (int) Math.round(depart.y() + (double) (arrivee.y() - depart.y()) * i / pas);
+            glisserVers(robot, x, y);
+        }
     }
 
     private static void glisserVers(Robot robot, double cibleX, double cibleY) throws Exception {
