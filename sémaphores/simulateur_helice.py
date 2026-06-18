@@ -17,7 +17,7 @@ class HelicePOV:
         self.CY = self.H / 2
         
         # Réglages du moteur
-        # FPS du moteur (20ms)
+        # [TAG_FPS] - Fluidité de l'animation Tkinter
         self.refresh_rate = 20  
         # Vitesse par défaut
         self.vitesse_rotation = 5.0
@@ -143,7 +143,7 @@ class HelicePOV:
     def _gerer_remanence(self):
         """Réduit la durée de vie des pixels. S'ils sont à 0, on les détruit pour simuler le fondu."""
         for p in self.pixels_remanents[:]:
-            # Vitesse d'estompage de la lumière (plus grand = disparaît plus vite)
+            # [TAG_TRAINEE] - Vitesse d'effacement de la lumière (rémanence)
             p['vie'] -= 15
             if p['vie'] <= 0:
                 self.canvas.delete(p['id'])
@@ -152,7 +152,8 @@ class HelicePOV:
                 ratio = p['vie'] / 255.0
                 c = f'#{int(p["r"]*ratio):02x}{int(p["g"]*ratio):02x}{int(p["b"]*ratio):02x}'
                 self.canvas.itemconfig(p['id'], fill=c)
-
+    
+    # [TAG_MOTEUR] - Boucle de rotation physique de l'hélice
     def animate(self):
         """Moteur de rendu physique : fait tourner l'hélice et allume les LEDs à l'angle ciblé."""
         # Adaptation fenêtre si changement de taille
@@ -204,7 +205,7 @@ class HelicePOV:
 
                     # indication de la matrice pour l'angle et la led nécessaire
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
-                        # Couleur du flash LED (ici Cyan)
+                        # [TAG_COULEUR] - Changement de la couleur du faisceau LED
                         c = "#00ffff"  
                         # On trace une ligne pour éviter les "trous noirs" dus à la vitesse
                         # Épaisseur du tracé
