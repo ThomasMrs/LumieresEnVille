@@ -19,7 +19,7 @@ public class Grille {
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
         deplacer(robot, destinationX, destinationY, false);
     }
-//a
+
     public static void deplacerRetour(Robot robot, double destinationX, double destinationY) throws Exception {
         deplacer(robot, destinationX, destinationY, true);
     }
@@ -31,6 +31,26 @@ public class Grille {
 
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
+//calcule chemin 
+
+    // private static List<Point> reconstruireChemin(Point depart, Point arrivee, Map<Point, Point> precedent) {
+    //     List<Point> chemin = new ArrayList<>();
+    //     Point courant = arrivee;
+    //     chemin.add(courant);
+    //     while (!courant.equals(depart)) {
+    //         courant = precedent.get(courant);
+    //         chemin.add(courant);
+    //     }
+    //     Collections.reverse(chemin);
+    //     return chemin;
+    // }
+
+    
+        List<Segment> segments = etatGrille.segments();
+        if (autreChemin) {
+            segments = new ArrayList<>(segments);
+            Collections.reverse(segments);
+        }
 
 
         List<Point> chemin = calculerChemin(depart, arrivee, segments);
