@@ -43,6 +43,7 @@ class Interface:
 
     # Mise à jour visuelle
     def mettre_a_jour_statut(self, texte):
+        # [TAG_STATUT] - Mise à jour du texte d'état en haut de l'UI
         self.canvas.itemconfig(self.txt_statut, text=texte)
 
     def mettre_a_jour_details(self, texte):
@@ -50,15 +51,18 @@ class Interface:
 
     def afficher_missions(self, missions, callback):
         """Détruit les anciens boutons et génère la liste actualisée des missions du serveur."""
+        # [TAG_RAFRAICHIR_LISTE] - Nettoyage et recréation des boutons de mission
         for btn in self.frame_choix.winfo_children(): btn.destroy()
         tk.Label(self.frame_choix, text="Missions Serveur (API) :", bg="black", fg="cyan", font=("Arial", 10, "bold")).pack(pady=5)
         
         for m in missions:
+            # [TAG_CALLBACK] - Utilisation d'une lambda pour capturer la mission (late binding)
             text_bouton = f"{m.get('name')} (ID: {m.get('id')})"
             tk.Button(self.frame_choix, text=text_bouton, command=lambda mc=m: callback(mc)).pack(fill="x", pady=2)
 
     def afficher_forme(self, symbole_ascii):
         """Affiche le caractère ASCII ciblé au centre de l'écran pendant l'attente."""
+        # [TAG_CANVAS_DESSIN] - Nettoyage et affichage du symbole ASCII central
         self.canvas.delete("dessin")
         if not symbole_ascii:
             # Le caractère affiché par défaut

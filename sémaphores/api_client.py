@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 
 # Configuration du lien avec l'API
+# [TAG_IP_SERVEUR] - Adresse IP de connexion au serveur API
 ip_serveur = input("IP du serveur (ex: 192.168.1.14) : ").strip()
 if not ip_serveur:
     ip_serveur = "127.0.0.1" 
@@ -14,7 +15,7 @@ print(f"Configuré sur {BASE_URL} ")
 def get_missions():
     """Récupère la liste de toutes les missions avec un timeout court pour ne pas bloquer l'UI."""
     try:
-        # Le timeout (secondes max avant d'abandonner la requête)
+        # [TAG_TIMEOUT] - Temps d'attente max avant d'abandonner la requête réseau
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
         return response.json() if response.status_code == 200 else []
     except Exception as e:
@@ -45,7 +46,7 @@ def get_shape_csv(shape_id):
     """Télécharge les données brutes d'une forme au format CSV."""
     url = f"{BASE_URL}/api/shape/{shape_id}/csv"
     try:
-        # Timeout 
+        # [TAG_TIMEOUT_CSV] - Timeout dédié pour les fichiers plus lourds
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             return response.text
@@ -58,6 +59,7 @@ def get_shape_csv(shape_id):
 def put_mission_state(mission_id, state):
     """Met à jour l'état d'une mission et force l'horodatage de fin."""
     url = f"{BASE_URL}/api/update_mission/{mission_id}"
+    # [TAG_HORODATAGE] - Formatage de la date pour le serveur
     maintenant = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     try:
         rep = requests.put(url, params={"state": state, "end_date": maintenant})
@@ -83,6 +85,7 @@ def decoder_chaine_image(chaine):
     
     chaine_propre = chaine.replace(" ", "\n").replace("\r", "")
     
+    # [TAG_PARSING_CSV] - Conversion du texte reçu en données exploitables (points R,A,S)
     for ligne in chaine_propre.split("\n"):
         ligne = ligne.strip()
         if not ligne or ligne.lower().startswith(("rayon", "angle", "stylo")): 

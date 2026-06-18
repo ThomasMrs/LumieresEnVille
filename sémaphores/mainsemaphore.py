@@ -55,7 +55,7 @@ def centrer_points_polaires(points):
 
 def interpoler_points(points):
     """Calcule des points intermédiaires pour lisser le tracé entre deux sommets éloignés."""
-    # Orientation globale (90 = à l'endroit)
+    # [TAG_ROTATION] - Pour pivoter le dessin entier de 90 ou 180 degrés
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
@@ -76,7 +76,7 @@ def interpoler_points(points):
         y2 = p2['r'] * math.sin(math.radians(a2))
         
         distance = math.hypot(x2 - x1, y2 - y1)
-        # Densité du lissage 
+        # [TAG_LISSAGE] - Densité des points pour fluidifier le moteur
         nb_etapes = max(20, int(distance * 2))
         
         for t in range(nb_etapes):
@@ -107,11 +107,9 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
     
-    # Durée
     try:
         duree_sec = int(mission_en_cours.get("time"))
     except Exception:
-        # Durée par défaut si le serveur n'envoie rien
         duree_sec = 10  
     
     shape = get_shape(shape_id)
@@ -121,7 +119,6 @@ def lancer_dessin_physique():
         points_bruts = []
         cible_affichage = None
         
-        # Si liste de points
         if isinstance(donnees, list):
             for pt in donnees:
                 try:
@@ -135,18 +132,15 @@ def lancer_dessin_physique():
             points_finaux = interpoler_points(points_centres)
             cible_affichage = ecrire_csv_temporaire(points_finaux)
             
-        # 2. Si caractère Ascii
         elif isinstance(donnees, str) and len(donnees.strip()) < 5:
             cible_affichage = donnees.strip()
             
-        # 3. Si c'est c'est une chaîne CSV 
         elif isinstance(donnees, str):
             points_bruts = decoder_chaine_image(donnees)
             points_centres = centrer_points_polaires(points_bruts)
             points_finaux = interpoler_points(points_centres)
             cible_affichage = ecrire_csv_temporaire(points_finaux)
             
-        # Je choisis le simulateur à lancer selon le type de sémaphore
         if cible_affichage:
             if type_sem == "helice":
                 lancer_helice_ui(ui.root, cible_affichage, duree_sec)
@@ -163,7 +157,6 @@ def lancer_dessin_physique():
     else:
         ui.mettre_a_jour_statut("ERREUR - Shape introuvable")
     
-    # Fin de mission 
     put_mission_state(m_id, "Done")
     put_semaphore_state(mission_en_cours.get("semaphore_id"), "Available")
     
@@ -185,6 +178,7 @@ def boucle_automatisation():
         
         missions_valides = []
         for m in toutes_les_missions:
+            # [TAG_DATE] - Vérification de l'heure de départ de la mission
             if isinstance(m, dict) and m.get("state") in ["Pending", "Pending_semaphore"]:
                 missions_valides.append(m)
                 
@@ -195,9 +189,8 @@ def boucle_automatisation():
             put_semaphore_state(mission_en_cours.get("semaphore_id"), "Occupied")
             lancer_dessin_physique()
             
-    # Relance la boucle toutes les 3 secondes via Tkinter
     if ui.root.winfo_exists():
-        # Vitesse de rafraîchissement réseau (3000 = 3 sec)
+        # [TAG_SCAN_RESEAU] - Fréquence d'interrogation de l'API (en ms)
         ui.root.after(3000, boucle_automatisation)
 
 if __name__ == "__main__":

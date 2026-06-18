@@ -67,7 +67,7 @@ class SimulateurTable:
         r_max = max(p[0] for p in points_bruts) if points_bruts else 1.0
         if r_max == 0: 
             r_max = 1.0
-        # Facteur de mise à l'échelle (0.85 = prend 85% de la toile)
+        # [TAG_ECHELLE] - Pour agrandir ou réduire la taille du dessin sur la feuille
         echelle = (min(self.W, self.H) / 2) * 0.85
         
         for r, a, s in points_bruts:
@@ -117,8 +117,7 @@ class SimulateurTable:
         self.derniere_pos = (x, y)
         self.index_actuel += 1
         
-        # Vitesse d'animation
-        # Vitesse d'animation (millisecondes entre chaque point tracé)
+        # [TAG_AXES] - Vitesse de déplacement des axes
         self.top.after(10, self.animer)
 
 def simuler_table_tracante_csv(fichier_csv, root_parent, duree_sec=10):
