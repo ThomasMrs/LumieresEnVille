@@ -73,7 +73,7 @@ class SimulateurTable:
         for r, a, s in points_bruts:
             r_ech = (r / r_max) * echelle
             x = self.CX + r_ech * math.cos(math.radians(a))
-            # ppur mettre l'image à l'endroit
+            # pour mettre l'image à l'endroit
             y = self.CY - r_ech * math.sin(math.radians(a))
             coords.append((x, y, s))
             
@@ -90,12 +90,13 @@ class SimulateurTable:
             
         x, y, s = self.points[self.index_actuel]
         
-        # Mise à jour de la position des rails 
+        # [TAG_MOUVEMENT_DYNAMIQUE] - Mise à jour de la position des rails
+        # Le rail horizontal est une ligne horizontale à la hauteur Y
         self.canvas.coords(self.rail_horizontal, 0, y, self.W, y)
+        # Le rail vertical est une ligne verticale à la position X
         self.canvas.coords(self.rail_vertical, x, 0, x, self.H)
         
         # Déplacement de la pointe du stylo
-        # Taille du curseur
         self.canvas.coords(self.stylo_visuel, x-5, y-5, x+5, y+5)
         
         # Le stylo frotte le papier, on laisse une trace noire quand c'est en 1
@@ -106,18 +107,17 @@ class SimulateurTable:
                 px, py = self.derniere_pos
                 # Couleur et épaisseur dessin sur le papier
                 self.canvas.create_line(px, py, x, y, fill="black", width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
-        # le stylo est en 0, il ne trace pas, on le met en bleu pour simuler qu'il est levé
+        # le stylo est en 0, il ne trace pas, on le met en bleu
         else:
-            # Couleur du curseur quand stylo levé
             self.canvas.itemconfig(self.stylo_visuel, fill="lightblue")
             
-        # pour que le stylo ne soit pas gêné par les rails
+        # pour que le stylo soit toujours au-dessus des rails
         self.canvas.tag_raise(self.stylo_visuel)
             
         self.derniere_pos = (x, y)
         self.index_actuel += 1
         
-        # [TAG_AXES] - Vitesse de déplacement des axes
+        # [TAG_VITESSE_CNC] - Vitesse de déplacement de la machine CNC
         self.top.after(10, self.animer)
 
 def simuler_table_tracante_csv(fichier_csv, root_parent, duree_sec=10):
