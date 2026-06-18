@@ -3,7 +3,8 @@ import math
 import os
 
 class HelicePOV:
-    def __init__(self, root, fichier_initial=None):
+    # On a ajouté "couleur" qui prend le Cyan par défaut
+    def __init__(self, root, fichier_initial=None, couleur=(0, 255, 255)):
         self.root = root
         self.root.title("Simulation Hélice POV")
         self.root.configure(bg="#222")
@@ -18,6 +19,11 @@ class HelicePOV:
         self.angle_moteur = 0.0
         self.pixels_remanents = []
         self.lettre_actuelle = "A"
+        
+        # GESTION DES COULEURS 
+        self.couleur_rgb = couleur
+        # Conversion du tuple (R, G, B) en code Hexadécimal pour Tkinter (ex: #00ffff)
+        self.couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
         
         self.matrices_polaires = {"A": self._creer_matrice_lettre_A()}
         self.CORRECTION_PHASE = 90
@@ -34,9 +40,34 @@ class HelicePOV:
         self.animate()
 
     def _creer_matrice_lettre_A(self):
+        """Génère une véritable lettre 'A' visible sur l'hélice."""
         matrice = [[None for _ in range(10)] for _ in range(360)]
-        for a in range(80, 100): 
-            matrice[a][9] = (255, 255, 255)
+
+        def draw_line(x1, y1, x2, y2):
+            dist = math.hypot(x2 - x1, y2 - y1)
+            steps = int(dist * 20) 
+            for i in range(steps + 1):
+                t = i / steps if steps > 0 else 0
+                x = x1 + t * (x2 - x1)
+                y = y1 + t * (y2 - y1)
+
+                r_float = math.hypot(x, y)
+                r_idx = int(round(r_float))
+
+                if 0 <= r_idx <= 9:
+                    angle_rad = math.atan2(y, -x)
+                    idx = int(math.degrees(angle_rad)) % 360
+                    
+                    matrice[idx][r_idx] = True
+                    matrice[(idx + 1) % 360][r_idx] = True
+                    matrice[(idx - 1) % 360][r_idx] = True
+                    if r_idx < 9:
+                        matrice[idx][r_idx + 1] = True
+
+        draw_line(0, 8, -4, -8)
+        draw_line(0, 8, 4, -8)
+        draw_line(-2, 0, 2, 0)
+
         return matrice
 
     def _creer_interface(self):
@@ -150,9 +181,12 @@ class HelicePOV:
                     prev_y = self.CY + r_phys * math.sin(angle_rad_prev)
 
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
-                        c = "#00ffff"  # Couleur Cyan classique
+                        # --- LOGIQUE BONUS : On applique la couleur hexadécimale générée au démarrage ---
+                        c = self.couleur_hex
                         tid = self.canvas.create_line(prev_x, prev_y, x, y, fill=c, width=4, capstyle=tk.ROUND)
-                        self.pixels_remanents.append({'id': tid, 'vie': 255, 'r': 0, 'g': 255, 'b': 255})
+                        
+                        # --- LOGIQUE BONUS : On stocke les valeurs RGB dynamiques pour la remanence ---
+                        self.pixels_remanents.append({'id': tid, 'vie': 255, 'r': self.couleur_rgb[0], 'g': self.couleur_rgb[1], 'b': self.couleur_rgb[2]})
                         
                         if dernier_pas:
                             self.canvas.itemconfig(self.leds_gui[b][i], fill=c)
@@ -164,9 +198,10 @@ class HelicePOV:
                             
         self.root.after(self.refresh_rate, self.animate)
 
-def lancer_helice_ui(fenetre_parente, donnees=None, duree_sec=10):
+# --- LOGIQUE BONUS : On a ajouté "couleur" en paramètre pour correspondre à l'appel du mainsemaphore.py ---
+def lancer_helice_ui(fenetre_parente, donnees=None, couleur=(0, 255, 255), duree_sec=10):
     top = tk.Toplevel(fenetre_parente)
-    app = HelicePOV(top, fichier_initial=donnees)
+    app = HelicePOV(top, fichier_initial=donnees, couleur=couleur)
     
     top.after(duree_sec * 1000, top.destroy)
     
