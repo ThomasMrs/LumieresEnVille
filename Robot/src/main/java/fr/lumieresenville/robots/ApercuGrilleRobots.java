@@ -171,7 +171,7 @@ public class ApercuGrilleRobots {
                     origineX + s.x() * taille, origineY - s.y() * taille, taille));
         }
 
-        // Robots au repos en (0;0) : alignes SOUS la base pour rester visibles
+        // Robots au repos en (0;0) 
         int totalBase = 0;
         for (RobotVue r : etat.robots) {
             if (estALaBase(r)) {
@@ -270,7 +270,7 @@ public class ApercuGrilleRobots {
         return pastille;
     }
 
-    // === Lecture serveur (Java pur) ===
+    //ecture serveur
 
     private static EtatGrille lireEtatGrille() {
         EtatGrille etat = new EtatGrille();

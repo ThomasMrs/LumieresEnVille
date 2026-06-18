@@ -3,9 +3,7 @@ package fr.lumieresenville.robots;
 import java.util.ArrayList;
 import java.util.List;
 
-// Mini-lecteur JSON en Java pur (aucune dependance externe : "JAVA/JavaFX uniquement").
-// Suffisant pour les reponses simples du serveur (tableaux d'objets plats).
-// Centralise le code autrefois duplique dans AppRobots, Grille et ApercuGrilleRobots.
+// Lecteur JSON en Java 
 public final class JsonMini {
 
     private JsonMini() {
