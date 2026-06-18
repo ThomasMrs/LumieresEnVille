@@ -14,7 +14,7 @@ print(f"Configuré sur {BASE_URL} ")
 def get_missions():
     """Récupère la liste de toutes les missions avec un timeout court pour ne pas bloquer l'UI."""
     try:
-        # [TAG_TIMEOUT] - Temps d'attente max avant d'abandonner la requête réseau
+        # Le timeout (secondes max avant d'abandonner la requête)
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
         return response.json() if response.status_code == 200 else []
     except Exception as e:
