@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 
+
 ip_serveur = input("IP du serveur (ex: 192.168.1.14) : ").strip()
 if not ip_serveur:
     ip_serveur = "127.0.0.1" 
@@ -10,6 +11,7 @@ print(f"Configuré sur {BASE_URL} ")
 
 def get_missions():
     try:
+        # Le timeout (2 sec) 
         response = requests.get(f"{BASE_URL}/api/list_missions", timeout=2)
         return response.json() if response.status_code == 200 else []
     except Exception as e:

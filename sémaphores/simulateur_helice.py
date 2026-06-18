@@ -3,29 +3,33 @@ import math
 import os
 
 class HelicePOV:
-    
     def __init__(self, root, fichier_initial=None, couleur=(0, 255, 255)):
         self.root = root
         self.root.title("Simulation Hélice POV")
+        # Couleur du fond
         self.root.configure(bg="#222")
         
+        # Taille de l'écran Hélice
         self.W = 300
         self.H = 300
         self.CX = self.W / 2
         self.CY = self.H / 2
+        # Les FPS (Plus c'est bas, plus le moteur tourne vite)
         self.refresh_rate = 20  
         
+        # Vitesse par défaut de rotation
         self.vitesse_rotation = 5.0
         self.angle_moteur = 0.0
         self.pixels_remanents = []
         self.lettre_actuelle = "A"
         
-        # GESTION DES COULEURS 
+        # On sauvegarde la couleur brute pour la rémanence
         self.couleur_rgb = couleur
-        # Conversion du tuple (R, G, B) en code Hexadécimal pour Tkinter (ex: #00ffff)
+        # On convertit la couleur en Héxadécimal
         self.couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
         
         self.matrices_polaires = {"A": self._creer_matrice_lettre_A()}
+        # Décalage du degré zéro
         self.CORRECTION_PHASE = 90
         
         self._creer_interface()
@@ -40,7 +44,6 @@ class HelicePOV:
         self.animate()
 
     def _creer_matrice_lettre_A(self):
-        """Génère une véritable lettre 'A' visible sur l'hélice."""
         matrice = [[None for _ in range(10)] for _ in range(360)]
 
         def draw_line(x1, y1, x2, y2):
@@ -83,6 +86,7 @@ class HelicePOV:
         tk.Button(self.control_frame, text="Afficher", command=self.update_lettre).pack()
 
         tk.Label(self.control_frame, text="Vitesse (°/frame):", bg="#333", fg="white").pack(anchor="w", pady=(20,0))
+        # La limite max du curseur de vitesse (to=60)
         self.slider_vitesse = tk.Scale(self.control_frame, from_=1, to=60, orient=tk.HORIZONTAL, bg="#333", fg="white", highlightthickness=0, command=self.update_vitesse)
         self.slider_vitesse.set(self.vitesse_rotation)
         self.slider_vitesse.pack(fill=tk.X, pady=5)
@@ -115,6 +119,7 @@ class HelicePOV:
         
         for r, a, s in points:
             if s == 1:
+                # Changer le "9" si l'hélice physique nécessite plus de leds.
                 led_idx = int((r / r_max) * 9)
                 if led_idx > 9: led_idx = 9
                 if led_idx < 0: led_idx = 0
@@ -123,11 +128,13 @@ class HelicePOV:
         self.matrices_polaires[os.path.basename(nom_fichier).upper()] = matrice
 
     def _initialiser_matrice_rotation(self):
+        # Couleur des pales de l'hélice 
         self.bras_gui = [self.canvas.create_line(0,0,0,0, fill="gray", width=4) for _ in range(4)]
         self.leds_gui = [[self.canvas.create_oval(0,0,0,0, fill="#111") for _ in range(10)] for _ in range(4)]
 
     def _gerer_remanence(self):
         for p in self.pixels_remanents[:]:
+            # estompage des traces laissés par les leds
             p['vie'] -= 15
             if p['vie'] <= 0:
                 self.canvas.delete(p['id'])
@@ -166,6 +173,7 @@ class HelicePOV:
                 angle_rad_prev = math.radians((angle_physique - 1) - 90)
 
                 if dernier_pas:
+                    # Longueur des barres 
                     x_b = self.CX + (self.W / 2.5) * math.cos(angle_rad)
                     y_b = self.CY + (self.H / 2.5) * math.sin(angle_rad)
                     self.canvas.coords(self.bras_gui[b], self.CX, self.CY, x_b, y_b)
@@ -181,11 +189,12 @@ class HelicePOV:
                     prev_y = self.CY + r_phys * math.sin(angle_rad_prev)
 
                     if idx < 360 and len(matrice[idx]) > i and matrice[idx][i]:
-                        # --- LOGIQUE BONUS : On applique la couleur hexadécimale générée au démarrage ---
-                        c = self.couleur_hex
+                        # On dessine avec la couleur dynamique Hexadécimale
+                        c = self.couleur_hex  
+                        # 🛠️ MODIF POSSIBLE : Épaisseur du laser (width)
                         tid = self.canvas.create_line(prev_x, prev_y, x, y, fill=c, width=4, capstyle=tk.ROUND)
                         
-                        # --- LOGIQUE BONUS : On stocke les valeurs RGB dynamiques pour la remanence ---
+                        # On injecte les valeurs RGB de base 
                         self.pixels_remanents.append({'id': tid, 'vie': 255, 'r': self.couleur_rgb[0], 'g': self.couleur_rgb[1], 'b': self.couleur_rgb[2]})
                         
                         if dernier_pas:
@@ -193,12 +202,12 @@ class HelicePOV:
                             self.canvas.coords(self.leds_gui[b][i], x-3, y-3, x+3, y+3)
                     else:
                         if dernier_pas:
+                            # Couleur des leds éteintes
                             self.canvas.itemconfig(self.leds_gui[b][i], fill="#111")
                             self.canvas.coords(self.leds_gui[b][i], x-3, y-3, x+3, y+3)
                             
         self.root.after(self.refresh_rate, self.animate)
 
-# --- LOGIQUE BONUS : On a ajouté "couleur" en paramètre pour correspondre à l'appel du mainsemaphore.py ---
 def lancer_helice_ui(fenetre_parente, donnees=None, couleur=(0, 255, 255), duree_sec=10):
     top = tk.Toplevel(fenetre_parente)
     app = HelicePOV(top, fichier_initial=donnees, couleur=couleur)

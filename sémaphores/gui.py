@@ -3,7 +3,9 @@ import tkinter as tk
 class Interface:
     def __init__(self):
         self.root = tk.Tk()
+        # Titre de la fenêtre
         self.root.title("Sémaphore - Panneau de Contrôle")
+        # Couleur de fond
         self.root.configure(bg="black")
         
         self.frame_local = tk.Frame(self.root, bg="#1a1a1a", bd=2, relief="groove")
@@ -11,6 +13,7 @@ class Interface:
         
         tk.Label(self.frame_local, text="Tests Manuels (Hors-Ligne)", bg="#1a1a1a", fg="gray", font=("Arial", 9)).pack(pady=2)
         
+        # Couleurs des boutons
         self.btn_table = tk.Button(
             self.frame_local, text="Ouvrir Table Traçante", 
             bg="#333333", fg="white", font=("Arial", 10, "bold")
@@ -23,6 +26,7 @@ class Interface:
         )
         self.btn_helice.pack(side="right", expand=True, fill="x", padx=10, pady=5)
 
+        # Taille du grand écran noir central (width / height)
         self.canvas = tk.Canvas(self.root, width=500, height=350, bg="black", highlightthickness=0)
         self.canvas.pack(padx=20, pady=5)
         
@@ -57,14 +61,17 @@ class Interface:
             
         self.canvas.delete("dessin")
         if not symbole_ascii:
+            # Le caractère affiché par défaut
             symbole_ascii = "?"
             
+        # On convertit le RGB (ex: 255,0,0) en code Hexadécimal compréhensible par l'écran Tkinter
         couleur_hex = f"#{couleur[0]:02x}{couleur[1]:02x}{couleur[2]:02x}"
             
         self.canvas.create_text(
             250, 220, 
             text=symbole_ascii, 
             fill=couleur_hex,  
+            # Taille du caractère ASCII (130)
             font=("Courier", 130, "bold"), 
             tags="dessin"
         )

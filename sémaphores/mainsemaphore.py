@@ -13,6 +13,7 @@ etat = "RECHERCHE_MISSION"
 mission_en_cours = None
 DOSSIER_ACTUEL = os.path.dirname(os.path.abspath(__file__))
 
+# Nom du CSV généré
 def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
     chemin = os.path.join(DOSSIER_ACTUEL, nom_fichier)
     with open(chemin, 'w') as f:
@@ -49,6 +50,7 @@ def centrer_points_polaires(points):
     return points_centres
 
 def interpoler_points(points):
+    # Rotation du dessin (90 = vers le haut)
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
@@ -69,6 +71,7 @@ def interpoler_points(points):
         y2 = p2['r'] * math.sin(math.radians(a2))
         
         distance = math.hypot(x2 - x1, y2 - y1)
+        # Lissage points
         nb_etapes = max(20, int(distance * 2))
         
         for t in range(nb_etapes):
@@ -97,6 +100,7 @@ def lancer_dessin_physique():
     sem = get_semaphore(mission_en_cours.get("semaphore_id"))
     type_sem = sem.get("type", "").lower()
     
+    # Extraction des couleurs du serveur (si elles existent)
     r = int(mission_en_cours.get("color_r"))
     g = int(mission_en_cours.get("color_g"))
     b = int(mission_en_cours.get("color_b"))
@@ -106,6 +110,7 @@ def lancer_dessin_physique():
     try:
         duree_sec = int(duree_str)
     except Exception:
+        # Durée d'animation par défaut
         duree_sec = 10  
     
     shape = get_shape(shape_id)
@@ -145,6 +150,7 @@ def lancer_dessin_physique():
                 if cible_affichage.endswith(".csv"):
                     simuler_table_tracante_csv(cible_affichage, ui.root, couleur_mission, duree_sec)
                 else:
+                    # On envoie aussi la couleur au mode ASCII
                     ui.afficher_forme(cible_affichage)
                     var_attente = tk.IntVar()
                     ui.root.after(duree_sec * 1000, lambda: var_attente.set(1))
@@ -159,6 +165,7 @@ def lancer_dessin_physique():
     
     etat = "RECHERCHE_MISSION"
     mission_en_cours = None
+
 def boucle_automatisation():
     global etat, mission_en_cours
     
@@ -178,20 +185,23 @@ def boucle_automatisation():
                 
         if len(missions_valides) > 0:
             mission_en_cours = missions_valides[0]
+            # Au lieu d'imprimer tout de suite, on met en salle d'attente
             etat = "ATTENTE_DEPART"
             
     elif etat == "ATTENTE_DEPART":
         date_depart_str = mission_en_cours.get("start_date")
         demarrer_maintenant = False
         
+        # Le check temporel
         if not date_depart_str: 
             demarrer_maintenant = True
         else:
             try:
+                # Nettoyage de la chaîne de date envoyée par l'API (enlève les T et les Z)
                 date_propre = date_depart_str.replace("T", " ").replace("Z", "").strip()
-                
                 date_depart = datetime.strptime(date_propre, "%Y-%m-%d %H:%M:%S")
                 
+                # Si la date prévue est dépassée par l'heure actuelle du PC on commence la mission du sémaphore
                 if datetime.now() >= date_depart:
                     demarrer_maintenant = True
             except Exception as e:
@@ -206,6 +216,7 @@ def boucle_automatisation():
             ui.mettre_a_jour_statut(f"Planifié pour : {date_depart_str}")
             
     if ui.root.winfo_exists():
+        # regarde toutes les 3 secondes.
         ui.root.after(3000, boucle_automatisation)
 
 if __name__ == "__main__":
