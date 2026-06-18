@@ -4,7 +4,9 @@ class Interface:
     def __init__(self):
         # Initialisation fenêtre 
         self.root = tk.Tk()
+        # Titre de la fenêtre
         self.root.title("Sémaphore - Panneau de Contrôle")
+        # Fond général
         self.root.configure(bg="black")
         
         # Boutons test manuel hors ligne
@@ -13,6 +15,7 @@ class Interface:
         
         tk.Label(self.frame_local, text="Tests Manuels (Hors-Ligne)", bg="#1a1a1a", fg="gray", font=("Arial", 9)).pack(pady=2)
         
+        # Couleurs des boutons (bg = fond, fg = texte)
         self.btn_table = tk.Button(self.frame_local, text="Ouvrir Table Traçante", bg="#333333", fg="white", font=("Arial", 10, "bold"))
         self.btn_table.pack(side="left", expand=True, fill="x", padx=10, pady=5)
 
@@ -20,6 +23,7 @@ class Interface:
         self.btn_helice.pack(side="right", expand=True, fill="x", padx=10, pady=5)
 
         # Zone d'affichage
+        # Dimensions de l'écran radar central (width et height)
         self.canvas = tk.Canvas(self.root, width=500, height=350, bg="black", highlightthickness=0)
         self.canvas.pack(padx=20, pady=5)
         
@@ -57,7 +61,9 @@ class Interface:
         """Affiche le caractère ASCII ciblé au centre de l'écran pendant l'attente."""
         self.canvas.delete("dessin")
         if not symbole_ascii:
+            # Le caractère affiché par défaut
             symbole_ascii = "?"
             
+        # Taille et couleur du symbole au milieu
         self.canvas.create_text(250, 220, text=symbole_ascii, fill="cyan", font=("Courier", 130, "bold"), tags="dessin")
         self.canvas.update()

@@ -14,6 +14,7 @@ DOSSIER_ACTUEL = os.path.dirname(os.path.abspath(__file__))
 
 # Fonctions géométriques et traitement points
 
+# Nom du fichier temporaire
 def ecrire_csv_temporaire(liste_points, nom_fichier="temp_mission.csv"):
     """Crée un fichier local temporaire pour que les simulateurs puissent le lire."""
     chemin = os.path.join(DOSSIER_ACTUEL, nom_fichier)
@@ -54,6 +55,7 @@ def centrer_points_polaires(points):
 
 def interpoler_points(points):
     """Calcule des points intermédiaires pour lisser le tracé entre deux sommets éloignés."""
+    # Orientation globale (90 = à l'endroit)
     PHASE_SHIFT = 90  
     
     if len(points) < 2: 
@@ -74,6 +76,7 @@ def interpoler_points(points):
         y2 = p2['r'] * math.sin(math.radians(a2))
         
         distance = math.hypot(x2 - x1, y2 - y1)
+        # Densité du lissage 
         nb_etapes = max(20, int(distance * 2))
         
         for t in range(nb_etapes):
@@ -108,6 +111,7 @@ def lancer_dessin_physique():
     try:
         duree_sec = int(mission_en_cours.get("time"))
     except Exception:
+        # Durée par défaut si le serveur n'envoie rien
         duree_sec = 10  
     
     shape = get_shape(shape_id)
@@ -193,6 +197,7 @@ def boucle_automatisation():
             
     # Relance la boucle toutes les 3 secondes via Tkinter
     if ui.root.winfo_exists():
+        # Vitesse de rafraîchissement réseau (3000 = 3 sec)
         ui.root.after(3000, boucle_automatisation)
 
 if __name__ == "__main__":

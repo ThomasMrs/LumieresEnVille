@@ -5,9 +5,11 @@ class SimulateurTable:
     def __init__(self, root, fichier_csv):
         self.top = tk.Toplevel(root)
         self.top.title("Simulateur Table Traçante")
+        # Couleur de fond de la fenêtre Tkinter
         self.top.configure(bg="#333")
         
         # Dimensions fixes 
+        # Taille du plan de travail papier
         self.W = 300
         self.H = 300
         self.CX = self.W / 2
@@ -19,6 +21,7 @@ class SimulateurTable:
         self._dessiner_axes()
         
         # Les bras mécaniques qui suivent le curseur
+        # Couleur et épaisseur des bras CNC
         self.rail_horizontal = self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#666666", width=3)
         self.rail_vertical = self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#666666", width=3)
         
@@ -34,6 +37,7 @@ class SimulateurTable:
 
     def _dessiner_axes(self):
         """Dessine les pointillés de repérage en arrière-plan."""
+        # Style des axes (dash = taille pointillé)
         self.canvas.create_line(0, self.CY, self.W, self.CY, fill="#cccccc", dash=(4, 4))
         self.canvas.create_text(self.W - 10, self.CY - 10, text="X", fill="#999999", font=("Arial", 8, "bold"))
         self.canvas.create_line(self.CX, 0, self.CX, self.H, fill="#cccccc", dash=(4, 4))
@@ -63,6 +67,7 @@ class SimulateurTable:
         r_max = max(p[0] for p in points_bruts) if points_bruts else 1.0
         if r_max == 0: 
             r_max = 1.0
+        # Facteur de mise à l'échelle (0.85 = prend 85% de la toile)
         echelle = (min(self.W, self.H) / 2) * 0.85
         
         for r, a, s in points_bruts:
@@ -90,16 +95,20 @@ class SimulateurTable:
         self.canvas.coords(self.rail_vertical, x, 0, x, self.H)
         
         # Déplacement de la pointe du stylo
+        # Taille du curseur
         self.canvas.coords(self.stylo_visuel, x-5, y-5, x+5, y+5)
         
         # Le stylo frotte le papier, on laisse une trace noire quand c'est en 1
         if s == 1:
+            # Couleur du curseur quand stylo posé
             self.canvas.itemconfig(self.stylo_visuel, fill="red")
             if self.derniere_pos:
                 px, py = self.derniere_pos
+                # Couleur et épaisseur dessin sur le papier
                 self.canvas.create_line(px, py, x, y, fill="black", width=2, capstyle=tk.ROUND, joinstyle=tk.ROUND)
         # le stylo est en 0, il ne trace pas, on le met en bleu pour simuler qu'il est levé
         else:
+            # Couleur du curseur quand stylo levé
             self.canvas.itemconfig(self.stylo_visuel, fill="lightblue")
             
         # pour que le stylo ne soit pas gêné par les rails
@@ -109,6 +118,7 @@ class SimulateurTable:
         self.index_actuel += 1
         
         # Vitesse d'animation
+        # Vitesse d'animation (millisecondes entre chaque point tracé)
         self.top.after(10, self.animer)
 
 def simuler_table_tracante_csv(fichier_csv, root_parent, duree_sec=10):
