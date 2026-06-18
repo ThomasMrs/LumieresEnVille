@@ -90,7 +90,7 @@ class HelicePOV:
         tk.Button(self.control_frame, text="Afficher", command=self.update_lettre).pack()
 
         tk.Label(self.control_frame, text="Vitesse (°/frame):", bg="#333", fg="white").pack(anchor="w", pady=(20,0))
-        # 🛠️ MODIF POSSIBLE : Plage de la barre de vitesse (to=60)
+        # Plage de la barre de vitesse (to=60)
         self.slider_vitesse = tk.Scale(self.control_frame, from_=1, to=60, orient=tk.HORIZONTAL, bg="#333", fg="white", highlightthickness=0, command=self.update_vitesse)
         self.slider_vitesse.set(self.vitesse_rotation)
         self.slider_vitesse.pack(fill=tk.X, pady=5)
