@@ -17,18 +17,47 @@ public class Grille {
 
     //Deplacer un robot vers une destination
     public static void deplacer(Robot robot, double destinationX, double destinationY) throws Exception {
+        deplacer(robot, destinationX, destinationY, false);
+    }
+
+    public static void deplacerRetour(Robot robot, double destinationX, double destinationY) throws Exception {
+        deplacer(robot, destinationX, destinationY, true);
+    }
+
+    private static void deplacer(Robot robot, double destinationX, double destinationY, boolean autreChemin) throws Exception {
         EtatGrille etatGrille = lireEtatGrille();
         Point depart = new Point((int) Math.round(robot.getX()), (int) Math.round(robot.getY()));
         Point arrivee = new Point((int) Math.round(destinationX), (int) Math.round(destinationY));
 
         verifierPositionDansGrille(depart, etatGrille);
         verifierPositionDansGrille(arrivee, etatGrille);
+//calcule chemin 
 
-        List<Point> chemin = calculerChemin(depart, arrivee, etatGrille.segments());
+    // private static List<Point> reconstruireChemin(Point depart, Point arrivee, Map<Point, Point> precedent) {
+    //     List<Point> chemin = new ArrayList<>();
+    //     Point courant = arrivee;
+    //     chemin.add(courant);
+    //     while (!courant.equals(depart)) {
+    //         courant = precedent.get(courant);
+    //         chemin.add(courant);
+    //     }
+    //     Collections.reverse(chemin);
+    //     return chemin;
+    // }
+
+    
+        List<Segment> segments = etatGrille.segments();
+        if (autreChemin) {
+            segments = new ArrayList<>(segments);
+            Collections.reverse(segments);
+        }
+
+
+        List<Point> chemin = calculerChemin(depart, arrivee, segments);
         System.out.println("[" + robot.getNom() + "] deplacement -> depart=" + depart
                 + ", destination=" + arrivee
                 + ", vitesse=" + robot.getVitesse() + " case(s)/s"
-                + ", segments=" + etatGrille.segments().size()
+                + ", segments=" + segments.size()
                 + ", pas=" + Math.max(0, chemin.size() - 1));
 
         for (int i = 1; i < chemin.size(); i++) {
